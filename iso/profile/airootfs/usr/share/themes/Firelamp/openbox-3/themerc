@@ -1,0 +1,43 @@
+# Firelamp: warm ember accents on soft dark charcoal.
+border.width: 1
+padding.height: 6
+titlebar.height: 30
+window.titlebar.padding.width: 10
+window.button.width: 22
+window.button.spacing: 2
+
+window.active.border.color: #3a2a24
+window.inactive.border.color: #2a211e
+window.active.indicator.toggled-keybind.color: #ff7a3d
+
+window.active.title.bg.color: #231a17
+window.inactive.title.bg.color: #1c1513
+window.active.label.text.color: #f4e6dc
+window.inactive.label.text.color: #8f7d73
+window.label.text.justify: center
+
+window.active.button.unpressed.image.color: #f4e6dc
+window.inactive.button.unpressed.image.color: #6e5d55
+
+window.active.shadow.size: 40
+window.inactive.shadow.size: 24
+window.active.shadow.color: #00000077
+window.inactive.shadow.color: #00000044
+
+menu.border.width: 1
+menu.border.color: #3a2a24
+menu.items.bg.color: #1f1714
+menu.items.text.color: #f4e6dc
+menu.items.active.bg.color: #ff6a2b
+menu.items.active.text.color: #1a100c
+menu.items.padding.x: 12
+menu.items.padding.y: 6
+menu.separator.color: #3a2a24
+menu.title.bg.color: #1f1714
+menu.title.text.color: #ffb347
+
+osd.bg.color: #1f1714
+osd.border.color: #3a2a24
+osd.border.width: 1
+osd.label.text.color: #f4e6dc
+osd.window-switcher.item.active.border.color: #ff7a3d

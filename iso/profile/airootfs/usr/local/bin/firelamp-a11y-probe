@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Print the live AT-SPI2 UI tree: the same view of the screen the AI gets.
+
+    firelamp-a11y-probe              print every app's tree (depth 6)
+    firelamp-a11y-probe --depth 3    limit tree depth
+    firelamp-a11y-probe --boot-report
+                                     wait for the session to settle, then write a
+                                     short status summary to
+                                     $XDG_RUNTIME_DIR/firelamp-boot-report.txt
+"""
+import argparse
+import os
+import subprocess
+import sys
+import time
+
+import gi
+
+gi.require_version("Atspi", "2.0")
+from gi.repository import Atspi  # noqa: E402
+
+
+def describe(node):
+    try:
+        role = node.get_role_name()
+    except Exception:
+        role = "?"
+    try:
+        name = node.get_name() or ""
+    except Exception:
+        name = ""
+    extra = ""
+    try:
+        ext = node.get_extents(Atspi.CoordType.SCREEN)
+        extra = f" @{ext.x},{ext.y} {ext.width}x{ext.height}"
+    except Exception:
+        pass
+    return f"[{role}] {name!r}{extra}"
+
+
+def walk(node, depth, max_depth, lines, counter):
+    counter[0] += 1
+    lines.append("  " * depth + describe(node))
+    if depth >= max_depth:
+        return
+    try:
+        count = node.get_child_count()
+    except Exception:
+        return
+    for i in range(count):
+        try:
+            child = node.get_child_at_index(i)
+        except Exception:
+            continue
+        if child is not None:
+            walk(child, depth + 1, max_depth, lines, counter)
+
+
+def snapshot(max_depth):
+    desktop = Atspi.get_desktop(0)
+    lines, counter, apps = [], [0], []
+    for i in range(desktop.get_child_count()):
+        app = desktop.get_child_at_index(i)
+        if app is None:
+            continue
+        apps.append(app.get_name() or "?")
+        walk(app, 0, max_depth, lines, counter)
+    return apps, counter[0], lines
+
+
+def run(cmd):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=5).stdout.strip()
+    except Exception as exc:
+        return f"({exc})"
+
+
+def boot_report():
+    time.sleep(20)
+    out = []
+    out.append(f"FIRELAMP_SESSION wayland={os.environ.get('WAYLAND_DISPLAY', '-')}")
+    out.append("compositor: " + (run(["pgrep", "-a", "-x", "labwc"]) or run(["pgrep", "-a", "-x", "cage"]) or "NOT RUNNING"))
+    out.append("shell: " + (run(["pgrep", "-a", "-f", "qml|firelamp-shell"]) or "NOT RUNNING"))
+    out.append("qt: " + run(["/usr/lib/qt6/bin/qtpaths6", "--qt-version"]))
+    out.append("renderer: " + os.environ.get("WLR_RENDERER", "auto"))
+    try:
+        apps, nodes, lines = snapshot(4)
+        out.append(f"FIRELAMP_ATSPI_OK apps={len(apps)} nodes={nodes} names={apps}")
+        out.extend(lines[:40])
+    except Exception as exc:
+        out.append(f"FIRELAMP_ATSPI_FAIL {exc}")
+    path = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-boot-report.txt")
+    tmp = path + ".tmp"
+    with open(tmp, "w") as fh:
+        fh.write("\n".join(out) + "\n")
+    os.replace(tmp, path)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--depth", type=int, default=6)
+    parser.add_argument("--boot-report", action="store_true")
+    args = parser.parse_args()
+    if args.boot_report:
+        boot_report()
+        return
+    apps, nodes, lines = snapshot(args.depth)
+    print("\n".join(lines))
+    print(f"\n{len(apps)} apps, {nodes} nodes", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
