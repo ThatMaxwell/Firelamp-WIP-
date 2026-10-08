@@ -107,6 +107,10 @@ def main():
             time.sleep(3)
             hmp(mon, f"screendump {os.path.join(out, 'desktop.png')} -f png")
             shutil.copy(os.path.join(out, "desktop.png"), os.path.join(frames, f"{frame:04d}.png"))
+            # Tap Super: it should open the Firelamp launcher, not Plasma's.
+            hmp(mon, "sendkey meta_l")
+            time.sleep(3)
+            hmp(mon, f"screendump {os.path.join(out, 'super.png')} -f png")
     finally:
         if vm.poll() is None:
             try:
