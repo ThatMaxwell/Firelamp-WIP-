@@ -263,7 +263,20 @@ Item {
                 Rectangle { width: 6; height: 6; radius: 3; color: Theme.ember; anchors.verticalCenter: parent.verticalCenter }
                 Label { text: Os.name }
             }
-            Empty { visible: !Os.demo && !Os.activity.count; y: 22; text: "Nothing done yet. Ask me anything." }
+            // before the first task: what it can already do here, one tap each
+            Column {
+                visible: !Os.demo && !Os.activity.count
+                y: 22; spacing: 5; width: parent.width
+                Repeater {
+                    model: Os.suggestions
+                    Row { required property var modelData; spacing: 7
+                        property string aiName: modelData.text; property string aiRole: "button"
+                        function aiActivate() { Os.submit(modelData.text); }
+                        Glyph { name: modelData.icon; width: 12; height: 12; color: Theme.text3; anchors.verticalCenter: parent.verticalCenter }
+                        Line { text: modelData.text; font.weight: Font.Normal; color: Theme.text2; font.pixelSize: 12 }
+                        TapHandler { enabled: !hw.preview && !Os.editingHome; onTapped: parent.aiActivate() } }
+                }
+            }
             Column {
                 y: 22; spacing: 5; width: parent.width
                 Repeater {

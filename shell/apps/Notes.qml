@@ -117,6 +117,6 @@ Item {
             }
         }
         Scroller { flick: fl }
-        EmptyState { visible: !app.cur; glyph: "compose"; title: "No notes yet"; hint: "Start one with the pencil above. Notes save as you type." }
+        EmptyState { visible: !app.cur; glyph: "compose"; title: "No notes yet"; hint: "Notes save as you type."; action: "New note"; onActed: app.newNote() }
     }
 }

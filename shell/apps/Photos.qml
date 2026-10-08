@@ -2,6 +2,7 @@
 import QtQuick
 import QtCore
 import Qt.labs.folderlistmodel
+import QtQuick.Dialogs
 import "../components"
 
 Item {
@@ -22,7 +23,7 @@ Item {
     // a real install shows what's in ~/Pictures, newest first, as square crops
     FolderListModel {
         id: pics
-        folder: Os.demo ? "" : StandardPaths.writableLocation(StandardPaths.PicturesLocation)
+        folder: Os.demo ? "" : Os.settings.photosFolder || StandardPaths.writableLocation(StandardPaths.PicturesLocation)
         nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.gif", "*.JPG", "*.JPEG", "*.PNG", "*.heic"]
         showDirs: false; sortField: FolderListModel.Time
     }
@@ -44,7 +45,9 @@ Item {
             MouseArea { anchors.fill: parent; onDoubleClicked: Qt.openUrlExternally(parent.fileUrl) }
         }
     }
-    EmptyState { visible: !Os.demo && pics.count === 0; glyph: "image"; title: "No photos yet"; hint: "Pictures you save to your Pictures folder show up here." }
+    EmptyState { visible: !Os.demo && pics.count === 0; glyph: "image"; title: "No photos yet"; hint: "Pictures in your Pictures folder show up here."
+                 action: "Choose a folder…"; onActed: chooser.open() }
+    FolderDialog { id: chooser; title: "Show photos from"; currentFolder: pics.folder; onAccepted: Os.settings.photosFolder = String(selectedFolder) }
     Flickable {
         id: fl
         x: 14; y: 52; width: parent.width - 28; height: parent.height - y

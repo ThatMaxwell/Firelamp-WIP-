@@ -46,6 +46,7 @@ QtObject {
         property string accent: ""             // the user's color; empty = neutral. Never ember.
         property string myLooks: "[]"           // saved Looks, JSON
         property string notes: "[]"            // your notes, JSON [{body, at}]
+        property string photosFolder: ""       // Photos shows this folder; empty = ~/Pictures
         property bool packsAsked: false        // first boot showed "What do you do?"
         property bool browserAsked: false      // first boot showed "Pick your browser"
     }
@@ -159,8 +160,7 @@ QtObject {
         { uid: 2, kind: "system", size: "S", x: 424, y: 64 },
         { uid: 3, kind: "upnext", size: "M", x: 72, y: 240 },
         { uid: 4, kind: "notes", size: "S", x: 424, y: 240 },
-        { uid: 5, kind: "folder", size: "M", x: -400, y: 64 },
-        { uid: 6, kind: "assistant", size: "M", x: -400, y: 240 } ]
+        { uid: 6, kind: "assistant", size: "M", x: -400, y: 64 } ]
     readonly property var demoHome: [
         { uid: 1, kind: "clock", size: "M", x: 72, y: 64 },
         { uid: 2, kind: "weather", size: "S", x: 424, y: 64 },
