@@ -31,7 +31,7 @@ window.Film = (() => {
   function scene(k) { $$('.sc').forEach(s => s.classList.toggle('on', !!k && s.classList.contains('sc-' + k))); }
   function hit() { el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); }
   function word(i) { $$('.b-word span').forEach((s, j) => s.classList.toggle('on', j === i % 6)); }
-  function shot(i) { const s = $$('.b-shots i')[i % 6]; s.classList.remove('on'); void s.offsetWidth; s.classList.add('on'); }
+  function shot() { const s = $('.b-shots i'); s.classList.remove('on'); void s.offsetWidth; s.classList.add('on'); }
   function cap(i) { $$('.d-caps li').forEach((li, j) => { li.classList.toggle('on', j === i); li.classList.toggle('past', j < i); }); }
   function punch(i) { $$('.punch').forEach((p, j) => p.classList.toggle('on', j === i)); }
 
