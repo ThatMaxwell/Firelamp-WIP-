@@ -31,9 +31,9 @@ for f in [*out.glob("*.png"), *out.glob("*.jpg")]:
 
 # first boot runs from scratch: splash, no name, then naming
 base = ["firelamp", "--windowed", "--reset"] if scene == "firstboot" else ["firelamp", "--nosplash", "--windowed", "--name=Juniper"]
-if scene in ("stuck", "autopause", "desktops", "edithome"):
+if scene in ("stuck", "autopause", "desktops", "edithome", "packs"):
     base.append("--pointer")
-if scene == "desktops":
+if scene in ("desktops", "packs"):
     base.append("--demo-installs")
 app = QGuiApplication([*base, *sys.argv[3:]])
 engine = QQmlApplicationEngine()
@@ -129,6 +129,50 @@ def on(name, prop, value, fn, delay=0):
             QTimer.singleShot(delay, fn)
     t.timeout.connect(poll)
     t.start(40)
+
+
+# ---- step runner: each step starts when the one before it ends ----
+pos = {"x": 0, "y": 0}
+
+
+def tap(x, y, button=Qt.LeftButton):
+    mouse(x, y, "press", button); mouse(x, y, "release", button)
+
+
+def glide_to(x, y, ms, then):
+    glide(pos["x"], pos["y"], x, y, ms, lambda: (pos.update(x=x, y=y), then()))
+
+
+def run(steps):
+    if not steps:
+        return
+    step, rest = steps[0], steps[1:]
+    nxt = lambda: run(rest)
+    kind = step[0]
+    if kind == "wait":
+        QTimer.singleShot(step[1], nxt)
+    elif kind == "still":
+        still(step[1], 0); QTimer.singleShot(60, nxt)
+    elif kind == "do":
+        step[1](); nxt()
+    elif kind == "tap":                    # ("tap", name): activate by name, no pointer
+        call("probeTap", step[1]); nxt()
+    elif kind == "point":                  # ("point", x, y, ms)
+        glide_to(step[1], step[2], step[3], nxt)
+    elif kind in ("click", "rclick", "drag", "find"):
+        name, dx, dy = step[1], (step[2] if len(step) > 2 else 0), (step[3] if len(step) > 3 else 0)
+        call("probe", name)
+        x, y = win.property("probeX") + dx, win.property("probeY") + dy
+        if x < 0:
+            print("not found:", name, file=sys.stderr)
+        if kind == "click":
+            glide_to(x, y, 700, lambda: (tap(x, y), nxt()))
+        elif kind == "find":
+            glide_to(x, y, 700, nxt)
+        elif kind == "drag":               # ("drag", name, dx, dy, tx, ty)
+            tx, ty = step[4], step[5]
+            glide_to(x, y, 700, lambda: (mouse(x, y, "press"),
+                glide(x, y, x + tx, y + ty, 900, lambda: (mouse(x + tx, y + ty, "release"), pos.update(x=x + tx, y=y + ty), nxt()))))
 
 
 def finished(fn, delay=0):
@@ -237,7 +281,7 @@ elif scene == "trust":
     at(300, lambda: call("launch", "settings"))
     at(1200, lambda: call("setTrust", "terminal", "all"))
     at(1300, lambda: call("setTrust", "web", "never"))
-    at(1500, lambda: call("settingsScroll", 230))
+    at(1500, lambda: call("settingsScroll", 640))
     still("settings-trust", 2400)
     at(2500, lambda: (call("setTrust", "terminal", "risky"), call("setTrust", "web", "risky")))
     stop(2800)
@@ -268,42 +312,7 @@ elif scene == "edithome":
     at(300, lambda: call("launch", "notes"))
     at(700, lambda: call("launch", "photos"))
     at(1300, lambda: mouse(1180, 700))
-    pos = {"x": 1180, "y": 700}
-
-    def tap(x, y, button=Qt.LeftButton):
-        mouse(x, y, "press", button); mouse(x, y, "release", button)
-
-    def glide_to(x, y, ms, then):
-        glide(pos["x"], pos["y"], x, y, ms, lambda: (pos.update(x=x, y=y), then()))
-
-    def run(steps):
-        if not steps:
-            return
-        step, rest = steps[0], steps[1:]
-        nxt = lambda: run(rest)
-        kind = step[0]
-        if kind == "wait":
-            QTimer.singleShot(step[1], nxt)
-        elif kind == "still":
-            still(step[1], 0); QTimer.singleShot(60, nxt)
-        elif kind == "do":
-            step[1](); nxt()
-        elif kind == "point":                  # ("point", x, y, ms)
-            glide_to(step[1], step[2], step[3], nxt)
-        elif kind in ("click", "rclick", "drag", "find"):
-            name, dx, dy = step[1], (step[2] if len(step) > 2 else 0), (step[3] if len(step) > 3 else 0)
-            call("probe", name)
-            x, y = win.property("probeX") + dx, win.property("probeY") + dy
-            if x < 0:
-                print("edithome: not found:", name, file=sys.stderr)
-            if kind == "click":
-                glide_to(x, y, 700, lambda: (tap(x, y), nxt()))
-            elif kind == "find":
-                glide_to(x, y, 700, nxt)
-            elif kind == "drag":               # ("drag", name, dx, dy, tx, ty)
-                tx, ty = step[4], step[5]
-                glide_to(x, y, 700, lambda: (mouse(x, y, "press"),
-                    glide(x, y, x + tx, y + ty, 900, lambda: (mouse(x + tx, y + ty, "release"), pos.update(x=x + tx, y=y + ty), nxt()))))
+    pos.update(x=1180, y=700)
 
     def typed(text):
         return [("do", lambda ch=ch: key(ch)) for ch in text]
@@ -325,6 +334,33 @@ elif scene == "edithome":
         ("do", lambda: (call("setSetting", "wallpaper", "graphite"), call("resetHome"))), ("wait", 200),
         ("do", lambda: stop(0)),
     ]))
+elif scene == "looks":
+    # Edit home › Looks: each preset applies live; then a color of your own
+    for k, v in (("look", "graphite"), ("accent", ""), ("winRadius", 12), ("dockSize", 1), ("dockMag", 2), ("wallpaper", "graphite")):
+        call("setSetting", k, v)
+    call("resetHome")
+    at(300, lambda: call("launch", "notes"))
+    at(900, lambda: call("editHome", True, "Looks"))
+    steps = [("wait", 900), ("still", "looks-graphite")]
+    for name in ("Paper", "Midnight", "Moss", "Studio"):
+        steps += [("tap", name + " look"), ("wait", 700), ("still", "looks-" + name.lower())]
+    steps += [("do", lambda: call("editHome", False, "")), ("wait", 800), ("still", "looks-studio-home"),
+              ("do", lambda: call("editHome", True, "Looks")), ("wait", 600)]
+    steps += [("tap", "Graphite look"), ("tap", "Blue color"), ("wait", 300), ("do", lambda: call("sheetTab", "Dock & bar")), ("wait", 700), ("still", "looks-accent"),
+              ("do", lambda: call("editHome", False, "")), ("wait", 800), ("still", "looks-accent-home"),
+              ("do", lambda: [call("setSetting", k, v) for k, v in (("look", "graphite"), ("accent", ""), ("winRadius", 12), ("dockSize", 1), ("dockMag", 2))]),
+              ("wait", 100), ("do", lambda: stop(0))]
+    at(1200, lambda: run(steps))
+elif scene == "packs":
+    # First boot's optional "What do you do?", then the same packs in Settings
+    at(200, lambda: call("showPacks"))
+    steps = [("wait", 900), ("still", "packs-firstboot-empty"),
+             ("click", "Dev"), ("wait", 250), ("click", "Rice"), ("wait", 500), ("point", 900, 760, 500), ("wait", 300), ("still", "packs-firstboot"),
+             ("click", "Continue"), ("wait", 1200), ("still", "packs-toast"),
+             ("do", lambda: call("openSettings", "Packs")), ("wait", 900), ("click", "Dev pack", -200, 0), ("wait", 600),
+             ("click", "Install Play pack"), ("point", 1240, 800, 600), ("wait", 800), ("still", "settings-packs"),
+             ("do", lambda: call("setSetting", "packsAsked", False)), ("wait", 100), ("do", lambda: stop(0))]
+    at(400, lambda: run(steps))
 elif scene == "effort":
     # Settings › Assistant: the effort picker, Jev (Instant) by default
     at(300, lambda: call("launch", "settings"))

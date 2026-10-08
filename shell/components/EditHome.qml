@@ -23,6 +23,28 @@ Item {
         { kind: "assistant", name: Os.name, sizes: ["S", "M"] },
         { kind: "quick", name: "Quick actions", sizes: ["S", "M"] } ]
 
+    // ---- Looks ----
+    readonly property var presets: [
+        { name: "Graphite", what: "The default", look: "graphite", winRadius: 12, dockSize: 1, dockMag: 2, dockBacking: true },
+        { name: "Paper", what: "Light", look: "paper", winRadius: 12, dockSize: 1, dockMag: 2, dockBacking: true },
+        { name: "Midnight", what: "True black, for OLED", look: "midnight", winRadius: 12, dockSize: 1, dockMag: 1, dockBacking: true },
+        { name: "Moss", what: "Green-grey", look: "moss", winRadius: 12, dockSize: 1, dockMag: 2, dockBacking: true },
+        { name: "Studio", what: "Dense and square", look: "studio", winRadius: 0, dockSize: 0, dockMag: 0, dockBacking: true } ]
+    readonly property var lookKeys: ["look", "winRadius", "dockSize", "dockMag", "dockBacking", "wallpaper", "accent"]
+    property var mine: { try { return JSON.parse(Os.settings.myLooks); } catch (e) { return []; } }
+    readonly property var allLooks: presets.concat(mine)
+    function applyLook(l) { lookKeys.forEach(function (k) { if (l[k] !== undefined) Os.settings[k] = l[k]; }); }
+    function isCurrent(l) {
+        for (var i = 0; i < lookKeys.length; i++) { var k = lookKeys[i]; if (l[k] !== undefined && Os.settings[k] !== l[k]) return false; }
+        return true;
+    }
+    // "Save as Look" captures the setup as it is now, home layout included
+    function saveLook() {
+        var l = { name: "My Look" + (mine.length ? " " + (mine.length + 1) : ""), what: "Saved just now", home: Os.settings.homeLayout };
+        lookKeys.forEach(function (k) { l[k] = Os.settings[k]; });
+        Os.settings.myLooks = JSON.stringify(mine.concat([l]));
+    }
+
     function add(kind, size) {
         var p = home.freeSpot(size);
         Os.addWidget(kind, size, p.x, p.y);
@@ -208,10 +230,75 @@ Item {
                 }
             }
 
-            Text {
+            // Looks: one click changes the palette, corners and dock together, live on the
+            // desktop behind the sheet. Your color is separate, and is never the AI's ember.
+            Column {
                 visible: eh.tab === "Looks"
-                text: "Looks are next: Graphite, Paper, Midnight, Moss and Studio."
-                color: Theme.text3; font.family: Theme.font; font.pixelSize: 12
+                spacing: 16
+                Row {
+                    spacing: 12
+                    Repeater {
+                        model: eh.allLooks
+                        Rectangle {
+                            id: lk
+                            required property var modelData
+                            readonly property var pal: Theme.looks[modelData.look]
+                            readonly property bool on: eh.isCurrent(modelData)
+                            property string aiName: modelData.name + " look"; property string aiRole: "radio"
+                            function aiActivate() { eh.applyLook(modelData); }
+                            width: 138; height: 112; radius: 12
+                            color: Qt.rgba(1, 1, 1, 0.03)
+                            border.color: on ? Theme.text : Theme.hairline2; border.width: on ? 2 : 1
+                            MouseArea { anchors.fill: parent; onClicked: lk.aiActivate() }
+                            // the palette itself, as swatches: background, surfaces, text
+                            Row {
+                                x: 12; y: 14; spacing: -6
+                                Repeater {
+                                    model: [lk.pal.bg, lk.pal.s[1], lk.pal.s[3], lk.pal.t[2], lk.pal.t[0]]
+                                    Rectangle { required property var modelData; width: 26; height: 26; radius: 13; color: modelData; border.color: Theme.hairline2; border.width: 1 }
+                                }
+                            }
+                            Column {
+                                x: 12; anchors.bottom: parent.bottom; anchors.bottomMargin: 12; spacing: 2
+                                Text { text: lk.modelData.name; color: Theme.text; font.family: Theme.font; font.pixelSize: 12; font.weight: Font.Medium }
+                                Text { text: lk.modelData.what; color: Theme.text3; font.family: Theme.font; font.pixelSize: 10 }
+                            }
+                        }
+                    }
+                    Rectangle {
+                        property string aiName: "Save as Look"; property string aiRole: "button"
+                        function aiActivate() { eh.saveLook(); }
+                        width: 112; height: 112; radius: 12; color: "transparent"; border.color: Theme.hairline2; border.width: 1
+                        Column { anchors.centerIn: parent; spacing: 6
+                            Text { anchors.horizontalCenter: parent.horizontalCenter; text: "+"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 20 }
+                            Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Save as Look"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.Medium } }
+                        MouseArea { anchors.fill: parent; onClicked: parent.aiActivate() }
+                    }
+                }
+                Row {
+                    spacing: 14
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Your color"; color: Theme.text; font.family: Theme.font; font.pixelSize: 12; font.weight: Font.Medium; rightPadding: 4 }
+                    Repeater {
+                        // no oranges or reds: those read as the AI
+                        model: [["", "None"], ["#5B8CFF", "Blue"], ["#7C6CFF", "Indigo"], ["#A67BFF", "Purple"], ["#E46FB0", "Pink"],
+                                ["#3DB5AE", "Teal"], ["#3FB97A", "Green"], ["#9CBF4A", "Lime"], ["#8A939C", "Slate"]]
+                        Rectangle {
+                            id: sw
+                            required property var modelData
+                            readonly property bool on: Os.settings.accent === modelData[0]
+                            property string aiName: modelData[1] + " color"; property string aiRole: "radio"
+                            function aiActivate() { Os.settings.accent = modelData[0]; }
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 22; height: 22; radius: 11
+                            color: modelData[0] || "transparent"
+                            border.color: modelData[0] ? "transparent" : Theme.text3; border.width: 1
+                            Rectangle { visible: !sw.modelData[0]; width: 14; height: 1.5; rotation: -45; anchors.centerIn: parent; color: Theme.text3 }
+                            Rectangle { anchors.fill: parent; anchors.margins: -4; radius: 15; color: "transparent"; border.color: Theme.text; border.width: 1.5; visible: sw.on }
+                            MouseArea { anchors.fill: parent; anchors.margins: -3; onClicked: sw.aiActivate() }
+                        }
+                    }
+                    Text { anchors.verticalCenter: parent.verticalCenter; leftPadding: 8; text: "For focus, selection and switches. The assistant keeps its ember."; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
+                }
             }
         }
     }

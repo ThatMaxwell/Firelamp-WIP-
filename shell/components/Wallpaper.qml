@@ -7,8 +7,8 @@ Rectangle {
     property bool still: true
     property bool breathe: false
     gradient: Gradient {
-        GradientStop { position: 0; color: "#141312" }
-        GradientStop { position: 1; color: "#0f0e0d" }
+        GradientStop { position: 0; color: Theme.pal.wall[0] }
+        GradientStop { position: 1; color: Theme.pal.wall[1] }
     }
 
     // the lamp: a radial falloff drawn once, so it never bands or costs a frame
@@ -23,10 +23,10 @@ Rectangle {
         smooth: true
         source: "data:image/svg+xml;utf8," + encodeURIComponent(
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 200"><defs><radialGradient id="g" cx=".5" cy=".5" r=".5">'
-            + '<stop offset="0" stop-color="#2a221c" stop-opacity="1"/>'
-            + '<stop offset=".35" stop-color="#2a221c" stop-opacity=".62"/>'
-            + '<stop offset=".7" stop-color="#2a221c" stop-opacity=".18"/>'
-            + '<stop offset="1" stop-color="#2a221c" stop-opacity="0"/></radialGradient></defs>'
+            + '<stop offset="0" stop-color="' + Theme.pal.glow + '" stop-opacity="1"/>'
+            + '<stop offset=".35" stop-color="' + Theme.pal.glow + '" stop-opacity=".62"/>'
+            + '<stop offset=".7" stop-color="' + Theme.pal.glow + '" stop-opacity=".18"/>'
+            + '<stop offset="1" stop-color="' + Theme.pal.glow + '" stop-opacity="0"/></radialGradient></defs>'
             + '<rect width="256" height="200" fill="url(#g)"/></svg>')
         SequentialAnimation on drift {
             running: wp.breathe && !wp.still; loops: Animation.Infinite
