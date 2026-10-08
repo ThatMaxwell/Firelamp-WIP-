@@ -6,7 +6,8 @@ import "../js/art.js" as Art
 Item {
     id: app
     property var win
-    function start(opts) {}
+    property string pane: "Assistant"
+    function start(opts) { if (opts && opts.pane) pane = opts.pane; }
     function scrollTo(y) { fl.contentY = Math.max(0, Math.min(y, fl.contentHeight - fl.height)); }
 
     component Row2: Item {
@@ -63,11 +64,18 @@ Item {
     Sidebar {
         id: side
         Repeater {
-            model: [["Assistant", "sparkle"], ["Permissions", "shield"], ["Fire Cursor", "cursor"], ["Activity", "clock"], ["Appearance", "moon"], ["Wi-Fi", "wifi"], ["Sound", "volume"], ["Bluetooth", "bluetooth"]]
-            SideItem { required property var modelData; text: modelData[0]; glyph: modelData[1]; selected: modelData[0] === "Assistant" }
+            model: [["Assistant", "sparkle"], ["Desktops", "grid"], ["Permissions", "shield"], ["Fire Cursor", "cursor"], ["Activity", "clock"], ["Appearance", "moon"], ["Wi-Fi", "wifi"], ["Sound", "volume"], ["Bluetooth", "bluetooth"]]
+            SideItem { required property var modelData; text: modelData[0]; glyph: modelData[1]; selected: modelData[0] === app.pane
+                       onClicked: if (modelData[0] === "Assistant" || modelData[0] === "Desktops") app.pane = modelData[0] }
         }
     }
+    DesktopsPane {
+        visible: app.pane === "Desktops"
+        active: visible
+        anchors { left: side.right; right: parent.right; top: parent.top; bottom: parent.bottom }
+    }
     Item {
+        visible: app.pane === "Assistant"
         anchors { left: side.right; right: parent.right; top: parent.top; bottom: parent.bottom }
         Text { x: 24; y: 16; text: "Assistant"; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.Bold }
         Flickable {

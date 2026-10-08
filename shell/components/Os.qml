@@ -28,6 +28,7 @@ QtObject {
     readonly property string name: settings.assistantName || "Assistant"
     property bool vision: false
     property bool demo: false
+    property bool demoInstalls: false             // recorder/dev: stand-in installs when the helper isn't running
     property bool demoUnlabeledSend: false        // recorder: Mail's Send button loses its label
 
     // ---- events ----

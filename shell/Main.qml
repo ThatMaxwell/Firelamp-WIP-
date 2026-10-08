@@ -68,6 +68,7 @@ Window {
     function showMe() { agent.showMe(); }
     function togglePause() { agent.togglePause(); }
     function setTrust(app, v) { Os.setTrust(app, v); }
+    function openSettings(pane) { var w = desktop.get("settings"); if (w && w.content) { desktop.focusWindow(w); w.content.pane = pane; } else desktop.open("settings", { pane: pane }); }
     function settingsScroll(y) { var s = desktop.get("settings"); if (s && s.content) s.content.scrollTo(y); }
     function timelineOpen(on) { Os.timelineToggle(on); }
     function expandActivity(i) { var n = 0; for (var j = 0; j < Os.activity.count; j++) if (Os.activity.get(j).kind === "milestone" && n++ === i) return Os.activity.setProperty(j, "expanded", true); }
@@ -227,6 +228,7 @@ Window {
     Component.onCompleted: {
         if (flag("reset")) Os.settings.assistantName = "";
         if (opt("name")) Os.settings.assistantName = opt("name");
+        if (flag("demo-installs")) Os.demoInstalls = true;
         Os.root = screen; Os.desktop = desktop; Os.dock = dock; Os.agent = agent; Os.cursor = cursor;
         if (flag("nosplash")) { if (!Os.settings.assistantName) nameCard.shown = true; else screen.booted = true; }
     }

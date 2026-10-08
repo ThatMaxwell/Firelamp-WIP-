@@ -25,5 +25,6 @@ file_permissions=(
   ["/usr/local/bin/firelamp-shell"]="0:0:755"
   ["/usr/local/bin/firelamp-a11y-probe"]="0:0:755"
   ["/usr/local/bin/firelamp-boot-report"]="0:0:755"
+  ["/usr/local/bin/firelamp-desktops"]="0:0:755"
 )
 kernel_params_x86_64="quiet loglevel=3 rd.udev.log_level=3"
