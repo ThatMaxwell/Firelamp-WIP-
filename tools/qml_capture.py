@@ -422,6 +422,20 @@ elif scene == "round2":
              ("do", lambda: [call("setSetting", k, v) for k, v in (("dockSide", "bottom"), ("barOrder", ""), ("myLooks", "[]"))]),
              ("do", lambda: call("resetHome")), ("wait", 200), ("do", lambda: stop(0))]
     at(400, lambda: run(steps))
+elif scene == "superkey":
+    # Super, as KWin sends it: the helper's D-Bus call becomes an event the shell long-polls.
+    # Needs `firelamp-desktops serve` running; this stands in for the key with the CLI.
+    helper = str(ROOT / "iso/profile/airootfs/usr/local/bin/firelamp-desktops")
+    super_key = lambda: subprocess.run([sys.executable, "-I", helper, "launcher"])
+    at(300, lambda: call("launch", "notes"))
+    still("super-before", 1800)
+    at(2000, super_key)
+    still("super-launcher", 2900)
+    at(3000, lambda: (key("m"), key("u")))
+    still("super-typed", 3600)
+    at(3800, super_key)
+    still("super-closed", 4700)
+    stop(5000)
 elif scene == "live":
     # the live ISO: Install Firelamp OS in the dock and the Firelamp menu
     steps = [("wait", 1200), ("find", "Install Firelamp OS"), ("wait", 900), ("still", "live-dock"),

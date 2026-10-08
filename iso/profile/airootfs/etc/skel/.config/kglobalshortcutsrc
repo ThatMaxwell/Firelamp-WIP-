@@ -1,0 +1,7 @@
+# Plasma's own launcher and search stay out of sight: the Firelamp shell has its own,
+# opened with Super. (Meta itself is rerouted in /etc/xdg/kwinrc.)
+[plasmashell]
+activate application launcher=none,Meta\tAlt+F1,Activate Application Launcher
+
+[services][org.kde.krunner.desktop]
+_launch=none

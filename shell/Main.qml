@@ -234,6 +234,13 @@ Window {
     Connections {
         target: Os
         function onSubmit(t) { agent.handle(t); }
+        // Super, rerouted from KWin through firelamp-desktops: our launcher, never Plasma's
+        function onLauncherKey() {
+            if (!screen.booted || Os.editingHome) return;
+            if (askBar.shown) { askBar.close(); return; }
+            win.raise(); win.requestActivate();
+            askBar.open();
+        }
         function onTrashFull() { dock.trashIcon = Art.icon("trash", true); }
         function onTrashEmpty() { dock.trashIcon = Art.icon("trash", false); }
         function onAskOpen() { askBar.open(); }
@@ -262,6 +269,7 @@ Window {
         if (opt("name")) Os.settings.assistantName = opt("name");
         if (flag("demo-installs")) Os.demoInstalls = true;
         if (flag("live")) Os.live = true; else Os.checkLive();
+        Os.listen();
         Os.root = screen; Os.desktop = desktop; Os.dock = dock; Os.agent = agent; Os.cursor = cursor;
         if (flag("nosplash")) { if (!Os.settings.assistantName) nameCard.shown = true; else screen.booted = true; }
     }
