@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Writes the desktop session's boot status to the first serial port, so a
+# headless VM (CI, QEMU -serial) can tell whether the desktop came up.
+# Harmless on real hardware: it gives up quickly if there is no serial port.
+port=/dev/ttyS0
+report=/run/user/1000/firelamp-boot-report.txt
+
+for _ in $(seq 240); do
+    [[ -s "$report" ]] && break
+    sleep 1
+done
+
+{
+    echo
+    echo '=== FIRELAMP BOOT REPORT ==='
+    cat "$report" 2>/dev/null || echo 'FIRELAMP_SESSION_MISSING no session report after 240s'
+    echo '--- session log ---'
+    tail -n 40 /home/firelamp/.local/state/firelamp/session.log 2>/dev/null
+    echo '--- shell log ---'
+    tail -n 40 /home/firelamp/.local/state/firelamp/shell.log 2>/dev/null
+    echo '--- errors this boot ---'
+    journalctl -b -p err --no-pager -q 2>/dev/null | tail -n 30
+    echo '=== END FIRELAMP BOOT REPORT ==='
+} | timeout 10 tee "$port" >/dev/null 2>&1
+exit 0

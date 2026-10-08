@@ -1,0 +1,8 @@
+NAME="Firelamp OS"
+PRETTY_NAME="Firelamp OS"
+ID=firelamp
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;255;106;43"
+HOME_URL="https://github.com/ThatMaxwell/Firelamp-WIP-"
+LOGO=firelamp
