@@ -153,6 +153,24 @@ Item {
                         }
                     }
                     Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
+                    // Jev is bring-your-own-key; the bigger tiers go through Puter.js
+                    Row2 {
+                        title: "Jev API key"
+                        hint: Os.settings.jevKey ? "Saved. Instant uses your TypeSafe key" : "Instant needs your own key from TypeSafe"
+                        Rectangle {
+                            width: 190; height: 26; radius: 6; color: Theme.surface0; border.color: jk.input.activeFocus ? Theme.line3 : Theme.hairline; border.width: 1
+                            Field {
+                                id: jk; x: 8; width: parent.width - 16; height: parent.height; pixelSize: 11
+                                label: "Jev API key"; placeholder: "Paste your key"
+                                input.echoMode: TextInput.Password
+                                Component.onCompleted: text = Os.settings.jevKey
+                                onTextChanged: Os.settings.jevKey = text.trim()
+                            }
+                        }
+                    }
+                    Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
+                    Row2 { title: "Fast to Ultra"; hint: "Run through Puter.js, on your Puter account" }
+                    Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
                     Row2 {
                         title: "Reasoning"
                         hint: Os.settings.effort === 0 ? "Not used on Instant: Jev decides without a reasoning pass" : "Think it through before acting. Slower; off by default"

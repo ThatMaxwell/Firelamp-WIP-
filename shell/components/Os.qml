@@ -26,6 +26,7 @@ QtObject {
         property string modelFast: ""
         property string modelBalanced: ""
         property bool reasoning: false
+        property string jevKey: ""             // Jev is bring-your-own-key (TypeSafe)
         property string appTrust2: ""         // per app: "all" | "risky" (default) | "never"
     }
     // Risky means deleting, sending, paying or sharing; those always ask, whatever this says.
