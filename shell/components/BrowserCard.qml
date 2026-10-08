@@ -14,7 +14,7 @@ Item {
     visible: opacity > 0
     opacity: shown ? 1 : 0
     Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutQuint } }
-    onShownChanged: if (shown) { picker.selected = Os.defaultBrowser; Os.fetchBrowsers(); }
+    onShownChanged: if (shown) { picker.selected = Os.defaultBrowser; picker.showAll = false; Os.fetchBrowsers(); }
 
     function finish(useIt) {
         var id = useIt ? picker.selected : "firefox";
@@ -50,10 +50,21 @@ Item {
         BrowserPicker {
             id: picker
             objectName: "browserPicker"
+            curated: ["firefox", "chrome", "brave", "zen", "vivaldi", "edge", "librewolf", "opera"]
             width: Math.min(bc.width - 160, 1080)
-            height: Math.min(bc.height - 330, 6 * 74 + 46)
+            height: showAll ? Math.min(bc.height - 360, 6 * 74 + 46) : gridHeight
+            Behavior on height { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
         }
-        Item { width: 1; height: 28 }
+        Item { width: 1; height: 14 }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            property string aiName: picker.showAll ? "Show fewer" : "Show all browsers"; property string aiRole: "button"
+            function aiActivate() { picker.showAll = !picker.showAll; }
+            text: picker.showAll ? "Show fewer" : "Show all " + B.BROWSERS.length
+            color: Theme.text2; font.family: Theme.font; font.pixelSize: 13
+            MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: parent.aiActivate() }
+        }
+        Item { width: 1; height: 24 }
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 22

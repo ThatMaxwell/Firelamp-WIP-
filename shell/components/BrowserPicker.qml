@@ -14,22 +14,35 @@ Item {
     readonly property int gap: 10
     readonly property real tileW: (width - (cols - 1) * gap) / cols
     readonly property int tileH: 64
-    readonly property var shown: B.BROWSERS.filter(function (b) {
+    // first boot starts with a short list; "Show all" opens the full grid with chips and search
+    property var curated: null
+    property bool showAll: !curated
+    readonly property bool full: showAll || !curated
+    readonly property var matches: (full ? B.BROWSERS : curated.map(B.byId)).filter(function (b) {
+        if (!bp.full) return true;
         if (bp.group > 0 && b.group !== B.GROUPS[bp.group]) return false;
         if (!bp.query) return true;
         return (b.name + " " + b.what + " " + b.group).toLowerCase().indexOf(bp.query) >= 0;
     }).map(function (b) { return b.id; })
+    // the picked browser always stays in view: pinned first when the filter would hide it
+    readonly property bool pinned: matches.indexOf(selected) < 0
+    readonly property var shown: pinned ? [selected].concat(matches) : matches
+    readonly property real gridHeight: Math.ceil(shown.length / cols) * (tileH + gap) - gap + 4 + (full ? 42 : 0)
     signal chosen(string id)
     function select(id) { selected = id; chosen(id); }
     function scrollTo(y) { fl.contentY = Math.max(0, Math.min(y, fl.contentHeight - fl.height)); }
 
     Segmented {
         id: chips
+        opacity: bp.full ? 1 : 0; visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 200 } }
         options: B.GROUPS; current: bp.group
         onPicked: (i) => bp.group = i
     }
     Rectangle {
         id: box
+        opacity: bp.full ? 1 : 0; visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 200 } }
         anchors.right: parent.right; width: Math.min(220, bp.width - chips.width - 16); height: 26; radius: 7
         color: Theme.surface0; border.color: search.input.activeFocus ? Theme.line2 : Theme.hairline; border.width: 1
         Glyph { x: 8; anchors.verticalCenter: parent.verticalCenter; name: "search"; width: 12; height: 12; color: Theme.text3 }
@@ -38,7 +51,8 @@ Item {
 
     Flickable {
         id: fl
-        y: 42; width: parent.width; height: parent.height - y
+        y: bp.full ? 42 : 0; width: parent.width; height: parent.height - y
+        Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
         contentHeight: Math.ceil(bp.shown.length / bp.cols) * (bp.tileH + bp.gap) + 4
         clip: true; boundsBehavior: Flickable.StopAtBounds
         Behavior on contentHeight { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
@@ -75,7 +89,15 @@ Item {
                 Behavior on border.color { ColorAnimation { duration: 160 } }
                 MouseArea { id: ma; anchors.fill: parent; enabled: tile.slot >= 0; onClicked: tile.aiActivate() }
 
+                // the browser's own app icon, as the dock would show it; a monogram when there is none
+                Image {
+                    id: icon
+                    x: 12; anchors.verticalCenter: parent.verticalCenter; width: 40; height: 40
+                    source: tile.st.icon ? "file://" + tile.st.icon : ""
+                    sourceSize: Qt.size(80, 80); fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                }
                 Rectangle {
+                    visible: icon.status !== Image.Ready
                     x: 12; anchors.verticalCenter: parent.verticalCenter; width: 40; height: 40; radius: 10
                     color: Theme.surface3; border.color: Theme.hairline; border.width: 1
                     Text { anchors.centerIn: parent; text: B.mono(tile.modelData); color: tile.on ? Theme.text : Theme.text2
@@ -92,8 +114,14 @@ Item {
                         color: Theme.text3; font.family: Theme.font; font.pixelSize: 11
                     }
                 }
+                Text {
+                    visible: tile.on && bp.pinned
+                    anchors.right: check.left; anchors.rightMargin: 6; anchors.verticalCenter: check.verticalCenter
+                    text: "Selected"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 9; font.weight: Font.Medium; font.letterSpacing: 0.3
+                }
                 // corner: a check when picked, else where it comes from
                 Rectangle {
+                    id: check
                     anchors.right: parent.right; anchors.rightMargin: 10; y: 10
                     width: 16; height: 16; radius: 8
                     color: tile.on ? Theme.text : "transparent"; border.color: tile.on ? Theme.text : Theme.text4; border.width: 1

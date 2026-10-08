@@ -370,12 +370,13 @@ elif scene == "browsers":
     at(200, lambda: call("showBrowsers"))
     start(300)
     steps = [("wait", 1000), ("still", "browser-firstboot"),
-             ("click", "Private"), ("wait", 700), ("still", "browser-private"),
-             ("click", "Firefox family"), ("wait", 700), ("click", "Zen"), ("wait", 500), ("still", "browser-firefox-family"),
+             ("click", "Show all browsers"), ("wait", 900), ("still", "browser-all"),
+             ("click", "Private"), ("wait", 700), ("click", "Helium"), ("wait", 500), ("still", "browser-private"),
              ("click", "All"), ("wait", 300), ("click", "Search browsers"), ("wait", 200), *typed("bra"), ("wait", 700), ("still", "browser-search"),
              ("click", "Brave"), ("wait", 600), ("still", "browser-brave"),
              *[("do", lambda: key(code=Qt.Key_Backspace)) for _ in range(3)], ("wait", 600),
              ("click", "Use browser"), ("wait", 1200), ("still", "browser-toast"),
+             ("wait", 600), ("do", lambda: call("closeTop")), ("wait", 500),
              ("do", lambda: call("openSettings", "Browser")), ("wait", 700), ("point", 1240, 800, 400), ("still", "settings-browser-installing"),
              ("wait", 4200), ("still", "settings-browser"),
              ("do", lambda: call("setSetting", "browserAsked", False)), ("wait", 100), ("do", lambda: stop(0))]

@@ -18,10 +18,10 @@ Rectangle {
                 property string aiName: modelData; property string aiRole: "radio"
                 function aiActivate() { sg.picked(index); }
                 width: st.implicitWidth + 16; height: 22; radius: 5
-                color: sg.current === index ? Theme.surface3 : sm.containsMouse ? Theme.hover : "transparent"
+                color: sg.current === index ? Theme.surface3 : "transparent"
                 Behavior on color { ColorAnimation { duration: 140 } }
                 Text { id: st; anchors.centerIn: parent; text: seg.modelData; color: sg.current === seg.index ? Theme.text : Theme.text2; font.family: Theme.font; font.pixelSize: 11; font.weight: sg.current === seg.index ? Font.Medium : Font.Normal }
-                MouseArea { id: sm; anchors.fill: parent; hoverEnabled: true; onClicked: seg.aiActivate() }
+                MouseArea { id: sm; anchors.fill: parent; onClicked: seg.aiActivate() }
             }
         }
     }
