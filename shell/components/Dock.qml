@@ -11,6 +11,7 @@ Item {
     property real maxScale: 1.62
     property real reach: 2.9
     property real mouseX: -1
+    property real pointerX: -1         // pointer x over the plate, for the label bubble
     property var running: ({})
     property var bouncing: ({})
     property string aiActiveId: ""
@@ -53,14 +54,15 @@ Item {
         Rectangle { x: 20; width: parent.width - 40; height: 1; y: 1; color: Qt.rgba(1, 1, 1, 0.06) }
     }
 
+    // tracks the pointer over the whole dock; it takes no buttons, so clicks reach the icons
     MouseArea {
-        id: hover
         anchors.fill: plate
         anchors.topMargin: -40
+        z: 5
         hoverEnabled: true
         acceptedButtons: Qt.NoButton
-        onPositionChanged: (m) => dock.mouseX = m.x - (plate.width - dock.baseWidth()) / 2
-        onExited: dock.mouseX = -1
+        onPositionChanged: (m) => { dock.pointerX = m.x; dock.mouseX = m.x - (plate.width - dock.baseWidth()) / 2; }
+        onExited: { dock.mouseX = -1; dock.pointerX = -1; }
     }
     function baseWidth() { var w = 12; for (var i = 0; i < items.length; i++) w += items[i] === "-" ? 15 : base + 4; return w; }
 
@@ -137,7 +139,7 @@ Item {
                 Rectangle {
                     id: tip
                     visible: !di.sep
-                    opacity: ima.containsMouse ? 1 : 0
+                    opacity: dock.pointerX >= 0 && plate.x + dock.pointerX >= row.x + di.x && plate.x + dock.pointerX < row.x + di.x + di.width ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 120 } }
                     anchors.horizontalCenter: parent.horizontalCenter
                     y: parent.height - di.size - 14 - height

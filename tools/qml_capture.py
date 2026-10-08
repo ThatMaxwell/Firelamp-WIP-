@@ -3,7 +3,7 @@
 
     xvfb-run -a -s "-screen 0 1440x900x24" python3 tools/qml_capture.py SCENE OUT_DIR
 
-Scenes: desktop (one still), dock, email, tidy, vision, pause.
+Scenes: desktop and apps (stills), dock, email, tidy, vision.
 The recording lands in OUT_DIR/SCENE/video.mp4 (ffmpeg x11grab); stills in OUT_DIR.
 Needs PySide6 (pip install PySide6). Rendering needs OpenGL, so run it under Xvfb,
 not the offscreen platform (its software backend has no MultiEffect).
@@ -86,6 +86,11 @@ if scene == "desktop":
     at(1300, lambda: call("launch", "assistant"))
     still("desktop", 2600)
     stop(2800)
+elif scene == "apps":
+    for i, a in enumerate(["terminal", "settings", "calendar", "web", "photos", "music", "about"]):
+        at(500 + i * 1500, lambda a=a: call("launch", a))
+        still("app-" + a, 1400 + i * 1500)
+    stop(500 + 7 * 1500 + 300)
 elif scene == "dock":
     start(300)
     cx, y = 720, 900 - 40

@@ -19,11 +19,11 @@ Item {
         Row { id: tr; anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter; spacing: 6 }
     }
     component Group: Rectangle {
-        default property alias rows: gc.data
+        default property alias rows: groupCol.data
         property string title
-        width: parent ? parent.width : 0; height: gc.height
+        width: parent ? parent.width : 0; height: groupCol.height
         radius: 10; color: Qt.rgba(1, 0.94, 0.9, 0.04); border.color: Theme.line; border.width: 0.5
-        Column { id: gc; width: parent.width }
+        Column { id: groupCol; width: parent.width }
         Text { y: -22; x: 4; text: parent.title; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.DemiBold }
     }
     component Kbd: Rectangle {

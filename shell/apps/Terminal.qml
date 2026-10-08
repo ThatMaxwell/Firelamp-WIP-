@@ -9,24 +9,24 @@ Rectangle {
     color: "#100b09"
     readonly property string prompt: "<font color=\"#FF8A3D\">carrot@firelamp</font> <font color=\"#FFB547\">~</font> <font color=\"#665a52\">%</font> "
     function start(opts) {
-        print("<font color=\"#665a52\">Last login: " + new Date().toDateString() + " on ttys001</font>");
+        echo("<font color=\"#665a52\">Last login: " + new Date().toDateString() + " on ttys001</font>");
         run("fetch", true);
-        print("<font color=\"#665a52\">Type</font> <font color=\"#FFD08A\">help</font> <font color=\"#665a52\">to see commands.</font>");
+        echo("<font color=\"#665a52\">Type</font> <font color=\"#FFD08A\">help</font> <font color=\"#665a52\">to see commands.</font>");
     }
     function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-    function print(html) { out.append({ kind: "text", html: html.replace(/\n/g, "<br>") }); Qt.callLater(lv.positionViewAtEnd); }
+    function echo(html) { out.append({ kind: "text", html: html.replace(/\n/g, "<br>") }); Qt.callLater(lv.positionViewAtEnd); }
     function c(t) { return "<font color=\"#FFD08A\">" + t + "</font>"; }
     function d(t) { return "<font color=\"#665a52\">" + t + "</font>"; }
     function a(t) { return "<font color=\"#FFB547\">" + t + "</font>"; }
 
     function run(line, quiet) {
-        if (!quiet) print(prompt + esc(line));
+        if (!quiet) echo(prompt + esc(line));
         var parts = line.trim().split(/\s+/), cmd = parts.shift(), rest = parts.join(" ");
         if (!cmd) return;
-        if (cmd === "help") print(c("fetch") + "   system info          " + c("tree") + "   the live UI tree the AI reads\n" + c("ask") + " …   hand a task to " + esc(Os.name) + "   " + c("whoami") + " " + c("date") + " " + c("clear"));
+        if (cmd === "help") echo(c("fetch") + "   system info          " + c("tree") + "   the live UI tree the AI reads\n" + c("ask") + " …   hand a task to " + esc(Os.name) + "   " + c("whoami") + " " + c("date") + " " + c("clear"));
         else if (cmd === "clear") out.clear();
-        else if (cmd === "whoami") print("carrot");
-        else if (cmd === "date") print(new Date().toString());
+        else if (cmd === "whoami") echo("carrot");
+        else if (cmd === "date") echo(new Date().toString());
         else if (cmd === "fetch") { out.append({ kind: "fetch", html: "" }); Qt.callLater(lv.positionViewAtEnd); }
         else if (cmd === "tree") {
             var lines = [];
@@ -39,10 +39,10 @@ Rectangle {
                 }
                 if (g.children.length > 12) lines.push(d("   … " + (g.children.length - 12) + " more"));
             });
-            print(lines.join("\n"));
+            echo(lines.join("\n"));
         }
-        else if (cmd === "ask") { if (!rest) return print("usage: ask &lt;something to do&gt;"); Os.submit(rest); print("<font color=\"#8fe0a0\">→</font> handed to " + esc(Os.name) + ". Watch the fire cursor."); }
-        else print("<font color=\"#ff8b72\">hearth:</font> command not found: " + esc(cmd));
+        else if (cmd === "ask") { if (!rest) return echo("usage: ask &lt;something to do&gt;"); Os.submit(rest); echo("<font color=\"#8fe0a0\">→</font> handed to " + esc(Os.name) + ". Watch the fire cursor."); }
+        else echo("<font color=\"#ff8b72\">hearth:</font> command not found: " + esc(cmd));
     }
 
     ListModel { id: out }

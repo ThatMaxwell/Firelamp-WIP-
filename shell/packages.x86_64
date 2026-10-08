@@ -1,0 +1,4 @@
+# Extra Arch packages the Qt shell needs on the ISO (build.sh appends these).
+qt6-svg
+inter-font
+ttf-jetbrains-mono
