@@ -1,5 +1,5 @@
 // Firelamp OS desktop shell. Run with Qt's `qml` tool:  qml shell/Main.qml
-// Flags (after `--`): --nosplash  --name=Pip  --reset  --still  --windowed
+// Flags (after `--`): --nosplash  --name=…  --reset  --still  --windowed
 import QtQuick
 import QtQuick.Window
 import "components"
@@ -14,7 +14,7 @@ Window {
     width: 1440; height: 900
     visibility: flag("windowed") ? Window.Windowed : Window.FullScreen
     visible: true
-    color: "#0e0a08"
+    color: Theme.bg
     title: "Firelamp OS"
     flags: Qt.FramelessWindowHint
 
@@ -47,6 +47,20 @@ Window {
     }
     // used by the recorder and the "Try it" chips
     function demo(text) { ask(text); }
+    // small hooks the recorder uses to film single interactions
+    function closeTop() { desktop.closeFocused(); }
+    function openAsk() { askBar.open(); }
+    function toggleControl() { control.open = !control.open; }
+    function notify(icon, title, body) { Os.toast(icon, title, body); }
+    function sheet(on) {
+        if (on) permission.ask({ app: "notes", title: "Delete the note “Groceries”?", body: "It moves to Recently Deleted for 30 days.",
+                                 deny: "Keep It", allow: "Delete" }, function () {});
+        else permission.answer(false);
+    }
+    function pointAt(x, y, label, w) {
+        if (!cursor.shown) cursor.show(Qt.point(x - 260, y + 180));
+        cursor.moveTo(x, y, function () { cursor.aim(label, function () { cursor.click(function () { cursor.clearTarget(); }); }); }, w || 40);
+    }
 
     Item {
         id: screen
@@ -123,14 +137,19 @@ Window {
     FireCursor { id: cursor; z: 40 }
     PermissionSheet { id: permission; objectName: "permission"; z: 50; onShownChanged: if (shown && win.autoAllow) allowLater.start() }
     Timer { id: allowLater; interval: 1700; onTriggered: permission.answer(true) }
-    AskBar { id: askBar; z: 55; onGo: (t) => win.ask(t) }
+    AskBar { id: askBar; z: 55; onGo: (t) => win.ask(t); onLaunch: (id) => win.launch(id)
+             apps: win.apps.filter(function (a) { return !a.noDock && a.id !== "assistant"; }) }
+    // clicking anywhere else closes Control Center
+    MouseArea { anchors.fill: parent; z: 56; enabled: control.open; onPressed: control.open = false }
+    ControlCenter { id: control; z: 57; x: parent.width - width - 8; y: Theme.menubarH + 6 }
     Item { id: menuLayer; anchors.fill: parent; z: 60
         MouseArea { anchors.fill: parent; enabled: bar.menu !== null; onPressed: bar.closeMenu() } }
-    NameCard { id: nameCard; z: 70; onDone: Os.toast("assistant", "Say hi to " + Os.name, "Click its icon in the dock, or press Alt+Space to ask it anything.") }
+    NameCard { id: nameCard; z: 70; onDone: { screen.booted = true; helloToast.start(); } }
+    Timer { id: helloToast; interval: 1500; onTriggered: Os.toast("assistant", "Say hi to " + Os.name, "Click its icon in the dock, or press Alt+Space to ask it anything.") }
     Splash {
         anchors.fill: parent; z: 80
         visible: !win.flag("nosplash")
-        onFinished: { screen.booted = true; if (!Os.settings.assistantName) nameCard.shown = true; }
+        onFinished: { if (!Os.settings.assistantName) nameCard.shown = true; else screen.booted = true; }
     }
 
     Agent { id: agent; cursor: cursor; capsule: capsule; permission: permission; ghost: ghost }
@@ -140,10 +159,11 @@ Window {
         function onSubmit(t) { agent.handle(t); }
         function onTrashFull() { dock.trashIcon = Art.icon("trash", true); }
         function onAskOpen() { askBar.open(); }
+        function onControlToggle() { control.open = !control.open; }
     }
 
     Shortcut { sequences: ["Esc"]; context: Qt.ApplicationShortcut
-        onActivated: { if (askBar.shown) askBar.close(); else if (bar.menu) bar.closeMenu(); else if (agent.mode !== "idle") agent.stop(); else if (timeline.open) timeline.open = false; } }
+        onActivated: { if (askBar.shown) askBar.close(); else if (control.open) control.open = false; else if (bar.menu) bar.closeMenu(); else if (agent.mode !== "idle") agent.stop(); else if (timeline.open) timeline.open = false; } }
     Shortcut { sequences: ["Ctrl+Space"]; context: Qt.ApplicationShortcut; onActivated: agent.togglePause() }
     Shortcut { sequences: ["Alt+Space", "Ctrl+K"]; context: Qt.ApplicationShortcut; onActivated: askBar.open() }
     Shortcut { sequences: ["Ctrl+Alt+V"]; context: Qt.ApplicationShortcut; onActivated: Os.vision = !Os.vision }
@@ -155,6 +175,6 @@ Window {
         if (flag("reset")) Os.settings.assistantName = "";
         if (opt("name")) Os.settings.assistantName = opt("name");
         Os.root = screen; Os.desktop = desktop; Os.dock = dock; Os.agent = agent; Os.cursor = cursor;
-        if (flag("nosplash")) { screen.booted = true; if (!Os.settings.assistantName) nameCard.shown = true; }
+        if (flag("nosplash")) { if (!Os.settings.assistantName) nameCard.shown = true; else screen.booted = true; }
     }
 }

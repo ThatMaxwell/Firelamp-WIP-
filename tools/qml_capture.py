@@ -12,8 +12,13 @@ import os, subprocess, sys
 from pathlib import Path
 
 os.environ.setdefault("QSG_RENDER_LOOP", "basic")
+# frame-exact mode: animations advance exactly 1/60 s per rendered frame, and every frame is
+# saved, so the clip is true 60 fps however slow the machine renders
+EXACT = len(sys.argv) > 1 and sys.argv[1] == "motion"
+if EXACT:
+    os.environ["QSG_FIXED_ANIMATION_STEP"] = "1"
 from PySide6.QtCore import QObject, QTimer, QUrl, QPoint, Qt, QMetaObject, Q_ARG, QEvent, QPointF
-from PySide6.QtGui import QGuiApplication, QMouseEvent
+from PySide6.QtGui import QGuiApplication, QMouseEvent, QKeyEvent
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickWindow
 import shiboken6
@@ -24,7 +29,9 @@ out.mkdir(parents=True, exist_ok=True)
 for f in [*out.glob("*.png"), *out.glob("*.jpg")]:
     f.unlink()
 
-app = QGuiApplication(["firelamp", "--nosplash", "--windowed", "--name=Juniper", *sys.argv[3:]])
+# first boot runs from scratch: splash, no name, then naming
+base = ["firelamp", "--windowed", "--reset"] if scene == "firstboot" else ["firelamp", "--nosplash", "--windowed", "--name=Juniper"]
+app = QGuiApplication([*base, *sys.argv[3:]])
 engine = QQmlApplicationEngine()
 engine.warnings.connect(lambda ws: [print("QML:", w.toString(), file=sys.stderr) for w in ws])
 engine.load(QUrl.fromLocalFile(str(ROOT / "shell" / "Main.qml")))
@@ -71,12 +78,12 @@ def when(name, prop, shot, delay):
     t.start(60)
 
 
-def start(at):
+def start(at, fps=15):
     # ffmpeg grabs the X display on its own, so recording never stalls Qt's animations
     def f():
         global ffmpeg
         g = win.geometry()
-        ffmpeg = subprocess.Popen(["ffmpeg", "-loglevel", "error", "-y", "-f", "x11grab", "-draw_mouse", "0", "-framerate", "15",
+        ffmpeg = subprocess.Popen(["ffmpeg", "-loglevel", "error", "-y", "-f", "x11grab", "-draw_mouse", "0", "-framerate", str(fps),
                                    "-video_size", f"{g.width()}x{g.height()}", "-i", f"{os.environ['DISPLAY']}+{g.x()},{g.y()}",
                                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "16", "-pix_fmt", "yuv420p", str(out / "video.mp4")],
                                   stdin=subprocess.PIPE)
@@ -89,6 +96,11 @@ def stop(at):
             ffmpeg.communicate(b"q")
         app.quit()
     QTimer.singleShot(at, f)
+
+
+def key(text="", code=0):
+    for t in (QEvent.KeyPress, QEvent.KeyRelease):
+        QGuiApplication.sendEvent(win, QKeyEvent(t, code or (ord(text.upper()) if text else 0), Qt.NoModifier, text))
 
 
 def at(ms, fn):
@@ -130,6 +142,58 @@ elif scene in ("email", "tidy", "vision"):
         for k in range(1, 40000 // n):
             still(f"{scene}-{k:02d}", 1400 + k * n)
     stop(1400 + int(sys.argv[3] if len(sys.argv) > 3 and sys.argv[3].isdigit() else 40000))
+elif scene == "firstboot":
+    start(200)
+    still("firstboot-empty", 3600)
+    for i, ch in enumerate("Juniper"):
+        at(4200 + i * 170 + (60 if i % 3 == 1 else 0), lambda ch=ch: key(ch))
+    still("firstboot-typed", 5800)
+    at(6200, lambda: key(code=Qt.Key_Return))
+    still("firstboot-signing", 7350)
+    still("firstboot-signed", 8700)
+    stop(12500)
+elif scene == "panels":
+    at(300, lambda: call("launch", "notes"))
+    at(1200, lambda: call("openAsk"))
+    still("askbar-empty", 1700)
+    for i, ch in enumerate("mu"):
+        at(2000 + i * 160, lambda ch=ch: key(ch))
+    still("askbar", 2700)
+    at(3000, lambda: key(code=Qt.Key_Escape))
+    at(3400, lambda: call("toggleControl"))
+    still("control-center", 4000)
+    at(4300, lambda: call("toggleControl"))
+    at(4600, lambda: call("notify", "mail", "Ana Souza", "Thanks! Got the notes. See you at the sync tomorrow."))
+    at(4900, lambda: call("notify", "calendar", "Launch sync in 15 minutes", "Hearth room · 10:00"))
+    still("toasts", 5700)
+    stop(6000)
+elif scene == "motion":
+    # a 60 fps proof of the house curves: window open/close, sheet in/out, a cursor path.
+    # Steps are scheduled in animation time (frames), not wall time, so nothing overlaps.
+    plan = [(400, "launch", "notes"), (1500, "closeTop"), (2300, "launch", "notes"), (3400, "sheet", True),
+            (4700, "sheet", False), (5600, "pointAt", 380, 280, "Groceries", 240),
+            (7000, "pointAt", 1000, 172, "Search", 110), (8400, "pointAt", 390, 214, "Launch sync — Oct 7", 240)]
+    end_ms = 10200
+    frames = {"n": 0, "on": False}
+
+    def grab():
+        if not frames["on"]:
+            return
+        frames["n"] += 1
+        win.grabWindow().save(str(out / f"f{frames['n']:05d}.png"))
+        t = frames["n"] * 1000 / 60
+        while plan and plan[0][0] <= t:
+            step = plan.pop(0)
+            call(step[1], *step[2:])
+        if t >= end_ms:
+            frames["on"] = False
+            subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-framerate", "60", "-i", str(out / "f%05d.png"),
+                            "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", str(out / "video.mp4")])
+            app.quit()
+            return
+        win.update()
+    win.frameSwapped.connect(grab, Qt.QueuedConnection)
+    at(600, lambda: (frames.update(on=True), win.update()))
 elif scene == "timeline":
     at(300, lambda: call("launch", "assistant"))
     at(800, lambda: call("demo", "Email Ana my meeting notes"))

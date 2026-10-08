@@ -32,7 +32,8 @@ hidden from the AI's UI tree, so only a human can answer it. **Esc** stops the A
 animation: the fire cursor's flame, its target tag and click ring, and the logo on the splash and
 About screens. Everything else stays still and crisp. See `shell/js/logo.js`.
 
-**First boot** asks you to name your assistant. There is no default name.
+**First boot** asks you to name your assistant, and its fire cursor appears for the first time to
+sign the name. There is no default name.
 
 ## Run it
 
@@ -89,8 +90,9 @@ xvfb-run -a -s "-screen 0 1440x900x24" python3 tools/qml_capture.py email out/ 4
 ```
 
 `tools/qml_capture.py` (PySide6 + ffmpeg) loads `shell/Main.qml` under Xvfb, drives a scene
-(`desktop`, `dock`, `email`, `tidy`, `vision`) and records it; the clips in `media/qt/` come from
-it. `prototype/capture.mjs` does the same for the web prototype.
+(`desktop`, `apps`, `dock`, `email`, `tidy`, `vision`, `firstboot`, `panels`, `motion`) and records it;
+the clips in `media/qt/` come from it. `motion` is frame-exact: animations advance exactly 1/60 s per
+rendered frame and every frame is saved, so the clip is true 60 fps on any machine. `prototype/capture.mjs` does the same for the web prototype.
 
 ---
 

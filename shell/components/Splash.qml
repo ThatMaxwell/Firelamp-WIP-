@@ -6,7 +6,7 @@ Rectangle {
     id: sp
     property bool aiHidden: true
     signal finished()
-    color: "#0e0a08"
+    color: Theme.bg
     Behavior on opacity { NumberAnimation { duration: 700 } }
     visible: opacity > 0
     Column {

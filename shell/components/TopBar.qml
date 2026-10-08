@@ -53,7 +53,10 @@ Rectangle {
         default property alias content: inner.data
         property string aiName: label
         property string aiRole: "button"
-        function aiActivate() { if (bar.openFor === bi) bar.closeMenu(); else bar.openMenu(bi, bar.itemsFor(key), alignRight); }
+        function aiActivate() {
+            if (key === "control") { bar.closeMenu(); Os.controlToggle(); return; }
+            if (bar.openFor === bi) bar.closeMenu(); else bar.openMenu(bi, bar.itemsFor(key), alignRight);
+        }
         Accessible.role: Accessible.Button
         Accessible.name: label
         height: 22; radius: 5
@@ -64,7 +67,7 @@ Rectangle {
         MouseArea {
             id: ma; anchors.fill: parent; hoverEnabled: true
             onPressed: bi.aiActivate()
-            onContainsMouseChanged: if (containsMouse && bar.openFor && bar.openFor !== bi) bar.openMenu(bi, bar.itemsFor(bi.key), bi.alignRight)
+            onContainsMouseChanged: if (containsMouse && bar.openFor && bar.openFor !== bi && bi.key !== "control") bar.openMenu(bi, bar.itemsFor(bi.key), bi.alignRight)
         }
     }
     component BarText: Text {

@@ -40,7 +40,8 @@ Item {
         onFinished: settle.restart()
     }
     // arrive, settle 40 ms, then hand back
-    Timer { id: settle; interval: 40; onTriggered: { var cb = fc.onArrive; fc.onArrive = null; if (cb) cb(); } }
+    // every pause runs on the animation clock, so the cursor's rhythm holds at any frame rate
+    SequentialAnimation { id: settle; PauseAnimation { duration: 40 } ScriptAction { script: { var cb = fc.onArrive; fc.onArrive = null; if (cb) cb(); } } }
 
     function moveTo(x, y, done, w) {
         wake();
@@ -55,6 +56,14 @@ Item {
         mover.duration = ms / (Os.settings.cursorSpeed || 1);
         mover.restart();
     }
+    // a deliberate stroke at a set pace (used when the cursor signs its name)
+    function glide(x, y, ms, done) {
+        wake();
+        sx = px; sy = py; tx = x; ty = y; cx = (sx + tx) / 2; cy = (sy + ty) / 2 + 3;
+        onArrive = done;
+        mover.duration = ms;
+        mover.restart();
+    }
     onPausedChanged: { if (paused && mover.running) mover.pause(); else if (!paused && mover.paused) mover.resume(); wake(); }
 
     function show(from) {
@@ -67,7 +76,7 @@ Item {
         target = label; wake();
         tagWait.k = k; tagWait.restart();
     }
-    Timer { id: tagWait; property var k; interval: 150; onTriggered: { var f = k; k = null; if (f) f(); } }
+    SequentialAnimation { id: tagWait; property var k; PauseAnimation { duration: 150 } ScriptAction { script: { var f = tagWait.k; tagWait.k = null; if (f) f(); } } }
     function clearTarget() { target = ""; }
     function click(done) {
         wake();
@@ -76,11 +85,11 @@ Item {
         clickTimer.done = done;
         clickTimer.restart();
     }
-    Timer { id: clickTimer; property var done; interval: 120; onTriggered: { if (done) done(); } }
+    SequentialAnimation { id: clickTimer; property var done; PauseAnimation { duration: 120 } ScriptAction { script: { if (clickTimer.done) clickTimer.done(); } } }
 
     // idle: no move, click or tag for 1.2 s, and not working in place
     function wake() { idle = false; idler.restart(); }
-    Timer { id: idler; interval: 1200; onTriggered: if (Os.settings.idleFade && !fc.busy && !mover.running && !fc.paused) fc.idle = true }
+    SequentialAnimation { id: idler; PauseAnimation { duration: 1200 } ScriptAction { script: if (Os.settings.idleFade && !fc.busy && !mover.running && !fc.paused) fc.idle = true } }
     onBusyChanged: wake()
 
     // hand-drawn boil for the tag and ring: three fixed poses, ≤1.5 px

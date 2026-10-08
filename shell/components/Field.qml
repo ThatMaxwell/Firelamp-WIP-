@@ -33,6 +33,9 @@ Item {
         selectedTextColor: Theme.text
         cursorDelegate: Rectangle {
             width: 2; color: Os.agent && Os.agent.mode !== "idle" ? Theme.amber : Theme.text
+            visible: parent && parent.cursorVisible
+            SequentialAnimation on opacity { running: parent && parent.cursorVisible; loops: Animation.Infinite
+                PropertyAction { value: 1 } PauseAnimation { duration: 530 } PropertyAction { value: 0 } PauseAnimation { duration: 530 } }
         }
         clip: true
         onAccepted: f.accepted()

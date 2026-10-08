@@ -32,6 +32,7 @@ QtObject {
     signal submit(string text)                    // a request for the assistant
     signal timelineToggle(var on)
     signal askOpen()
+    signal controlToggle()
     signal trashFull()
 
     readonly property var months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]

@@ -21,21 +21,26 @@ Column {
             required property string icon
             required property string title
             required property string body
-            width: 344; height: 64
-            property real slide: 380
+            width: 344; height: Math.max(60, txt.implicitHeight + 24)
+            property real slide: 24
             Component.onCompleted: { slide = 0; life.start(); }
-            transform: Translate { x: t.slide; Behavior on x { NumberAnimation { duration: 520; easing.type: Easing.OutQuint } } }
-            Timer { id: life; interval: 4200; onTriggered: { t.slide = 400; gone.start(); } }
-            Timer { id: gone; interval: 400; onTriggered: model.remove(t.index) }
-            RectangularShadow { anchors.fill: tb; radius: 16; blur: 40; offset.y: 10; color: Qt.rgba(0, 0, 0, 0.55) }
-            Rectangle { id: tb; anchors.fill: parent; radius: 16; color: Theme.surface1; border.color: Theme.hairline2; border.width: 1 }
-            Image { x: 14; anchors.verticalCenter: parent.verticalCenter; width: 34; height: 34; sourceSize: Qt.size(68, 68); source: Art.icon(t.icon) }
+            // in: slide 24px and fade, 300 ms; out: fade, 180 ms
+            opacity: slide === 0 ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: t.slide === 0 ? 300 : 180; easing.type: Easing.OutQuint } }
+            transform: Translate { x: t.slide; Behavior on x { NumberAnimation { duration: 300; easing.type: Easing.OutQuint } } }
+            Timer { id: life; interval: 4200; onTriggered: { t.slide = 12; gone.start(); } }
+            Timer { id: gone; interval: 220; onTriggered: model.remove(t.index) }
+            RectangularShadow { anchors.fill: tb; radius: 14; blur: 30; offset.y: 10; color: Qt.rgba(0, 0, 0, 0.4) }
+            Rectangle { id: tb; anchors.fill: parent; radius: 14; color: Theme.surface1; border.color: Theme.hairline2; border.width: 1 }
+            // the same row as Control Center: a 30 px mark, a title, one line under it
+            Image { x: 16; y: 14; width: 30; height: 30; sourceSize: Qt.size(60, 60); source: Art.icon(t.icon) }
             Column {
-                x: 59; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 110
-                Text { text: t.title; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold }
-                Text { width: parent.width; text: t.body; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.WordWrap; color: Theme.text2; font.family: Theme.font; font.pixelSize: 12 }
+                id: txt
+                x: 58; y: 12; width: parent.width - 58 - 54
+                Text { text: t.title; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium }
+                Text { width: parent.width; text: t.body; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.WordWrap; color: Theme.text3; font.family: Theme.font; font.pixelSize: 12; lineHeight: 1.1 }
             }
-            Text { anchors.right: parent.right; anchors.rightMargin: 14; y: 12; text: "now"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
+            Text { anchors.right: parent.right; anchors.rightMargin: 14; y: 13; text: "now"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
         }
     }
 }
