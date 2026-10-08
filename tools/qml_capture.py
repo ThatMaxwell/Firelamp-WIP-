@@ -355,13 +355,14 @@ elif scene == "looks":
     at(1200, lambda: run(steps))
 elif scene == "packs":
     # First boot's optional "What do you do?", then the same packs in Settings
+    call("setSetting", "browserAsked", True)
     at(200, lambda: call("showPacks"))
     steps = [("wait", 900), ("still", "packs-firstboot-empty"),
-             ("click", "Dev"), ("wait", 250), ("click", "Rice"), ("wait", 500), ("point", 900, 760, 500), ("wait", 300), ("still", "packs-firstboot"),
+             ("click", "Make"), ("wait", 250), ("click", "Play"), ("wait", 500), ("point", 900, 760, 500), ("wait", 300), ("still", "packs-firstboot"),
              ("click", "Continue"), ("wait", 1200), ("still", "packs-toast"),
              ("do", lambda: call("openSettings", "Packs")), ("wait", 900), ("click", "Dev pack", -200, 0), ("wait", 600),
-             ("click", "Install Play pack"), ("point", 1240, 800, 600), ("wait", 800), ("still", "settings-packs"),
-             ("do", lambda: call("setSetting", "packsAsked", False)), ("wait", 100), ("do", lambda: stop(0))]
+             ("click", "Install Office pack"), ("point", 1240, 800, 600), ("wait", 800), ("still", "settings-packs"),
+             ("do", lambda: (call("setSetting", "packsAsked", False), call("setSetting", "browserAsked", False))), ("wait", 100), ("do", lambda: stop(0))]
     at(400, lambda: run(steps))
 elif scene == "browsers":
     # First boot's "Pick your browser": filter, search, pick Brave; then Settings › Browser
