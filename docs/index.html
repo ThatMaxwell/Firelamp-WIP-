@@ -191,11 +191,24 @@
     </section>
 
     <!-- end -->
-    <section class="end">
+    <section class="end" id="download">
       <span class="end-logo boil" data-logo></span>
       <h2 class="end-h">Firelamp OS</h2>
-      <p class="lede" data-i18n="end.p">Coming soon. Built in the open.</p>
-      <a class="btn" href="https://github.com/ThatMaxwell/Firelamp-WIP-" target="_blank" rel="noopener"><span data-i18n="cta.gh">Follow the build</span> ↗</a>
+      <button class="btn dl-btn" id="dlBtn" aria-expanded="false" aria-controls="dlPanel"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1.5v8M3.5 6.5 7 10l3.5-3.5M2 12.5h10"/></svg><span data-i18n="dl.btn">Download</span></button>
+      <div class="dl" id="dlPanel" hidden>
+        <div class="dl-in">
+          <div class="dl-tabs" role="tablist">
+            <button role="tab" data-os="win" data-i18n="dl.win">Windows</button>
+            <button role="tab" data-os="nix" data-i18n="dl.nix">Linux &amp; macOS</button>
+          </div>
+          <p class="dl-note" data-i18n="dl.note">Paste this into a terminal. It downloads the 3.7 GB ISO, joins its two parts and checks it.</p>
+          <div class="dl-code">
+            <div class="dl-bar"><span id="dlShell">PowerShell</span><button class="dl-copy" id="dlCopy" data-i18n="dl.copy">Copy</button></div>
+            <pre id="dlCode"></pre>
+          </div>
+          <p class="dl-meta"><span data-i18n="dl.into">Saves to</span> <code id="dlPath"></code> · <a href="https://github.com/ThatMaxwell/Firelamp-WIP-/releases/tag/v0.1.0" target="_blank" rel="noopener">v0.1.0 ↗</a></p>
+        </div>
+      </div>
     </section>
   </main>
 

@@ -223,5 +223,58 @@
     await wait(900); cursor.release(); ask.disabled = false;
   });
 
+  /* ---------- download: the button reveals the terminal command ---------- */
+  const REL = 'https://github.com/ThatMaxwell/Firelamp-WIP-/releases/download/v0.1.0';
+  const ISO = 'firelamp-2026.10.08-x86_64.iso';
+  const CMD = {
+    win: { path: '$HOME\\Firelamp', text: [
+      '$d = "$HOME\\Firelamp"; mkdir $d -Force | Out-Null; cd $d',
+      `$u = "${REL}"`,
+      `$n = "${ISO}"`,
+      'foreach ($f in "$n.part00", "$n.part01", "$n.sha256") { curl.exe -L -C - -o $f "$u/$f" }',
+      'cmd /c "copy /b $n.part00+$n.part01 $n"',
+      'if ((Get-FileHash $n -Algorithm SHA256).Hash -eq (Get-Content "$n.sha256").Split(" ")[0]) { "OK: checksum matches, ISO is ready"; del "$n.part*" } else { "Checksum mismatch, run the command again" }'
+    ] },
+    nix: { path: '~/Firelamp', text: [
+      'mkdir -p ~/Firelamp && cd ~/Firelamp',
+      `u=${REL}`,
+      `n=${ISO}`,
+      'for f in $n.part00 $n.part01 $n.sha256; do curl -L -C - -o $f $u/$f; done',
+      'cat $n.part00 $n.part01 > $n',
+      'if sha256sum -c $n.sha256 2>/dev/null || shasum -a 256 -c $n.sha256; then rm $n.part0*; echo "OK: checksum matches, ISO is ready"; else echo "Checksum mismatch, run the command again"; fi'
+    ] }
+  };
+  const dlBtn = $('#dlBtn'), dlPanel = $('#dlPanel'), dlCode = $('#dlCode'), dlCopy = $('#dlCopy');
+  let dlOs = /Windows/i.test(navigator.userAgent) ? 'win' : 'nix';
+  const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  function dlShow(os) {
+    dlOs = os;
+    $$('.dl-tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.os === os));
+    // commands bright, arguments quieter, so the six steps read at a glance
+    dlCode.innerHTML = CMD[os].text.map(l => esc(l).replace(/^(\S+)/, '<b>$1</b>')).join('\n');
+    $('#dlPath').textContent = CMD[os].path;
+    $('#dlShell').textContent = os === 'win' ? 'PowerShell' : 'Terminal';
+    dlCopy.textContent = T[lang]['dl.copy'];
+  }
+  $$('.dl-tabs button').forEach(b => b.addEventListener('click', () => dlShow(b.dataset.os)));
+  dlBtn.addEventListener('click', () => {
+    const open = dlBtn.getAttribute('aria-expanded') !== 'true';
+    dlBtn.setAttribute('aria-expanded', open);
+    if (open) {
+      dlShow(dlOs); dlPanel.hidden = false;
+      requestAnimationFrame(() => requestAnimationFrame(() => dlPanel.classList.add('open')));
+      setTimeout(() => dlPanel.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' }), 250);
+    } else {
+      dlPanel.classList.remove('open'); setTimeout(() => { if (!dlPanel.classList.contains('open')) dlPanel.hidden = true; }, 600);
+    }
+  });
+  dlCopy.addEventListener('click', async () => {
+    const text = CMD[dlOs].text.join('\n');
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) { const r = document.createRange(); r.selectNodeContents(dlCode); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); document.execCommand('copy'); }
+    dlCopy.textContent = T[lang]['dl.copied'];
+    clearTimeout(dlCopy._t); dlCopy._t = setTimeout(() => (dlCopy.textContent = T[lang]['dl.copy']), 1800);
+  });
+
   setLang('en');
 })();
