@@ -28,6 +28,13 @@ Item {
         files.remove(i);
     }
     function remove(name) { var i = indexOf(name); if (i >= 0) files.remove(i); }
+    // undo: take a file back out of a folder (or the Trash, when folder is "")
+    function restore(name, folder) {
+        if (indexOf(name) >= 0) return;
+        var f = folder ? indexOf(folder) : -1;
+        if (f >= 0) files.setProperty(f, "inside", Math.max(0, files.get(f).inside - 1));
+        files.insert(Math.min(files.count, f + 1), { name: name, kind: app.kindOf(name), inside: 0, editing: false });
+    }
 
     Sidebar {
         id: side

@@ -35,6 +35,12 @@ About screens. Everything else stays still and crisp. See `shell/js/logo.js`.
 **First boot** asks you to name your assistant, and its fire cursor appears for the first time to
 sign the name. There is no default name.
 
+### Working with the assistant (DIRECTION §12)
+- **Plan first.** Multi-step or risky asks show a numbered plan with Go and Edit, plus any preference question up front. After Go, the plan is the live checklist in the Assistant and the capsule.
+- **Milestones.** Activity groups routine steps under each plan line, collapsed by default, with Undo on reversible ones for 30 seconds.
+- **Pause, Resume, Stop.** Moving your own mouse into the window the AI is working in pauses it ("Paused · you're using Mail").
+- **Stuck means stop.** After two failed tries it stops and says what blocked it, with Show me (click the thing for it) and Stop.
+
 ## Run it
 
 ```sh

@@ -21,6 +21,7 @@ Item {
     property bool busy: false        // the agent is typing or reading in place
     property string verb: ""         // kept for the agent; not drawn
     property string target: ""       // the label on the target tag
+    property string note: ""         // overrides the tag while paused (e.g. why it's stuck)
     property bool idle: false
 
     // ---- movement: Fitts time, minimum-jerk easing, a very slight arc ----
@@ -160,7 +161,7 @@ Item {
         Text {
             id: tagText
             anchors.centerIn: parent
-            text: fc.paused ? "Paused" : fc.target
+            text: fc.paused ? (fc.note || "Paused") : fc.target
             color: Theme.text; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.DemiBold
             elide: Text.ElideRight
             width: Math.min(implicitWidth, 200)

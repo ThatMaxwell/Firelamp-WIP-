@@ -14,23 +14,43 @@ Item {
     visible: opacity > 0
     opacity: shown ? 1 : 0
     Behavior on opacity { NumberAnimation { duration: nc.shown ? 500 : 700; easing.type: Easing.OutQuint } }
-    onShownChanged: if (shown) { stage = "ask"; field.text = ""; field.input.forceActiveFocus(); }
+    onShownChanged: if (shown) { stage = "ask"; pressed = false; waiting = false; field.text = ""; field.input.forceActiveFocus(); }
 
     readonly property string typed: field.text.trim()
+    // the fire cursor appears for the first time only once you've typed, and waits on Continue
+    property bool waiting: false
+    onTypedChanged: {
+        if (stage !== "ask") return;
+        if (typed) settle.restart();
+        else { settle.stop(); if (flame.shown) { flame.hide(); waiting = false; } }
+    }
+    Timer { id: settle; interval: 650; onTriggered: nc.toContinue(null) }
+    function toContinue(k) {
+        var c = cont.mapToItem(nc, cont.width * 0.84, cont.height * 0.78);
+        if (waiting) { if (k) k(); return; }
+        var fresh = !flame.shown;
+        if (fresh) flame.show(mark.mapToItem(nc, mark.width * 0.42, mark.height * 0.86));
+        later(fresh ? 260 : 0, function () {
+            flame.moveTo(c.x, c.y, function () { nc.waiting = true; if (k) k(); }, cont.width);
+        });
+    }
 
     function finish() {
         if (!typed || stage !== "ask") return;
+        settle.stop();
         stage = "signing";
         field.input.readOnly = true;
         field.input.focus = false;
         field.input.cursorVisible = false;
-        // the flame wakes under the logo, flies to the start of the name, and signs it
-        var start = mark.mapToItem(nc, mark.width * 0.42, mark.height * 0.86);
+        // the flame presses Continue, then goes back up and signs the name
         var a = nameText.mapToItem(nc, 0, 0);
         var y0 = a.y + nameText.height + 12;
         stroke.x = a.x - 10; stroke.y = y0 - 9; stroke.w = nameText.width + 20;
-        flame.show(start);
-        later(260, function () {
+        toContinue(function () {
+          cont.down = true;
+          flame.click(function () {});
+          later(160, function () {
+            cont.down = false; nc.waiting = false; nc.pressed = true;
             flame.moveTo(stroke.x + 2, y0, function () {
                 flame.click(function () {});
                 later(90, function () {
@@ -43,9 +63,11 @@ Item {
                     });
                 });
             }, 40);
+          });
         });
     }
-    function later(ms, k) { tick.k = k; tick.interval = ms; tick.restart(); }
+    property bool pressed: false
+    function later(ms, k) { if (ms <= 0) return k(); tick.k = k; tick.interval = ms; tick.restart(); }
     Timer { id: tick; property var k; onTriggered: { var f = k; k = null; if (f) f(); } }
 
     // its own room: the same graphite and lamp as the desktop, without the desktop
@@ -115,17 +137,20 @@ Item {
                 Behavior on opacity { NumberAnimation { duration: 200 } }
             }
         }
-        Item { width: 1; height: 30 }
-        Row {
-            anchors.horizontalCenter: parent.horizontalCenter; spacing: 8
-            opacity: nc.stage === "ask" && nc.typed !== "" ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutQuint } }
-            Rectangle {
-                width: kbd.implicitWidth + 12; height: 20; radius: 5; color: Theme.surface2; border.color: Theme.hairline2; border.width: 1
-                anchors.verticalCenter: parent.verticalCenter
-                Text { id: kbd; anchors.centerIn: parent; text: "return"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.Medium }
+        Item { width: 1; height: 34 }
+        Item {
+            width: parent.width; height: 34
+            FButton {
+                id: cont
+                property bool down: false
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Continue"; primary: true; implicitWidth: 128; implicitHeight: 34
+                scale: down ? 0.97 : 1
+                opacity: nc.typed !== "" && !nc.pressed ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: 260; easing.type: Easing.OutQuint } }
+                onClicked: nc.finish()
             }
-            Text { text: "to name it"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
         }
     }
 

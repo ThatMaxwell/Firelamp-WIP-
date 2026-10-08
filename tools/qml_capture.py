@@ -31,6 +31,8 @@ for f in [*out.glob("*.png"), *out.glob("*.jpg")]:
 
 # first boot runs from scratch: splash, no name, then naming
 base = ["firelamp", "--windowed", "--reset"] if scene == "firstboot" else ["firelamp", "--nosplash", "--windowed", "--name=Juniper"]
+if scene in ("stuck", "autopause"):
+    base.append("--pointer")
 app = QGuiApplication([*base, *sys.argv[3:]])
 engine = QQmlApplicationEngine()
 engine.warnings.connect(lambda ws: [print("QML:", w.toString(), file=sys.stderr) for w in ws])
@@ -107,6 +109,35 @@ def at(ms, fn):
     QTimer.singleShot(ms, fn)
 
 
+def on(name, prop, value, fn, delay=0):
+    """Run fn `delay` ms after item `name` first has prop == value."""
+    t = QTimer(app)
+
+    def poll():
+        o = win.findChild(QObject, name)
+        if o is not None and o.property(prop) == value:
+            t.stop()
+            QTimer.singleShot(delay, fn)
+    t.timeout.connect(poll)
+    t.start(40)
+
+
+def finished(fn, delay=0):
+    """Run fn `delay` ms after the agent has run a task and gone idle again."""
+    on("agent", "mode", "running", lambda: on("agent", "mode", "idle", fn, delay))
+
+
+def glide(x0, y0, x1, y1, ms, then=None):
+    """Move the user's mouse along a straight line, like a hand would."""
+    n = max(2, ms // 30)
+    for i in range(n + 1):
+        u = i / n
+        u = u * u * (3 - 2 * u)
+        QTimer.singleShot(i * 30, lambda u=u: mouse(x0 + (x1 - x0) * u, y0 + (y1 - y0) * u))
+    if then:
+        QTimer.singleShot(n * 30 + 30, then)
+
+
 
 if scene == "desktop":
     at(600, lambda: call("launch", "notes"))
@@ -131,6 +162,13 @@ elif scene in ("email", "tidy", "vision"):
     at(300, lambda: call("launch", "assistant"))
     start(900)
     at(1400, lambda: call("demo", prompt))
+    if scene in ("email", "tidy"):
+        still(scene + "-plan", 1400 + 3000)
+        at(1400 + 3800, lambda: call("go"))
+    if scene == "tidy":
+        finished(lambda: call("timelineOpen", True), 1500)
+        finished(lambda: call("expandActivity", 1), 2300)
+        finished(lambda: still("activity", 0), 2900)
     if scene == "email":
         when("permission", "shown", "permission", 700)
     if scene == "tidy":
@@ -142,16 +180,47 @@ elif scene in ("email", "tidy", "vision"):
         for k in range(1, 40000 // n):
             still(f"{scene}-{k:02d}", 1400 + k * n)
     stop(1400 + int(sys.argv[3] if len(sys.argv) > 3 and sys.argv[3].isdigit() else 40000))
+elif scene == "stuck":
+    # the AI can't find Send: two tries, then it stops and asks you to show it
+    at(300, lambda: call("launch", "assistant"))
+    at(600, lambda: call("blind", "Send"))
+    at(700, lambda: mouse(1300, 820))
+    start(900)
+    at(1400, lambda: call("demo", "Email Ana my meeting notes"))
+    at(1400 + 3800, lambda: call("go"))
+    on("agent", "mode", "stuck", lambda: still("stuck", 0), 1600)
+
+    def teach():
+        call("probe", "Send")
+        x, y = win.property("probeX"), win.property("probeY")
+        call("showMe")
+        glide(1100, 760, x, y, 1100, lambda: (mouse(x, y, "press"), mouse(x, y, "release")))
+        still("show-me", 900)
+    on("agent", "mode", "stuck", teach, 2600)
+    finished(lambda: stop(1200), 400)
+elif scene == "autopause":
+    # you reach into the window it's working in, and it steps back on its own
+    at(300, lambda: call("launch", "assistant"))
+    start(900)
+    at(700, lambda: mouse(1300, 820))
+    at(1400, lambda: call("demo", "Tidy up my Downloads"))
+    at(1400 + 3800, lambda: call("go"))
+    at(1400 + 9000, lambda: glide(1300, 820, 520, 420, 900))
+    still("autopause", 1400 + 9000 + 1700)
+    at(1400 + 9000 + 3600, lambda: call("togglePause"))
+    stop(1400 + 9000 + 7000)
 elif scene == "firstboot":
     start(200)
     still("firstboot-empty", 3600)
     for i, ch in enumerate("Juniper"):
         at(4200 + i * 170 + (60 if i % 3 == 1 else 0), lambda ch=ch: key(ch))
-    still("firstboot-typed", 5800)
-    at(6200, lambda: key(code=Qt.Key_Return))
-    still("firstboot-signing", 7350)
-    still("firstboot-signed", 8700)
-    stop(12500)
+    still("firstboot-typed", 5300)
+    still("firstboot-continue", 6900)
+    at(7600, lambda: key(code=Qt.Key_Return))
+    still("firstboot-signing", 8900)
+    still("firstboot-signed", 10300)
+    still("firstboot-after", 14200)
+    stop(14600)
 elif scene == "panels":
     at(300, lambda: call("launch", "notes"))
     at(1200, lambda: call("openAsk"))

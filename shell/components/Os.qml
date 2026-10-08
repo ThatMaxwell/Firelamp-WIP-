@@ -34,6 +34,10 @@ QtObject {
     signal askOpen()
     signal controlToggle()
     signal trashFull()
+    signal trashEmpty()
+    signal propose(var plan)                      // a plan waiting for Go / Edit in the Assistant
+    signal logUpdate(string gid, var fields)
+    signal planEnded(string id, string how)      // a timeline group changed (milestone finished, undone)
 
     readonly property var months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     readonly property var days: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]

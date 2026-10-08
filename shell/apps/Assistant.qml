@@ -13,9 +13,17 @@ Rectangle {
     property var queue: []
 
     function start(opts) { if (opts && opts.prompt) Qt.callLater(function () { submit(opts.prompt); }); }
-    function add(who, text, time) { msgs.append({ who: who, text: text, time: time || "" }); Qt.callLater(chat.positionViewAtEnd); }
+    function add(who, text, time, pid) { msgs.append({ who: who, text: text, time: time || "", pid: pid || "", phase: pid ? "proposed" : "" }); Qt.callLater(chat.positionViewAtEnd); }
+    // the plan waiting for Go, if any (index into msgs)
+    property int proposed: -1
+    function planIndex(pid) { for (var i = msgs.count - 1; i >= 0; i--) if (msgs.get(i).pid === pid) return i; return -1; }
+    function setPlanState(pid, st) { var i = planIndex(pid); if (i >= 0) msgs.setProperty(i, "phase", st); if (i === proposed && st !== "proposed") proposed = -1; }
+    property var goPlan: null                // set by the card that is waiting, so Return or the recorder can press Go
+    property var pickPref: null
     function submit(t) {
-        t = t.trim(); if (!t) return;
+        t = t.trim();
+        if (!t && goPlan) return goPlan();
+        if (!t) return;
         input.text = "";
         add("me", t);
         Os.submit(t);
@@ -26,6 +34,7 @@ Rectangle {
         if (!queue.length) { typing = false; return; }
         typing = true; Qt.callLater(chat.positionViewAtEnd);
         var q = queue.shift();
+        if (q.who === "plan") { add("plan", q.text, "", q.pid); proposed = msgs.count - 1; return next(); }
         if (q.who !== "ai") { add(q.who, q.text, q.time); return next(); }
         typer.text = q.text; typer.interval = 420 + Math.min(900, q.text.length * 11); typer.start();
     }
@@ -33,7 +42,11 @@ Rectangle {
     Connections {
         target: Os
         function onSay(t) { app.say(t); }
+        function onPropose(p) { app.queue.push({ who: "plan", text: JSON.stringify(p), pid: p.id }); if (!app.typing) app.next(); }
+        function onPlanEnded(id, how) { app.setPlanState(id, how); }
         function onLog(e) {
+            // a planned task reports progress on its plan card, not as a stream of steps
+            if (e.gid || e.kind === "milestone") return;
             var d = new Date(), two = function (n) { return (n < 10 ? "0" : "") + n; };
             if (e.kind === "done") app.queue.push({ who: "sys", text: "Done · every step is in Activity" });
             else app.queue.push({ who: "step", text: e.title, time: two(d.getHours()) + ":" + two(d.getMinutes()) });
@@ -48,7 +61,7 @@ Rectangle {
         Row {
             x: 84; anchors.verticalCenter: parent.verticalCenter; spacing: 8
             Text { text: Os.name; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.DemiBold; anchors.baseline: stateText.baseline }
-            Text { id: stateText; text: app.st === "running" ? "working" : app.st === "paused" ? "paused" : "ready"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
+            Text { id: stateText; text: app.st === "running" ? "working" : app.st === "paused" ? "paused" : app.st === "stuck" || app.st === "teaching" ? "stuck" : "ready"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
         }
         TbButton { anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; glyph: "clock"; label: "Activity timeline"; onClicked: Os.timelineToggle(undefined) }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairline }
@@ -82,9 +95,17 @@ Rectangle {
             required property string who
             required property string text
             required property string time
+            required property string pid
+            required property string phase
             required property int index
             readonly property bool live: who === "step" && index === msgs.count - 1 && app.st !== "idle"
-            width: chat.width; height: who === "sys" ? 22 : who === "step" ? stepRow.height : bubble.height
+            width: chat.width; height: who === "sys" ? 22 : who === "step" ? stepRow.height : who === "plan" ? planLoader.height + 4 : bubble.height
+            Loader {
+                id: planLoader
+                active: m.who === "plan"
+                x: 14; width: parent.width - 28
+                sourceComponent: PlanCard { pid: m.pid; info: JSON.parse(m.text); phase: m.phase; index: m.index }
+            }
             Text { visible: m.who === "sys"; x: 18; anchors.verticalCenter: parent.verticalCenter; text: m.text; color: Theme.text3; font.family: Theme.font; font.pixelSize: 12 }
             // a step the assistant took: mono time, then what it did
             Row {
@@ -132,7 +153,7 @@ Rectangle {
     // ---- suggestions: plain rows, not chips ----
     Column {
         id: chips
-        visible: app.st === "idle"
+        visible: app.st === "idle" && app.proposed < 0
         x: 10; width: parent.width - 20
         y: composer.y - height - 8
         Rectangle { x: 8; width: parent.width - 16; height: 1; color: Theme.hairline }
@@ -152,7 +173,136 @@ Rectangle {
                 Row { id: cr; x: 8; anchors.verticalCenter: parent.verticalCenter; spacing: 10
                     Glyph { name: chip.modelData.icon; color: Theme.text3; width: 14; height: 14; anchors.verticalCenter: parent.verticalCenter }
                     Text { text: chip.modelData.text; color: Theme.text2; font.family: Theme.font; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter } }
+                // why it's suggested: what it noticed on this machine
+                Text { anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter
+                       text: chip.modelData.hint || ""; color: Theme.text3; font.family: Theme.font; font.pixelSize: 12 }
                 MouseArea { id: cma; anchors.fill: parent; hoverEnabled: true; onClicked: chip.aiActivate() }
+            }
+        }
+    }
+
+    // ---- the plan: numbered lines, Go / Edit; after Go it becomes the live checklist ----
+    component PlanCard: Rectangle {
+        id: pc
+        property string pid
+        property var info
+        property string phase
+        property int index
+        property int pick: 0
+        readonly property var ag: Os.agent
+        readonly property bool waiting: phase === "proposed"
+        readonly property bool active: phase === "running" && ag && ag.planId === pid
+        readonly property var lines: waiting && info.prefs && ag ? (ag.proposal ? ag.linesFor(pick) : info.lines) : (pc.frozen || info.lines)
+        property var frozen: null
+        readonly property int mi: active ? ag.mi : phase === "done" ? lines.length : frozenMi
+        property int frozenMi: -1
+        onActiveChanged: if (!active && ag) frozenMi = ag.mi
+        function go() {
+            frozen = lines;
+            msgs.setProperty(index, "phase", "running");
+            app.proposed = -1; app.goPlan = null; app.pickPref = null;
+            ag.go(pid, pick);
+        }
+        function edit() {
+            msgs.setProperty(index, "phase", "edited");
+            app.proposed = -1; app.goPlan = null; app.pickPref = null;
+            ag.edit(pid);
+            input.text = info.text; input.input.forceActiveFocus(); input.input.selectAll();
+        }
+        Component.onCompleted: if (waiting) { app.goPlan = function () { goBtn.flash(); }; app.pickPref = function (i) { pc.pick = i; }; }
+
+        width: parent ? parent.width : 300
+        height: col.implicitHeight + 28
+        radius: 12
+        color: Theme.surface1; border.color: Theme.hairline2; border.width: 1
+        opacity: phase === "edited" ? 0.5 : 1
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+
+        Column {
+            id: col
+            x: 14; y: 14; width: parent.width - 28
+            spacing: 10
+            Item {
+                width: parent.width; height: 14
+                Text { text: "Plan"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 0.3 }
+                Text {
+                    anchors.right: parent.right
+                    text: pc.waiting ? pc.lines.length + " steps" : pc.active ? (ag.mode === "paused" ? "Paused" : ag.mode === "stuck" || ag.mode === "teaching" ? "Stuck" : "Working") + " · " + Math.max(1, pc.mi + 1) + " of " + pc.lines.length
+                          : pc.phase === "done" ? "Done" : pc.phase === "edited" ? "Edited" : pc.phase === "denied" ? "Stopped at your no" : "Stopped"
+                    color: Theme.text3; font.family: Theme.font; font.pixelSize: 11
+                }
+            }
+            // the one preference worth asking, asked before anything moves
+            Column {
+                visible: pc.waiting && !!pc.info.prefs
+                width: parent.width; spacing: 2
+                Text { width: parent.width; wrapMode: Text.WordWrap; text: pc.info.prefs ? pc.info.prefs.q : ""; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; bottomPadding: 4 }
+                Repeater {
+                    model: pc.info.prefs ? pc.info.prefs.options : []
+                    Rectangle {
+                        id: opt
+                        required property string modelData
+                        required property int index
+                        property string aiName: modelData
+                        property string aiRole: "radio"
+                        function aiActivate() { pc.pick = index; }
+                        width: col.width; height: 30; radius: 7
+                        color: oma.containsMouse ? Theme.hover : "transparent"
+                        Rectangle {
+                            x: 8; width: 14; height: 14; radius: 7; anchors.verticalCenter: parent.verticalCenter
+                            color: "transparent"; border.width: 1.5; border.color: pc.pick === opt.index ? Theme.text : Theme.text3
+                            Rectangle { anchors.centerIn: parent; width: 6; height: 6; radius: 3; color: Theme.text; scale: pc.pick === opt.index ? 1 : 0
+                                        Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutQuint } } }
+                        }
+                        Text { x: 32; anchors.verticalCenter: parent.verticalCenter; text: opt.modelData; color: Theme.text; font.family: Theme.font; font.pixelSize: 13 }
+                        MouseArea { id: oma; anchors.fill: parent; hoverEnabled: true; onClicked: opt.aiActivate() }
+                    }
+                }
+                Item { width: 1; height: 4 }
+                Rectangle { width: parent.width; height: 1; color: Theme.hairline }
+                Item { width: 1; height: 4 }
+            }
+            Column {
+                width: parent.width; spacing: 7
+                Repeater {
+                    model: pc.lines
+                    Row {
+                        id: ln
+                        required property var modelData
+                        required property int index
+                        readonly property bool isDone: !pc.waiting && index < pc.mi
+                        readonly property bool isNow: pc.active && index === pc.mi
+                        spacing: 10
+                        Item {
+                            width: 16; height: 18
+                            Text { visible: !ln.isDone && !ln.isNow; anchors.centerIn: parent; text: ln.index + 1; color: Theme.text3; font.family: Theme.mono; font.pixelSize: 10 }
+                            Glyph { visible: ln.isDone; anchors.centerIn: parent; width: 12; height: 12; name: "check"; color: Theme.text3 }
+                            Rectangle { visible: ln.isNow; anchors.centerIn: parent; width: 6; height: 6; radius: 3; color: ag && ag.mode === "running" ? Theme.ember : Theme.text3 }
+                        }
+                        Text {
+                            width: col.width - 26; wrapMode: Text.WordWrap
+                            text: ln.isDone ? ln.modelData.done : ln.modelData.plan
+                            color: ln.isNow ? Theme.text : ln.isDone ? Theme.text3 : Theme.text2
+                            font.family: Theme.font; font.pixelSize: 13; font.weight: ln.isNow ? Font.Medium : Font.Normal
+                            Behavior on color { ColorAnimation { duration: 200 } }
+                        }
+                    }
+                }
+            }
+            Row {
+                visible: pc.waiting
+                spacing: 8; topPadding: 2
+                FButton {
+                    id: goBtn
+                    text: "Go"; primary: true; implicitWidth: 64
+                    property bool down: false
+                    scale: down ? 0.97 : 1
+                    function flash() { down = true; goFlash.start(); }
+                    Timer { id: goFlash; interval: 140; onTriggered: { goBtn.down = false; pc.go(); } }
+                    onClicked: pc.go()
+                }
+                FButton { text: "Edit"; onClicked: pc.edit() }
+                Text { text: "return to go"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter; leftPadding: 4 }
             }
         }
     }

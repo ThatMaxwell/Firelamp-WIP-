@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Window
 import "components"
 import "js/art.js" as Art
+import "js/uitree.js" as Tree
 
 Window {
     id: win
@@ -57,6 +58,18 @@ Window {
                                  deny: "Keep It", allow: "Delete" }, function () {});
         else permission.answer(false);
     }
+    // plan card: press Go, or pick an option (recorder)
+    function go() { var a = desktop.get("assistant"); if (a && a.content && a.content.goPlan) a.content.goPlan(); }
+    function pickPref(i) { var a = desktop.get("assistant"); if (a && a.content && a.content.pickPref) a.content.pickPref(i); }
+    // test hook: make the agent unable to find a target, to show the stuck state
+    function blind(name) { agent.blind = name; }
+    function showMe() { agent.showMe(); }
+    function togglePause() { agent.togglePause(); }
+    function timelineOpen(on) { Os.timelineToggle(on); }
+    function expandActivity(i) { timeline.expand(i); }
+    property real probeX: -1
+    property real probeY: -1
+    function probe(name) { var n = Tree.find(screen, { name: name }); probeX = n ? n.bounds.x + n.bounds.w / 2 : -1; probeY = n ? n.bounds.y + n.bounds.h / 2 : -1; }
     function pointAt(x, y, label, w) {
         if (!cursor.shown) cursor.show(Qt.point(x - 260, y + 180));
         cursor.moveTo(x, y, function () { cursor.aim(label, function () { cursor.click(function () { cursor.clearTarget(); }); }); }, w || 40);
@@ -144,20 +157,62 @@ Window {
     ControlCenter { id: control; z: 57; x: parent.width - width - 8; y: Theme.menubarH + 6 }
     Item { id: menuLayer; anchors.fill: parent; z: 60
         MouseArea { anchors.fill: parent; enabled: bar.menu !== null; onPressed: bar.closeMenu() } }
-    NameCard { id: nameCard; z: 70; onDone: { screen.booted = true; helloToast.start(); } }
-    Timer { id: helloToast; interval: 1500; onTriggered: Os.toast("assistant", "Say hi to " + Os.name, "Click its icon in the dock, or press Alt+Space to ask it anything.") }
+    // after naming, the desktop isn't empty: the Assistant is open with what it noticed
+    NameCard { id: nameCard; z: 70; onDone: { screen.booted = true; openAssistant.start(); } }
+    Timer { id: openAssistant; interval: 900; onTriggered: win.launch("assistant") }
     Splash {
         anchors.fill: parent; z: 80
         visible: !win.flag("nosplash")
         onFinished: { if (!Os.settings.assistantName) nameCard.shown = true; else screen.booted = true; }
     }
 
-    Agent { id: agent; cursor: cursor; capsule: capsule; permission: permission; ghost: ghost }
+    Agent { id: agent; objectName: "agent"; cursor: cursor; capsule: capsule; permission: permission; ghost: ghost }
+
+    // Your own mouse. When it moves into the window the AI is working in, the AI pauses
+    // itself; you get the window back without hunting for a button.
+    property real lastX: -1
+    property real lastY: -1
+    property real inWork: 0
+    function userMoved(x, y) {
+        var d = lastX < 0 ? 0 : Math.abs(x - lastX) + Math.abs(y - lastY);
+        lastX = x; lastY = y;
+        if (agent.mode !== "running" || !agent.workApp) { inWork = 0; return; }
+        var w = desktop.get(agent.workApp);
+        if (!w || !w.visible) return;
+        var p = w.mapToItem(null, 0, 0);
+        if (x >= p.x && y >= p.y && x <= p.x + w.width && y <= p.y + w.height) {
+            inWork += d;
+            if (inWork > 24) { inWork = 0; agent.autoPause(w.title); }
+        } else inWork = 0;
+    }
+    Item {
+        anchors.fill: parent; z: 90
+        HoverHandler { id: userHover; onPointChanged: win.userMoved(point.position.x, point.position.y) }
+    }
+    // "Show me": while the AI is stuck, your next click in its window points at the thing
+    MouseArea {
+        anchors.fill: parent; z: 19
+        enabled: agent.mode === "teaching"
+        cursorShape: Qt.PointingHandCursor
+        onPressed: (m) => {
+            var t = agent.stuckOn ? agent.stuckOn.target : null, best = null, area = 1e12;
+            Tree.nodes(screen).forEach(function (n) {
+                var b = n.bounds;
+                if (t && t.app && n.app !== t.app) return;
+                if (n.role === "window" || m.x < b.x || m.x > b.x + b.w || m.y < b.y || m.y > b.y + b.h) return;
+                if (b.w * b.h < area) { area = b.w * b.h; best = n; }
+            });
+            agent.taught(best);
+        }
+    }
+    // the system pointer, drawn by the shell only when recording (the X grab hides the real one)
+    UserPointer { visible: win.flag("pointer") && win.lastX >= 0; x: win.lastX; y: win.lastY; z: 95 }
 
     Connections {
         target: Os
         function onSubmit(t) { agent.handle(t); }
         function onTrashFull() { dock.trashIcon = Art.icon("trash", true); }
+        function onTrashEmpty() { dock.trashIcon = Art.icon("trash", false); }
         function onAskOpen() { askBar.open(); }
         function onControlToggle() { control.open = !control.open; }
     }

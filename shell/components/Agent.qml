@@ -7,7 +7,7 @@ import "../js/plans.js" as Plans
 
 Item {
     id: ag
-    property string mode: "idle"            // idle | running | paused
+    property string mode: "idle"            // idle | running | paused | stuck | teaching
     property var cursor
     property var capsule
     property var permission
@@ -19,20 +19,38 @@ Item {
     property string label: ""
     property bool stopped: false
     property var pending: null               // continuation held while paused
+    // plan-first: a proposal waits for Go / Edit; once running, its lines are milestones
+    property var proposal: null
+    property var lines: []
+    property int mi: -1
+    property string planId: ""
+    property string gid: ""
+    property var groups: ({})
+    property int seq: 0
+    property var cur: null
+    property string workApp: ""              // the app whose window the AI is working in
+    property var stuckOn: null               // { target, k } when it couldn't find something
+    property string blind: ""                // test hook: pretend this target isn't on screen
 
     // ---- control ----
     function togglePause() {
-        if (mode === "idle") return;
+        if (mode !== "running" && mode !== "paused") return;
         var p = mode !== "paused";
         mode = p ? "paused" : "running";
         cursor.paused = p; capsule.paused = p;
         if (p) cursor.verb = "paused";
-        else if (pending) { var k = pending; pending = null; k(); }
+        else { capsule.why = ""; if (pending) { var k = pending; pending = null; k(); } }
+    }
+    // you moved your own mouse into the window it's working in: it steps back on its own
+    function autoPause(title) {
+        if (mode !== "running" || permission.shown) return;
+        capsule.why = "you’re using " + title;
+        togglePause();
     }
     function stop() {
         if (mode === "idle") return;
         stopped = true;
-        if (mode === "paused") { mode = "running"; cursor.paused = false; capsule.paused = false; }
+        if (mode !== "running") { mode = "running"; cursor.paused = false; capsule.paused = false; capsule.why = ""; capsule.stuck = ""; stuckOn = null; }
         typer.stop(); waiter.stop();
         if (permission.shown) permission.answer(false);
         var k = pending; pending = null;
@@ -42,24 +60,80 @@ Item {
     // ---- helpers handed to plans ----
     readonly property var api: ({
         app: function (id) { var w = Os.desktop.get(id); return w ? w.content : null; },
-        trashFull: function () { Os.trashFull(); }
+        trashFull: function () { Os.trashFull(); },
+        trashEmpty: function () { Os.trashEmpty(); }
     })
     function quoteTitle(t) { return t.replace(/“([^”]+)”/g, "<font color=\"#ffffff\">“$1”</font>"); }
+    // routine steps file under the current milestone; asks, refusals and stops stand alone
+    readonly property var routine: ["open", "click", "type", "look", "move"]
     function log(kind, title, why, app) {
-        Os.log({ kind: kind, title: quoteTitle(title), why: why || "", app: app || "" });
-        if (kind !== "done" && kind !== "denied") capsule.steps = ++done;
+        var inGroup = gid !== "" && routine.indexOf(kind) >= 0;
+        Os.log({ kind: kind, title: quoteTitle(title), why: why || "", app: app || "", gid: inGroup ? gid : "" });
+        if (inGroup && cur && cur.undo && !cur.logged) { cur.logged = true; groups[gid].undos.push(cur.undo); }
+        if (routine.indexOf(kind) >= 0) capsule.steps = ++done;
+    }
+    function milestone(i) {
+        closeMilestone();
+        mi = i; gid = planId + ":" + i; groups[gid] = { undos: [] };
+        capsule.plan = lines[i].plan; capsule.k = i + 1;
+        Os.log({ kind: "milestone", gid: gid, title: lines[i].plan, why: "", app: "", live: true });
+    }
+    function closeMilestone() {
+        if (gid === "") return;
+        var g = groups[gid];
+        g.until = Date.now() + 30000;
+        Os.logUpdate(gid, { title: lines[mi].done, live: false, undo: g.undos.length > 0, until: g.until });
+        gid = "";
+    }
+    // undo a finished milestone, for 30 seconds after it finished
+    function undo(id) {
+        var g = groups[id];
+        if (!g || !g.undos.length || Date.now() > g.until) return;
+        for (var i = g.undos.length - 1; i >= 0; i--) g.undos[i](api);
+        g.undos = [];
+        Os.logUpdate(id, { undo: false, undone: true });
     }
     function appTitle(id) { var w = Os.desktop.get(id); return w ? w.title : id === "dock" ? "Dock" : "Firelamp"; }
 
     function after(ms, k) { waiter.k = k; waiter.interval = Math.max(1, ms); waiter.restart(); }
     Timer { id: waiter; property var k; onTriggered: { var f = k; k = null; if (f) f(); } }
 
-    function locate(target, k, tries) {
-        tries = tries || 0;
-        var n = Tree.find(Os.root, target);
-        if (n) return k(n);
-        if (tries > 25) { Os.say("I couldn't find “" + target.name + "” on screen, so I stopped."); return finish("error"); }
-        after(80, function () { locate(target, k, tries + 1); });
+    // two honest attempts, then it stops and says what blocked it instead of guessing
+    function locate(target, k, tries, attempt) {
+        tries = tries || 0; attempt = attempt || 1;
+        var n = target.name === blind ? null : Tree.find(Os.root, target);
+        if (n) { if (n.app !== "system" && n.app !== "desktop") workApp = n.app; return k(n); }
+        if (tries < 25) return after(80, function () { locate(target, k, tries + 1, attempt); });
+        if (attempt < 2) { cursor.verb = "looking again"; return after(500, function () { locate(target, k, 0, 2); }); }
+        stuck(target, k);
+    }
+    function stuck(target, k) {
+        var where = appTitle(target.app);
+        var what = target.role === "button" ? "a " + target.name + " button" : "“" + (target.say || target.name) + "”";
+        mode = "stuck"; stuckOn = { target: target, k: k };
+        cursor.busy = false; cursor.clearTarget(); cursor.note = "Stuck"; cursor.paused = true;
+        capsule.stuck = "Couldn’t find " + what + " in " + where;
+        log("stuck", "Couldn’t find " + what + " in " + where, "I tried twice, then stopped instead of guessing.", where);
+        Os.say("I couldn’t find " + what + " in " + where + ", so I stopped instead of guessing. Press Show me and click it for me, or stop.");
+    }
+    // "Show me": your next click in that window tells it where the thing is
+    function showMe() {
+        if (mode !== "stuck") return;
+        mode = "teaching";
+        var t = stuckOn.target, w = Os.desktop.get(t.app);
+        if (w) Os.desktop.focusWindow(w);
+        capsule.stuck = "Click the " + (t.role === "button" ? t.name + " button" : "“" + (t.say || t.name) + "”") + " for me";
+        cursor.note = "Show me";
+    }
+    function taught(n) {
+        if (mode !== "teaching" || !n) return;
+        var s = stuckOn; stuckOn = null;
+        mode = "running"; capsule.stuck = ""; cursor.paused = false; cursor.note = "";
+        if (blind === s.target.name) blind = "";
+        log("look", "You showed me “" + n.name + "”", "I’ll use it from here.", appTitle(n.app));
+        workApp = n.app;
+        Os.say("Got it, thanks. Carrying on.");
+        s.k(n);
     }
     function markItem(n) {
         if (!mark) return;
@@ -101,6 +175,7 @@ Item {
                     gate(function () {
                         cursor.click(function () {
                             Os.desktop.open(s.app);
+                            workApp = s.app;
                             cursor.clearTarget();
                             log("open", "Opened " + title, s.why, title);
                             after(560, next);
@@ -218,15 +293,19 @@ Item {
         gate(function () {
             if (pc >= steps.length) return finish("done");
             var s = steps[pc++];
+            cur = s;
+            if (s.op === "milestone") { milestone(s.i); return after(120, step); }
             exec(s, step);
         });
     }
 
-    function run(plan) {
+    function run(plan, pick, id) {
         if (mode !== "idle") { Os.say("I'm still working on the last thing. Pause or stop me first."); return; }
-        steps = plan.steps(); pc = 0; done = 0; stopped = false; pending = null; label = plan.label;
+        steps = plan.steps(pick); pc = 0; done = 0; stopped = false; pending = null; label = plan.label;
+        lines = plan.lines ? plan.lines(pick) : []; mi = -1; gid = ""; planId = id || "p" + (++seq); workApp = "";
         mode = "running";
-        capsule.steps = 0; capsule.what = plan.label; capsule.paused = false; capsule.shown = true;
+        capsule.steps = 0; capsule.what = plan.label; capsule.plan = ""; capsule.k = 0; capsule.total = lines.length;
+        capsule.paused = false; capsule.why = ""; capsule.stuck = ""; capsule.shown = true;
         var r = Os.dock.iconRect("assistant");
         cursor.verb = "";
         cursor.show(r ? Qt.point(r.x + r.width / 2, r.y) : null);
@@ -235,18 +314,33 @@ Item {
 
     function finish(how) {
         typer.stop();
+        closeMilestone();
         if (how === "done") log("done", "Done", label, "Firelamp");
         if (how === "stopped") { log("denied", "Stopped by you", "You pressed stop, so I stopped right away.", "Firelamp"); Os.say("Stopped. Nothing else was changed."); }
         stopped = true;
-        unmark(); ghost.visible = false; cursor.pressed = false; cursor.paused = false; cursor.verb = ""; cursor.busy = false; cursor.clearTarget();
+        unmark(); ghost.visible = false; cursor.pressed = false; cursor.paused = false; cursor.note = ""; cursor.verb = ""; cursor.busy = false; cursor.clearTarget();
+        Os.planEnded(planId, how);
+        lines = []; workApp = ""; stuckOn = null;
         var r = Os.dock.iconRect("assistant");
-        var end = function () { cursor.hide(); capsule.shown = false; mode = "idle"; };
+        var end = function () { cursor.hide(); capsule.shown = false; capsule.stuck = ""; capsule.why = ""; mode = "idle"; };
         if (r) cursor.moveTo(r.x + r.width / 2, r.y + 4, end); else end();
     }
 
     function handle(text) {
         var p = Plans.match(text);
         if (!p) { Os.say("I'm running in demo mode, so I only know a few tasks so far. Try “Email Ana my meeting notes”, “Tidy up my Downloads” or “Show me what you see”."); return; }
-        run(p);
+        if (mode !== "idle") { Os.say("I'm still working on the last thing. Pause or stop me first."); return; }
+        // simple things just happen; multi-step or risky ones show the plan first
+        if (!p.lines) return run(p);
+        proposal = { id: "p" + (++seq), plan: p, text: text };
+        Os.say(p.intro);
+        Os.propose({ id: proposal.id, lines: p.lines(0), prefs: p.prefs || null, text: text });
     }
+    function linesFor(pick) { return proposal ? proposal.plan.lines(pick) : []; }
+    function go(id, pick) {
+        if (!proposal || proposal.id !== id) return;
+        var p = proposal; proposal = null;
+        run(p.plan, pick, id);
+    }
+    function edit(id) { if (proposal && proposal.id === id) proposal = null; }
 }
