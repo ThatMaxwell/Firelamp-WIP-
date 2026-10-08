@@ -23,6 +23,13 @@ Rectangle {
         menu.picked.connect(closeMenu);
         openFor = btn;
     }
+    // a context menu at a point (right-click on the desktop)
+    function openAt(x, y, items) {
+        closeMenu();
+        menu = menuComp.createObject(menuLayer, { items: items });
+        menu.x = Math.min(menuLayer.width - menu.width - 4, x); menu.y = Math.min(menuLayer.height - menu.height - 4, y);
+        menu.picked.connect(closeMenu);
+    }
     Component { id: menuComp; MenuPopup {} }
 
     readonly property var appMenus: ({
@@ -134,9 +141,10 @@ Rectangle {
             font.weight: Font.Medium
             leftPadding: 8; rightPadding: 8
             font.features: { "tnum": 1 }
-            function tick() { var d = new Date(); text = Os.days[d.getDay()] + " " + Os.months[d.getMonth()].slice(0, 3) + " " + d.getDate() + "  " + Os.clock(d); }
+            function tick() { var d = new Date(); text = (Os.settings.barDate ? Os.days[d.getDay()] + " " + Os.months[d.getMonth()].slice(0, 3) + " " + d.getDate() + "  " : "") + Os.clock(d, Os.settings.barSeconds); }
             Component.onCompleted: tick()
-            Timer { interval: 5000; running: true; repeat: true; onTriggered: clock.tick() }
+            Timer { interval: Os.settings.barSeconds ? 1000 : 5000; running: true; repeat: true; onTriggered: clock.tick() }
+            Connections { target: Os.settings; function onBarDateChanged() { clock.tick(); } function onBarSecondsChanged() { clock.tick(); } }
         }
     }
 }

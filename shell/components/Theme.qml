@@ -63,7 +63,7 @@ QtObject {
     readonly property string mono: "Martian Mono"
 
     readonly property int menubarH: 28
-    readonly property int rWin: 12
+    readonly property int rWin: Os.settings.winRadius
 
     // traffic lights, 10% quieter than Mac
     readonly property color lightClose: "#E8574F"

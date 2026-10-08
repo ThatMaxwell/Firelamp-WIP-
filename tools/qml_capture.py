@@ -31,7 +31,7 @@ for f in [*out.glob("*.png"), *out.glob("*.jpg")]:
 
 # first boot runs from scratch: splash, no name, then naming
 base = ["firelamp", "--windowed", "--reset"] if scene == "firstboot" else ["firelamp", "--nosplash", "--windowed", "--name=Juniper"]
-if scene in ("stuck", "autopause", "desktops"):
+if scene in ("stuck", "autopause", "desktops", "edithome"):
     base.append("--pointer")
 if scene == "desktops":
     base.append("--demo-installs")
@@ -50,10 +50,17 @@ def call(fn, *args):
     QMetaObject.invokeMethod(win, fn, *[Q_ARG("QVariant", a) for a in args])
 
 
-def mouse(x, y, kind="move"):
+held = {"btn": Qt.NoButton}
+
+
+def mouse(x, y, kind="move", button=Qt.LeftButton):
     t = {"move": QEvent.MouseMove, "press": QEvent.MouseButtonPress, "release": QEvent.MouseButtonRelease}[kind]
-    btn = Qt.NoButton if kind == "move" else Qt.LeftButton
-    btns = Qt.LeftButton if kind == "press" else Qt.NoButton
+    if kind == "press":
+        held["btn"] = button
+    btn = Qt.NoButton if kind == "move" else button
+    btns = held["btn"] if kind != "release" else Qt.NoButton
+    if kind == "release":
+        held["btn"] = Qt.NoButton
     ev = QMouseEvent(t, QPointF(x, y), QPointF(x, y), btn, btns, Qt.NoModifier)
     QGuiApplication.sendEvent(win, ev)
 
@@ -251,6 +258,73 @@ elif scene == "desktops":
     still("desktops-installing", 5600)
     still("desktops-installed", 11000)
     stop(11800)
+elif scene == "edithome":
+    # Edit home: right-click the desktop, windows slide away, move / add / resize widgets,
+    # try a wallpaper and the dock size, then Done. Steps run one after another, so a slow
+    # frame never lets two pointer moves overlap.
+    for k, v in (("wallpaper", "graphite"), ("dockSize", 1), ("dockMag", 2), ("dockBacking", True)):
+        call("setSetting", k, v)
+    call("resetHome")
+    at(300, lambda: call("launch", "notes"))
+    at(700, lambda: call("launch", "photos"))
+    at(1300, lambda: mouse(1180, 700))
+    pos = {"x": 1180, "y": 700}
+
+    def tap(x, y, button=Qt.LeftButton):
+        mouse(x, y, "press", button); mouse(x, y, "release", button)
+
+    def glide_to(x, y, ms, then):
+        glide(pos["x"], pos["y"], x, y, ms, lambda: (pos.update(x=x, y=y), then()))
+
+    def run(steps):
+        if not steps:
+            return
+        step, rest = steps[0], steps[1:]
+        nxt = lambda: run(rest)
+        kind = step[0]
+        if kind == "wait":
+            QTimer.singleShot(step[1], nxt)
+        elif kind == "still":
+            still(step[1], 0); QTimer.singleShot(60, nxt)
+        elif kind == "do":
+            step[1](); nxt()
+        elif kind == "point":                  # ("point", x, y, ms)
+            glide_to(step[1], step[2], step[3], nxt)
+        elif kind in ("click", "rclick", "drag", "find"):
+            name, dx, dy = step[1], (step[2] if len(step) > 2 else 0), (step[3] if len(step) > 3 else 0)
+            call("probe", name)
+            x, y = win.property("probeX") + dx, win.property("probeY") + dy
+            if x < 0:
+                print("edithome: not found:", name, file=sys.stderr)
+            if kind == "click":
+                glide_to(x, y, 700, lambda: (tap(x, y), nxt()))
+            elif kind == "find":
+                glide_to(x, y, 700, nxt)
+            elif kind == "drag":               # ("drag", name, dx, dy, tx, ty)
+                tx, ty = step[4], step[5]
+                glide_to(x, y, 700, lambda: (mouse(x, y, "press"),
+                    glide(x, y, x + tx, y + ty, 900, lambda: (mouse(x + tx, y + ty, "release"), pos.update(x=x + tx, y=y + ty), nxt()))))
+
+    def typed(text):
+        return [("do", lambda ch=ch: key(ch)) for ch in text]
+
+    start(1400)
+    at(1500, lambda: run([
+        ("point", 720, 760, 600), ("do", lambda: tap(720, 760, Qt.RightButton)), ("wait", 700), ("still", "home-menu"),
+        ("click", "Edit Home…"), ("wait", 1100), ("still", "edit-home"),
+        # System moves from under Weather to the open space on the right
+        ("drag", "system widget", -30, 10, 213, -171), ("wait", 500),
+        ("click", "Search widgets"), ("wait", 300), *typed("photo"), ("wait", 400),
+        ("click", "Add Photo frame widget"), ("wait", 600),
+        # Up next grows from M to L
+        ("drag", "Resize upnext widget", 0, 0, 10, 190), ("wait", 900), ("still", "edit-home-widgets"),
+        ("click", "Wallpaper"), ("wait", 500), ("click", "Dusk wallpaper"), ("wait", 900), ("still", "edit-home-wallpaper"),
+        ("click", "Dock & bar"), ("wait", 500), ("click", "Large"), ("wait", 900), ("still", "edit-home-dock"),
+        ("click", "Medium"), ("wait", 400), ("click", "Done"), ("wait", 300), ("point", 1300, 640, 600), ("wait", 900),
+        ("still", "home-after"), ("wait", 300),
+        ("do", lambda: (call("setSetting", "wallpaper", "graphite"), call("resetHome"))), ("wait", 200),
+        ("do", lambda: stop(0)),
+    ]))
 elif scene == "effort":
     # Settings › Assistant: the effort picker, Jev (Instant) by default
     at(300, lambda: call("launch", "settings"))

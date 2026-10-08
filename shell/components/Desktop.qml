@@ -11,6 +11,10 @@ Item {
     property string aiApp: "desktop"
     property var lastGeo: ({})               // where each app's window was when it closed
     signal focusChanged2(var win)
+    signal contextMenu(real x, real y)
+    // 0 → 1 while editing home: windows slide away (spring, 320ms)
+    property real away: Os.editingHome ? 1 : 0
+    Behavior on away { NumberAnimation { duration: 320; easing.type: Easing.OutBack; easing.overshoot: 0.6 } }
 
     Component { id: winComp; AppWindow {} }
 
@@ -64,5 +68,11 @@ Item {
     function minimizeFocused() { if (focused) { var f = focused; f.minimize(); focused = null; f.focused = false; focusWindow(topmost()); } }
     function zoomFocused() { if (focused) focused.zoom(); }
 
-    MouseArea { anchors.fill: parent; z: -1; onPressed: desk.focusWindow(null) }
+    MouseArea {
+        anchors.fill: parent; z: -1
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onPressed: (m) => { desk.focusWindow(null); if (m.button === Qt.RightButton && !Os.editingHome) desk.contextMenu(m.x, m.y); }
+    }
+    Home { id: home; anchors.fill: parent; z: 1 }
+    property alias home: home
 }

@@ -35,6 +35,19 @@ Rectangle {
         }
     }
 
+    // a photo wallpaper, when one is picked: it crossfades in and is dimmed a little so the
+    // widgets and dock stay legible on it
+    property string pick: Os.settings.wallpaper
+    Image {
+        id: photo
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectCrop
+        sourceSize: Qt.size(1920, 1200)
+        source: wp.pick && wp.pick !== "graphite" ? Qt.resolvedUrl("../assets/photos/" + wp.pick + ".jpg") : ""
+        opacity: wp.pick !== "graphite" && status === Image.Ready ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
+        Rectangle { anchors.fill: parent; color: "black"; opacity: 0.22 }
+    }
     // film grain, so the dark gradients never band and the screen feels like a material
     Image {
         anchors.fill: parent

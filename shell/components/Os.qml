@@ -29,11 +29,44 @@ QtObject {
         property string jevKey: ""             // Jev is bring-your-own-key (TypeSafe)
         property string puterUser: ""          // signed-in Puter name; Fast to Ultra run through Puter.js
         property string appTrust2: ""         // per app: "all" | "risky" (default) | "never"
+        // ---- the home screen (DIRECTION §13) ----
+        property string homeLayout: ""         // JSON [{uid, kind, size, x, y}]; empty = the default home
+        property string wallpaper: "graphite"  // "graphite" or a photo name from assets/photos
+        property int dockSize: 1               // 0 small, 1 medium, 2 large
+        property int dockMag: 2                // 0 off, 1 subtle, 2 full
+        property bool dockBacking: true        // dark grey slab, or floating icons
+        property bool dockAutohide: false
+        property bool barSeconds: false
+        property bool barDate: true
+        property int winRadius: 12
     }
     // Risky means deleting, sending, paying or sharing; those always ask, whatever this says.
     function trust(app) { try { return JSON.parse(settings.appTrust)[app] || "risky"; } catch (e) { return "risky"; } }
     function setTrust(app, v) { var t = {}; try { t = JSON.parse(settings.appTrust); } catch (e) {} t[app] = v; settings.appTrust = JSON.stringify(t); }
     readonly property string name: settings.assistantName || "Assistant"
+
+    // ---- home widgets: sizes are S 2×2, M 4×2, L 4×4 on a 76px unit with 24px gutters ----
+    property bool editingHome: false
+    readonly property var widgetSizes: ({ S: [152, 152], M: [328, 152], L: [328, 328] })
+    readonly property var defaultHome: [
+        { uid: 1, kind: "clock", size: "M", x: 72, y: 64 },
+        { uid: 2, kind: "weather", size: "S", x: 424, y: 64 },
+        { uid: 3, kind: "upnext", size: "M", x: 72, y: 240 },
+        { uid: 4, kind: "system", size: "S", x: 424, y: 240 },
+        { uid: 5, kind: "nowplaying", size: "M", x: -400, y: 64 },
+        { uid: 6, kind: "assistant", size: "M", x: -400, y: 240 } ]
+    property var widgets: []
+    function loadHome() { try { widgets = settings.homeLayout ? JSON.parse(settings.homeLayout) : defaultHome.slice(); } catch (e) { widgets = defaultHome.slice(); } }
+    function saveHome(list) { widgets = list; settings.homeLayout = JSON.stringify(list); }
+    function updateWidget(uid, f) { saveHome(widgets.map(function (w) { return w.uid === uid ? Object.assign({}, w, f) : w; })); }
+    function removeWidget(uid) { saveHome(widgets.filter(function (w) { return w.uid !== uid; })); }
+    function addWidget(kind, size, x, y) {
+        var uid = 1; widgets.forEach(function (w) { uid = Math.max(uid, w.uid + 1); });
+        saveHome(widgets.concat([{ uid: uid, kind: kind, size: size, x: x, y: y, fresh: true }]));
+        return uid;
+    }
+    function resetHome() { settings.homeLayout = ""; widgets = defaultHome.slice(); }
+    Component.onCompleted: loadHome()
     property bool vision: false
     property bool demo: false
     property bool demoInstalls: false             // recorder/dev: stand-in installs when the helper isn't running
@@ -82,8 +115,8 @@ QtObject {
 
     readonly property var months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     readonly property var days: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    function clock(d) {
-        var h = d.getHours(), m = d.getMinutes();
-        return (h % 12 || 12) + ":" + (m < 10 ? "0" : "") + m + (h < 12 ? " AM" : " PM");
+    function clock(d, seconds) {
+        var h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
+        return (h % 12 || 12) + ":" + (m < 10 ? "0" : "") + m + (seconds ? ":" + (s < 10 ? "0" : "") + s : "") + (h < 12 ? " AM" : " PM");
     }
 }

@@ -8,8 +8,8 @@ import "../js/art.js" as Art
 Item {
     id: dock
     property var items: []            // [{id, icon, title}] or "-" for the separator
-    property real base: 54
-    property real maxScale: 1.6
+    property real base: [44, 54, 64][Os.settings.dockSize] || 54
+    property real maxScale: [1, 1.25, 1.6][Os.settings.dockMag] || 1
     property real reach: 3                // icons each side the falloff spans
     property real mouseX: -1              // raw pointer, in the un-magnified layout
     property real mx: -1                  // smoothed pointer
@@ -57,7 +57,8 @@ Item {
         return x + 2 + base / 2;
     }
 
-    RectangularShadow { anchors.fill: plate; radius: plate.radius; blur: 22; offset.y: 8; color: Qt.rgba(0, 0, 0, 0.35) }
+    // the backing can be switched off for floating icons; it is never glass
+    RectangularShadow { anchors.fill: plate; radius: plate.radius; blur: 22; offset.y: 8; color: Qt.rgba(0, 0, 0, 0.35); opacity: plate.opacity }
     Rectangle {
         id: plate
         anchors.bottom: parent.bottom
@@ -67,6 +68,8 @@ Item {
         width: row.width + 12
         radius: 22
         color: Theme.dock
+        opacity: Os.settings.dockBacking ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 200 } }
         border.color: Theme.hairline; border.width: 1
         Rectangle { x: 20; width: parent.width - 40; height: 1; y: 1; color: Qt.rgba(1, 1, 1, 0.06) }
     }

@@ -30,7 +30,15 @@ Item {
     readonly property real dx: (dockPoint.x - (x + width / 2)) * (1 - k)
     readonly property real dy: (dockPoint.y - (y + height / 2)) * (1 - k)
     property real appear: 1     // opening: 0.94 → 1 with a fade, 300 ms
+    // Edit home: each window slides off toward its nearer side edge
+    readonly property real away: parent && parent.away !== undefined ? parent.away : 0
+    readonly property real awayX: {
+        if (!parent || away === 0) return 0;
+        var left = x + width / 2 < parent.width / 2;
+        return (left ? -(x + width + 60) : parent.width - x + 60) * away;
+    }
     transform: [
+        Translate { x: w.awayX },
         Scale { origin.x: w.width / 2; origin.y: w.height / 2; xScale: (0.08 + 0.92 * w.k) * (0.94 + 0.06 * w.appear); yScale: (0.06 + 0.94 * w.k) * (0.94 + 0.06 * w.appear) },
         Translate { x: w.dx; y: w.dy }
     ]

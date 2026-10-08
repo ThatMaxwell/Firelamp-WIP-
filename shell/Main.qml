@@ -72,9 +72,15 @@ Window {
     function settingsScroll(y) { var s = desktop.get("settings"); if (s && s.content) s.content.scrollTo(y); }
     function timelineOpen(on) { Os.timelineToggle(on); }
     function expandActivity(i) { var n = 0; for (var j = 0; j < Os.activity.count; j++) if (Os.activity.get(j).kind === "milestone" && n++ === i) return Os.activity.setProperty(j, "expanded", true); }
+    function editHome(on, tab) { if (tab) editHome.tab = tab; else if (on) editHome.tab = "Widgets"; Os.editingHome = on; bar.closeMenu(); }
+    function sheetTab(t) { editHome.tab = t; }
+    function addWidget(kind, size) { editHome.add(kind, size); }
+    function desktopMenu(x, y) { desktop.contextMenu(x, y - Theme.menubarH); }
+    function resetHome() { Os.resetHome(); }
+    function setSetting(k, v) { Os.settings[k] = v; }
     property real probeX: -1
     property real probeY: -1
-    function probe(name) { var n = Tree.find(screen, { name: name }); probeX = n ? n.bounds.x + n.bounds.w / 2 : -1; probeY = n ? n.bounds.y + n.bounds.h / 2 : -1; }
+    function probe(name) { var n = Tree.find(win.contentItem, { name: name }); probeX = n ? n.bounds.x + n.bounds.w / 2 : -1; probeY = n ? n.bounds.y + n.bounds.h / 2 : -1; }
     function pointAt(x, y, label, w) {
         if (!cursor.shown) cursor.show(Qt.point(x - 260, y + 180));
         cursor.moveTo(x, y, function () { cursor.aim(label, function () { cursor.click(function () { cursor.clearTarget(); }); }); }, w || 40);
@@ -98,6 +104,10 @@ Window {
             anchors.fill: parent
             anchors.topMargin: Theme.menubarH
             onFocusChanged2: (w) => bar.appName = w ? w.title : "Desktop"
+            onContextMenu: (x, y) => bar.openAt(x, y + Theme.menubarH, [
+                { label: "Edit Home…", sc: "⌘E", action: function () { win.editHome(true); } },
+                { label: "Change Wallpaper…", action: function () { win.editHome(true, "Wallpaper"); } }, "-",
+                { label: "Display Settings…" } ])
             Component.onCompleted: {
                 var r = {};
                 win.apps.forEach(function (a) { r[a.id] = Object.assign({ source: Qt.resolvedUrl("apps/" + a.src + ".qml") }, a); });
@@ -109,7 +119,9 @@ Window {
             id: dock
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: screen.booted ? 7 : -110
+            // autohide: tucked away until your pointer reaches the bottom edge
+            readonly property bool tucked: Os.settings.dockAutohide && !Os.editingHome && (win.lastY < 0 || win.lastY < win.height - (dock.height + 20))
+            anchors.bottomMargin: screen.booted && !tucked ? 7 : -110
             Behavior on anchors.bottomMargin { SequentialAnimation { PauseAnimation { duration: 250 } NumberAnimation { duration: 900; easing.type: Easing.OutQuint } } }
             items: win.apps.filter(function (a) { return !a.noDock; }).map(function (a) { return { id: a.id, icon: a.icon, title: a.title }; })
                    .concat(["-", { id: "downloads", icon: "downloads", title: "Downloads" }, { id: "trash", icon: "trash", title: "Trash" }])
@@ -123,6 +135,8 @@ Window {
             Behavior on y { SequentialAnimation { PauseAnimation { duration: 150 } NumberAnimation { duration: 700; easing.type: Easing.OutQuint } } }
         }
     }
+
+    EditHome { id: editHome; anchors.fill: parent; z: 30; home: desktop.home }
 
     // ---- everything above the desktop: the AI's own layer ----
     Capsule {
@@ -217,11 +231,12 @@ Window {
     }
 
     Shortcut { sequences: ["Esc"]; context: Qt.ApplicationShortcut
-        onActivated: { if (askBar.shown) askBar.close(); else if (control.open) control.open = false; else if (bar.menu) bar.closeMenu(); else if (agent.mode !== "idle") agent.stop(); else { var a = desktop.get("assistant"); if (a && a.content && a.content.activity) a.content.activity = false; } } }
+        onActivated: { if (Os.editingHome) Os.editingHome = false; else if (askBar.shown) askBar.close(); else if (control.open) control.open = false; else if (bar.menu) bar.closeMenu(); else if (agent.mode !== "idle") agent.stop(); else { var a = desktop.get("assistant"); if (a && a.content && a.content.activity) a.content.activity = false; } } }
     Shortcut { sequences: ["Ctrl+Space"]; context: Qt.ApplicationShortcut; onActivated: agent.togglePause() }
     Shortcut { sequences: ["Alt+Space", "Ctrl+K"]; context: Qt.ApplicationShortcut; onActivated: askBar.open() }
     Shortcut { sequences: ["Ctrl+Alt+V"]; context: Qt.ApplicationShortcut; onActivated: Os.vision = !Os.vision }
     Shortcut { sequences: ["Ctrl+Alt+T"]; context: Qt.ApplicationShortcut; onActivated: Os.timelineToggle(undefined) }
+    Shortcut { sequences: ["Meta+E"]; context: Qt.ApplicationShortcut; onActivated: win.editHome(!Os.editingHome) }
     Shortcut { sequences: ["Ctrl+W"]; context: Qt.ApplicationShortcut; onActivated: desktop.closeFocused() }
     Shortcut { sequences: ["Ctrl+M"]; context: Qt.ApplicationShortcut; onActivated: desktop.minimizeFocused() }
 
