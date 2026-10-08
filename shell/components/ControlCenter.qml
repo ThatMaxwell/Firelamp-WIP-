@@ -102,7 +102,7 @@ Item {
                         width: 28; height: 28; radius: 14
                         color: bm.containsMouse ? Qt.lighter(Theme.surface3, 1.25) : Theme.surface3
                         scale: bm.pressed ? 0.97 : 1
-                        Glyph { anchors.centerIn: parent; width: 12; height: 12; name: parent.modelData[0]; color: Theme.text2 }
+                        Glyph { anchors.centerIn: parent; width: 12; height: 12; name: parent.modelData[0]; color: Theme.text }
                         MouseArea { id: bm; anchors.fill: parent; hoverEnabled: true; onClicked: parent.modelData[2]() }
                     }
                 }
