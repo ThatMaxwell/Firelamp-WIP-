@@ -67,7 +67,27 @@
 
   function startHero() {
     $$('.hero .rise').forEach((n, i) => n.style.setProperty('--d', i * 90));
-    setTimeout(() => cursor.wake(), 1600);
+    setTimeout(selectWord, 1500);
+  }
+
+  // the fire cursor flies in and selects "cursor." the way you'd select text
+  const sel = $('#selWord');
+  async function selectWord() {
+    if (reduce) { sel.style.setProperty('--sel', 1); return; }
+    cursor.wake();
+    const r = () => sel.getBoundingClientRect();
+    cursor.hold(r().left - 4, r().top + r().height * 0.55);
+    for (let i = 0; i < 80 && !cursor.near(); i++) await wait(25);
+    cursor.click(); await wait(120);
+    const t0 = performance.now(), dur = 520;
+    await new Promise(done => (function drag(t) {
+      const k = Math.min(1, (t - t0) / dur), e = k * k * (3 - 2 * k), b = r();
+      sel.style.setProperty('--sel', e.toFixed(3));
+      cursor.hold(b.left - 4 + (b.width + 4) * e, b.top + b.height * 0.55);
+      k < 1 ? requestAnimationFrame(drag) : done();
+    })(t0));
+    await wait(1100);
+    cursor.release();
   }
 
   /* ---------- statement: words light up as you read down ---------- */
@@ -82,10 +102,9 @@
   function onScroll() {
     ticking = false;
     nav.classList.toggle('solid', scrollY > 20);
-    // hero screen: tilted back, then flat by the time it's well in view
-    const r = screen.getBoundingClientRect(), vh = innerHeight;
-    const p = Math.min(1, Math.max(0, (r.top - vh * 0.12) / (vh * 0.75)));
-    tilt.style.setProperty('--tilt', p.toFixed(3));
+    // hero screen eases back a touch as you scroll past it
+    const vh = innerHeight;
+    tilt.style.setProperty('--tilt', Math.min(1, scrollY / vh).toFixed(3));
     // statement words
     const wr = words.getBoundingClientRect(), ws = $$('.w', words);
     const q = Math.min(1, Math.max(0, (vh * 0.78 - wr.top) / (wr.height + vh * 0.25)));
@@ -95,18 +114,16 @@
   addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
   addEventListener('resize', onScroll);
 
-  /* ---------- steps: the sticky screen follows the text ---------- */
-  const media = $$('.sm');
-  const stepIO = new IntersectionObserver(es => es.forEach(e => {
-    if (!e.isIntersecting) return;
-    const s = e.target.dataset.s;
-    $$('.step').forEach(n => n.classList.toggle('on', n === e.target));
-    media.forEach(m => {
-      const on = m.dataset.s === s; m.classList.toggle('on', on);
-      if (m.tagName === 'VIDEO') { if (on) { m.preload = 'auto'; m.play().catch(() => {}); } else m.pause(); }
-    });
-  }), { rootMargin: '-45% 0px -45% 0px' });
-  $$('.step').forEach(n => stepIO.observe(n));
+  /* ---------- the story: reveal once, play footage only while it's on screen ---------- */
+  const revealIO = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('in'); revealIO.unobserve(e.target); }
+  }), { rootMargin: '0px 0px -12% 0px' });
+  $$('.reveal').forEach(n => revealIO.observe(n));
+  const clipIO = new IntersectionObserver(es => es.forEach(e => {
+    const v = e.target;
+    if (e.isIntersecting) { v.preload = 'auto'; v.play().catch(() => {}); } else v.pause();
+  }), { threshold: 0.35 });
+  $$('.clip').forEach(v => clipIO.observe(v));
 
   /* ---------- brain → reflexes pipeline ---------- */
   const pipe = $('#pipe'), plan = $('.plan', pipe), acts = $('.acts', pipe);
@@ -137,7 +154,7 @@
     const el = $('#pageCursor'), tag = $('.pc-tag', el);
     let x = innerWidth * 0.8, y = innerHeight * 0.4, tx = x, ty = y, vx = 0, vy = 0;
     let paused = false, awake = false, asleep = false, nextAt = 0, raf;
-    const targets = () => $$('.hero-h, .hero-sub, .btn, .reveal-words .w.lit, .step.on h3, .step.on p, .stack-p, .pipe-v span, .lede, .keycap, #aiName, .end-h, .num, .h2')
+    const targets = () => $$('.hero-h, .hero-sub, .btn, .reveal-words .w.lit, .feat h3, .feat-text p, .stack-p, .pipe-v span, .lede, .keycap, #aiName, .end-h, .num, .h2')
       .filter(n => { const r = n.getBoundingClientRect(); return r.width && r.bottom > 80 && r.top < innerHeight - 40; });
     function pick(t) {
       const ts = targets();
@@ -169,7 +186,7 @@
     // hand the cursor a fixed spot; it stays there until released
     function hold(px, py) { tx = px; ty = py; nextAt = Infinity; }
     function release() { nextAt = 0; }
-    const near = () => Math.hypot(tx - x, ty - y) < 6;
+    const near = () => Math.hypot(tx - x, ty - y) < 14;
     return { wake, sleep, setPaused, setName, hold, release, click, near, get paused() { return paused; } };
   })();
 

@@ -53,7 +53,7 @@
     </div>
     <div class="sc sc-b">
       <p class="b-lead" data-i18n="f.b">So AI agents use them through screenshots.</p>
-      <div class="b-shots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="b-shots" aria-hidden="true"><i></i></div>
       <p class="b-word"><span data-i18n="f.b1">Screenshot.</span><span data-i18n="f.b2">Guess.</span><span data-i18n="f.b3">Click.</span><span data-i18n="f.b4">Repeat.</span><span data-i18n="f.b1">Screenshot.</span><span data-i18n="f.b2">Guess.</span></p>
     </div>
     <div class="sc sc-c">
@@ -102,23 +102,25 @@
   </header>
 
   <main id="top">
-    <!-- hero -->
+    <!-- hero: the product, big -->
     <section class="hero">
       <p class="meta rise" data-i18n="hero.meta">Firelamp OS · Arch Linux · Coming soon</p>
-      <h1 class="hero-h">
-        <span class="line"><span class="rise" data-i18n="hero.l1">Your computer,</span></span>
-        <span class="line"><span class="rise" data-i18n="hero.l2">now with a second</span> <span class="ember-wrap"><span class="rise ember-word" data-i18n="hero.l3">cursor.</span><svg class="circle boil" viewBox="0 0 300 120" preserveAspectRatio="none" aria-hidden="true"><path d="M170 14 C90 4 18 22 10 58 C4 92 80 112 160 108 C240 104 296 84 290 52 C284 22 220 8 120 16" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg></span></span>
-      </h1>
-      <div class="hero-row">
-        <p class="hero-sub rise" data-i18n="hero.sub">Firelamp is a Linux desktop built so an AI can use it the way you do. It sees every window, moves its own cursor, and asks before anything you can't undo.</p>
-        <div class="hero-cta rise">
-          <button class="btn" id="watch"><svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span data-i18n="cta.film">Watch the film</span></button>
-          <a class="link" href="https://github.com/ThatMaxwell/Firelamp-WIP-" target="_blank" rel="noopener"><span data-i18n="cta.gh">Follow the build</span> ↗</a>
+      <div class="hero-top">
+        <h1 class="hero-h">
+          <span class="line"><span class="rise" data-i18n="hero.l1">Your computer,</span></span>
+          <span class="line"><span class="rise" data-i18n="hero.l2">now with a second</span> <span class="sel-wrap" id="selWord"><span class="rise" data-i18n="hero.l3">cursor.</span></span></span>
+        </h1>
+        <div class="hero-side">
+          <p class="hero-sub rise" data-i18n="hero.sub">Firelamp is a Linux desktop built so an AI can use it the way you do. It sees every window, moves its own cursor, and asks before anything you can't undo.</p>
+          <div class="hero-cta rise">
+            <button class="btn" id="watch"><svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span data-i18n="cta.film">Watch the film</span></button>
+            <a class="link" href="https://github.com/ThatMaxwell/Firelamp-WIP-" target="_blank" rel="noopener"><span data-i18n="cta.gh">Follow the build</span> ↗</a>
+          </div>
         </div>
       </div>
       <figure class="screen" id="heroScreen">
         <div class="screen-tilt">
-          <video class="screen-media" muted loop playsinline autoplay preload="metadata" poster="media/desktop.jpg"><source src="media/hero-loop.webm" type="video/webm"><source src="media/hero-loop.mp4" type="video/mp4"></video>
+          <video class="screen-media" muted loop playsinline autoplay preload="auto" poster="media/desktop.jpg"><source src="media/hero-loop.webm" type="video/webm"><source src="media/hero-loop.mp4" type="video/mp4"></video>
         </div>
       </figure>
     </section>
@@ -128,23 +130,29 @@
       <p class="reveal-words" data-i18n="st.text">Most AI agents use your computer through screenshots. They take a picture, guess what it means, click, and take another. Firelamp doesn't guess. The OS tells the AI exactly what's on screen, the moment it changes.</p>
     </section>
 
-    <!-- four things, sticky media -->
-    <section class="steps" id="how">
-      <div class="steps-media">
-        <div class="frame">
-          <img class="sm on" data-s="0" src="media/vision.jpg" alt="" loading="lazy">
-          <video class="sm" data-s="1" muted loop playsinline preload="none" poster="media/cursor.jpg"><source src="media/cursor.webm" type="video/webm"><source src="media/cursor.mp4" type="video/mp4"></video>
-          <img class="sm" data-s="2" src="media/ask.jpg" alt="" loading="lazy">
-          <img class="sm" data-s="3" src="media/timeline.jpg" alt="" loading="lazy">
-        </div>
-      </div>
-      <div class="steps-text">
-        <article class="step" data-s="0"><span class="num">01</span><h3 data-i18n="s1.t">It reads the screen.</h3><p data-i18n="s1.p">Every window, button and text field reaches the AI already labeled, with its exact position. Nothing to decode, nothing to guess.</p><img class="m-only" src="media/vision.jpg" alt="" loading="lazy"></article>
-        <article class="step" data-s="1"><span class="num">02</span><h3 data-i18n="s2.t">It has its own cursor.</h3><p data-i18n="s2.p">The fire cursor moves, clicks and types right next to yours. Keep working, or sit back and watch.</p><img class="m-only" src="media/cursor.jpg" alt="" loading="lazy"></article>
-        <article class="step" data-s="2"><span class="num">03</span><h3 data-i18n="s3.t">It asks first.</h3><p data-i18n="s3.p">Deleting files, sending messages, paying for things. The OS itself stops and asks you, every single time.</p><img class="m-only" src="media/ask.jpg" alt="" loading="lazy"></article>
-        <article class="step" data-s="3"><span class="num">04</span><h3 data-i18n="s4.t">It shows its work.</h3><p data-i18n="s4.p">Everything it did lands in a timeline you can actually read: what, where, and why.</p><img class="m-only" src="media/timeline.jpg" alt="" loading="lazy"></article>
-      </div>
-    </section>
+    <!-- the story: sees, moves, asks, stop, log. Each one real footage. -->
+    <article class="feat feat-bleed reveal">
+      <div class="feat-text"><span class="num">01</span><h3 data-i18n="s1.t">It reads the screen.</h3><p data-i18n="s1.p">Every window, button and text field reaches the AI already labeled, with its exact position. Nothing to decode, nothing to guess.</p></div>
+      <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/vision.jpg"><source src="media/vision.webm" type="video/webm"><source src="media/vision.mp4" type="video/mp4"></video></figure>
+    </article>
+    <article class="feat reveal">
+      <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/cursor.jpg"><source src="media/cursor.webm" type="video/webm"><source src="media/cursor.mp4" type="video/mp4"></video></figure>
+      <div class="feat-text"><span class="num">02</span><h3 data-i18n="s2.t">It has its own cursor.</h3><p data-i18n="s2.p">The fire cursor moves, clicks and types right next to yours. Keep working, or sit back and watch.</p></div>
+    </article>
+    <article class="feat feat-r reveal">
+      <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/ask.jpg"><source src="media/ask.webm" type="video/webm"><source src="media/ask.mp4" type="video/mp4"></video></figure>
+      <div class="feat-text"><span class="num">03</span><h3 data-i18n="s3.t">It asks first.</h3><p data-i18n="s3.p">Deleting files, sending messages, paying for things. The OS itself stops and asks you, every single time.</p></div>
+    </article>
+    <article class="feat control reveal" id="control">
+      <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/pause.jpg"><source src="media/pause.webm" type="video/webm"><source src="media/pause.mp4" type="video/mp4"></video></figure>
+      <div class="feat-text"><span class="num">04</span><h3 data-i18n="ctl.h">You can stop it. Instantly.</h3><p data-i18n="ctl.p">See the little fire cursor wandering around this page? Press Esc, or the key below. That's how pausing works in Firelamp, too.</p>
+        <button class="keycap" id="escKey"><span>esc</span></button>
+        <p class="ctl-state" id="ctlState" data-i18n="ctl.run">It's running.</p></div>
+    </article>
+    <article class="feat feat-r reveal">
+      <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/timeline.jpg"><source src="media/timeline.webm" type="video/webm"><source src="media/timeline.mp4" type="video/mp4"></video></figure>
+      <div class="feat-text"><span class="num">05</span><h3 data-i18n="s4.t">It shows its work.</h3><p data-i18n="s4.p">Everything it did lands in a timeline you can actually read: what, where, and why.</p></div>
+    </article>
 
     <!-- brain + reflexes -->
     <section class="stack">
@@ -164,14 +172,6 @@
         <div class="pipe-row"><span class="pipe-k" data-i18n="pipe.brain">brain</span><span class="pipe-v plan"></span></div>
         <div class="pipe-row"><span class="pipe-k">jev</span><span class="pipe-v acts"></span></div>
       </div>
-    </section>
-
-    <!-- control -->
-    <section class="control" id="control">
-      <h2 class="h2" data-i18n="ctl.h">You can stop it. Instantly.</h2>
-      <p class="lede" data-i18n="ctl.p">See the little fire cursor wandering around this page? Press Esc, or the key below. That's how pausing works in Firelamp, too.</p>
-      <button class="keycap" id="escKey"><span>esc</span></button>
-      <p class="ctl-state" id="ctlState" data-i18n="ctl.run">It's running.</p>
     </section>
 
     <!-- name -->
