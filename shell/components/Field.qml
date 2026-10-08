@@ -5,6 +5,7 @@ Item {
     id: f
     property alias text: input.text
     property string placeholder
+    property bool placeholderOnFocus: true   // false: a quiet hint that steps aside once the caret is in
     property string label: placeholder
     property alias input: input
     property int pixelSize: 13
@@ -46,7 +47,7 @@ Item {
             text: f.placeholder
             color: Theme.text3
             font: input.font
-            visible: !input.text && !input.preeditText
+            visible: !input.text && !input.preeditText && (f.placeholderOnFocus || !input.activeFocus)
         }
     }
 }

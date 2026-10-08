@@ -9,6 +9,7 @@ Item {
     property int zTop: 10
     property int cascade: 0
     property string aiApp: "desktop"
+    property var lastGeo: ({})               // where each app's window was when it closed
     signal focusChanged2(var win)
 
     Component { id: winComp; AppWindow {} }
@@ -31,9 +32,11 @@ Item {
         // leave room on the right for the assistant, which lives there
         var room = get("assistant") && id !== "assistant" ? 440 : 0;
         if (app.place === "right" && opts.x === undefined) { opts.x = width - wd - 14; opts.y = 12; }
+        var g = lastGeo[id];
+        if (g && opts.x === undefined) { opts.x = g.x; opts.y = g.y; wd = g.w; ht = g.h; }
         var x = opts.x !== undefined ? opts.x : Math.max(16, Math.round((width - room - wd) / 2 + (cascade % 4) * 24 - 36));
         var y = opts.y !== undefined ? opts.y : Math.max(16, Math.round((height - 88 - ht) / 2 + (cascade % 4) * 22 - 24));
-        cascade++;
+        if (!g) cascade++;
         var win = winComp.createObject(desk, { app: app, x: x, y: y, width: wd, height: ht, z: ++zTop, opts: opts });
         win.activated.connect(function () { focusWindow(win); });
         win.closed.connect(function () { remove(win); });
@@ -46,6 +49,7 @@ Item {
         return win;
     }
     function remove(win) {
+        lastGeo[win.app.id] = { x: win.x, y: win.y, w: win.width, h: win.height };
         windows = windows.filter(function (o) { return o !== win; });
         if (!get(win.app.id)) Os.dock.setRunning(win.app.id, false);
         if (focused === win) { focused = null; focusWindow(topmost()); }

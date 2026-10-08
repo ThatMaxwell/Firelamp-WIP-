@@ -53,6 +53,8 @@ Item {
         if (r.kind === "app") launch(r.id); else go(r.title);
     }
 
+    // the desktop dims to 85% so the bar reads as the one thing in front
+    Rectangle { anchors.fill: parent; color: "black"; opacity: 0.15 }
     MouseArea {
         anchors.fill: parent; hoverEnabled: true; onPressed: ask.close()
         onPositionChanged: (m) => ask.track(m.x, m.y)
@@ -64,7 +66,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         y: parent.height * 0.2 + (ask.shown ? 0 : -4)
         Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutQuint } }
-        RectangularShadow { anchors.fill: bg; radius: 14; blur: 50; offset.y: 20; color: Qt.rgba(0, 0, 0, 0.5) }
+        RectangularShadow { anchors.fill: bg; radius: 14; blur: 70; offset.y: 24; color: Qt.rgba(0, 0, 0, 0.55) }
         Rectangle { id: bg; anchors.fill: parent; radius: 14; color: Theme.surface1; border.color: Theme.hairline2; border.width: 1 }
         MouseArea { anchors.fill: parent }
 
@@ -100,15 +102,26 @@ Item {
                         Logo { visible: rowItem.ai; anchors.centerIn: parent; width: 13; height: 19 }
                         Image { visible: !rowItem.ai; anchors.fill: parent; sourceSize: Qt.size(40, 40); source: rowItem.ai ? "" : Art.icon(rowItem.modelData.icon) }
                     }
+                    // a typed request reads as a sentence: "Ask Juniper “…”", the verb quieter
+                    readonly property bool asking: ai && modelData.sub !== "Suggested"
                     Text {
-                        x: 40; width: parent.width - 170; anchors.verticalCenter: parent.verticalCenter
-                        text: rowItem.modelData.title; elide: Text.ElideRight
+                        x: 40; width: parent.width - 150; anchors.verticalCenter: parent.verticalCenter
+                        textFormat: Text.StyledText
+                        text: rowItem.asking ? "<font color=\"" + Theme.text2 + "\">Ask " + Os.name + "</font> “" + rowItem.modelData.title.replace(/&/g, "&amp;").replace(/</g, "&lt;") + "”" : rowItem.modelData.title
+                        elide: Text.ElideRight
                         color: Theme.text; font.family: Theme.font; font.pixelSize: 14; font.weight: rowItem.index === 0 ? Font.Medium : Font.Normal
                     }
                     Text {
+                        visible: ask.sel !== rowItem.index
                         anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter
-                        text: ask.sel === rowItem.index ? (rowItem.ai ? "return to ask" : "return to open") : rowItem.modelData.sub
+                        text: rowItem.asking ? "" : rowItem.modelData.sub
                         color: Theme.text3; font.family: Theme.font; font.pixelSize: 12
+                    }
+                    Rectangle {
+                        visible: ask.sel === rowItem.index
+                        anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter
+                        width: rk.implicitWidth + 12; height: 20; radius: 5; color: Theme.surface2; border.color: Theme.hairline2; border.width: 1
+                        Text { id: rk; anchors.centerIn: parent; text: "return"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.Medium }
                     }
                     MouseArea { anchors.fill: parent; hoverEnabled: true; onPositionChanged: (m) => { var p = mapToItem(ask, m.x, m.y); ask.track(p.x, p.y); if (ask.armed) ask.sel = rowItem.index; } onClicked: ask.pick(rowItem.index) }
                 }

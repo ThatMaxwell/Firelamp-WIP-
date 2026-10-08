@@ -45,6 +45,8 @@ Item {
     SequentialAnimation { id: settle; PauseAnimation { duration: 40 } ScriptAction { script: { var cb = fc.onArrive; fc.onArrive = null; if (cb) cb(); } } }
 
     function moveTo(x, y, done, w) {
+        // coming back from faded: appear at rest for ~90 ms, then move, so it never pops in mid-flight
+        var fromRest = pointer.opacity < 0.95 && !mover.running;
         wake();
         var dx = x - px, dy = y - py, dist = Math.hypot(dx, dy);
         if (dist < 1) { onArrive = done; settle.restart(); return; }
@@ -55,8 +57,10 @@ Item {
         cx = sx + dx / 2 - (dy / dist) * bow; cy = sy + dy / 2 + (dx / dist) * bow;
         onArrive = done;
         mover.duration = ms / (Os.settings.cursorSpeed || 1);
-        mover.restart();
+        if (fromRest) { mover.stop(); u = 0; px = sx; py = sy; rest.restart(); }
+        else mover.restart();
     }
+    SequentialAnimation { id: rest; PauseAnimation { duration: 90 } ScriptAction { script: mover.restart() } }
     // a deliberate stroke at a set pace (used when the cursor signs its name)
     function glide(x, y, ms, done) {
         wake();

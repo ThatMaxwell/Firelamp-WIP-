@@ -77,8 +77,9 @@ Item {
     Column {
         id: col
         anchors.horizontalCenter: parent.horizontalCenter
-        y: parent.height * 0.27
-        width: 560
+        // one block, optically centred a little above the middle
+        y: Math.round(parent.height * 0.45 - implicitHeight / 2)
+        width: 640
         spacing: 0
 
         // the logo, boiling: the only animated thing on screen until you type
@@ -87,23 +88,23 @@ Item {
             width: 54; height: 80; anchors.horizontalCenter: parent.horizontalCenter
             GlowLogo { anchors.fill: parent; glow: 0.35 }
         }
-        Item { width: 1; height: 34 }
+        Item { width: 1; height: 36 }
+        // once signed, the hero line becomes the assistant saying its own name
         Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: "Welcome to Firelamp"
-            color: Theme.text3; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium
-        }
-        Item { width: 1; height: 10 }
-        Text {
+            id: headline
             width: parent.width; horizontalAlignment: Text.AlignHCenter
-            text: "Your computer has a second cursor now."
+            text: nc.stage === "signed" ? "Hi. I’m " + nc.typed + "." : "Your computer has a second cursor now."
             color: Theme.text; font.family: Theme.font; font.pixelSize: 30; font.weight: Font.DemiBold
+            Behavior on text { SequentialAnimation {
+                NumberAnimation { target: headline; property: "opacity"; to: 0; duration: 180 }
+                PropertyAction {}
+                NumberAnimation { target: headline; property: "opacity"; to: 1; duration: 320; easing.type: Easing.OutQuint } } }
         }
         Item { width: 1; height: 10 }
         Text {
             id: sub
             width: parent.width; horizontalAlignment: Text.AlignHCenter
-            text: nc.stage === "signed" ? "Hi. I’m " + nc.typed + ". Ask me for anything, and watch me do it." : "Give it a name. It’s what you’ll call it, and how it signs its work."
+            text: nc.stage === "signed" ? "Ask me for anything, and watch me do it." : "Give it a name. It’s what you’ll call it, and how it signs its work."
             color: Theme.text2; font.family: Theme.font; font.pixelSize: 15
             Behavior on text { SequentialAnimation {
                 NumberAnimation { target: sub; property: "opacity"; to: 0; duration: 140 }
@@ -121,7 +122,8 @@ Item {
                 anchors.fill: parent
                 align: TextInput.AlignHCenter
                 pixelSize: 40
-                placeholder: "Name"
+                placeholder: "Type a name"
+                placeholderOnFocus: false
                 textColor: Theme.text
                 input.font.weight: Font.DemiBold
                 input.maximumLength: 20
@@ -173,7 +175,10 @@ Item {
                                   "M1 9 C 19 7, 33 12, 51 10 S 85 5, 99 9",
                                   "M1 10 C 17 7, 35 12, 53 8 S 83 7, 99 7"][ink.frame] }
             }
-            Timer { running: nc.shown && nc.stage !== "ask"; interval: 130; repeat: true; onTriggered: ink.frame = (ink.frame + 1) % 3 }
+            // the ink boils while it's being written and for 400 ms after the last click, then rests
+            Timer { running: nc.shown && (nc.stage === "signing" || inkTail.running); interval: 130; repeat: true; onTriggered: ink.frame = (ink.frame + 1) % 3 }
+            Timer { id: inkTail; interval: 400 }
+            Connections { target: nc; function onStageChanged() { if (nc.stage === "signed") inkTail.restart(); } }
         }
     }
 

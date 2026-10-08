@@ -98,9 +98,9 @@ Item {
                     model: [["pause", "⌃Space", function () { Os.agent.togglePause(); }], ["stop", "Esc", function () { Os.agent.stop(); }]]
                     Rectangle {
                         required property var modelData
-                        width: 30; height: 30; radius: 15
-                        color: bm.containsMouse ? Theme.surface3 : Theme.surface2
-                        opacity: aiRow.st === "idle" ? 0.45 : 1
+                        // the emergency controls: always clearly visible
+                        width: 28; height: 28; radius: 14
+                        color: bm.containsMouse ? Qt.lighter(Theme.surface3, 1.25) : Theme.surface3
                         scale: bm.pressed ? 0.97 : 1
                         Glyph { anchors.centerIn: parent; width: 12; height: 12; name: parent.modelData[0]; color: Theme.text2 }
                         MouseArea { id: bm; anchors.fill: parent; hoverEnabled: true; onClicked: parent.modelData[2]() }
