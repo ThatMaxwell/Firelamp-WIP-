@@ -49,6 +49,18 @@ QtObject {
     function setTrust(app, v) { var t = {}; try { t = JSON.parse(settings.appTrust); } catch (e) {} t[app] = v; settings.appTrust = JSON.stringify(t); }
     readonly property string name: settings.assistantName || "Assistant"
 
+    // ---- the live ISO: the shell covers Plasma, so it carries the way to the installer ----
+    property bool live: false                     // firelamp-desktops says /run/archiso exists
+    function checkLive() {
+        var x = new XMLHttpRequest();
+        x.onreadystatechange = function () { if (x.readyState === XMLHttpRequest.DONE && x.status === 200) os.live = !!JSON.parse(x.responseText).live; };
+        x.open("GET", "http://127.0.0.1:7341/live"); x.send();
+    }
+    function installOS() {
+        var x = new XMLHttpRequest(); x.open("POST", "http://127.0.0.1:7341/install-os"); x.send();
+        toast("install", "Opening the installer", "Firelamp OS installs from here. Your live session keeps running.");
+    }
+
     // ---- packs: one shared status, so first boot and Settings › Packs agree ----
     property var packStatus: ({})                 // id -> { installed, state, log, removing }
     property bool packHelper: false               // firelamp-desktops answered

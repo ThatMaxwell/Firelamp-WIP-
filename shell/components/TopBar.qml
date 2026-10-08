@@ -41,10 +41,11 @@ Rectangle {
     })
     function itemsFor(key) {
         if (key === "logo") return [
-            { label: "About Firelamp OS", action: function () { Os.desktop.open("about"); } }, "-",
+            { label: "About Firelamp OS", action: function () { Os.desktop.open("about"); } }, "-"].concat(
+            Os.live ? [{ label: "Install Firelamp OS…", action: function () { Os.installOS(); } }, "-"] : [], [
             { label: "System Settings…", action: function () { Os.desktop.open("settings"); } },
             { label: "Activity Timeline", sc: "⌥⌘T", action: function () { Os.timelineToggle(undefined); } }, "-",
-            { label: "Sleep" }, { label: "Restart…" }, { label: "Shut Down…" }, "-", { label: "Lock Screen", sc: "⌃⌘Q" }];
+            { label: "Sleep" }, { label: "Restart…" }, { label: "Shut Down…" }, "-", { label: "Lock Screen", sc: "⌃⌘Q" }]);
         if (key === "app") return [{ label: "About " + appName }, "-", { label: "Settings…", sc: "⌘,", action: function () { Os.desktop.open("settings"); } }, "-", { label: "Hide " + appName, sc: "⌘H" }, { label: "Quit " + appName, sc: "⌘Q", action: function () { Os.desktop.closeFocused(); } }];
         if (key === "control") return [{ label: "Focus", sc: "Off" }, { label: "Screen Mirroring" }, "-", { label: "Pause " + Os.name, sc: "⌃Space", action: function () { Os.agent.togglePause(); } }, { label: "Stop " + Os.name, sc: "Esc", action: function () { Os.agent.stop(); } }];
         if (key === "wifi") return [{ label: "Wi-Fi", sc: "On" }, "-", { label: "Hearth", sc: "●" }, { label: "Kitchen 5G" }, "-", { label: "Network Settings…" }];

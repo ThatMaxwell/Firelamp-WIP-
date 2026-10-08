@@ -31,10 +31,12 @@ for f in [*out.glob("*.png"), *out.glob("*.jpg")]:
 
 # first boot runs from scratch: splash, no name, then naming
 base = ["firelamp", "--windowed", "--reset"] if scene == "firstboot" else ["firelamp", "--nosplash", "--windowed", "--name=Juniper"]
-if scene in ("stuck", "autopause", "desktops", "edithome", "packs"):
+if scene in ("stuck", "autopause", "desktops", "edithome", "packs", "live"):
     base.append("--pointer")
 if scene in ("desktops", "packs"):
     base.append("--demo-installs")
+if scene == "live":
+    base.append("--live")
 app = QGuiApplication([*base, *sys.argv[3:]])
 engine = QQmlApplicationEngine()
 engine.warnings.connect(lambda ws: [print("QML:", w.toString(), file=sys.stderr) for w in ws])
@@ -361,6 +363,13 @@ elif scene == "packs":
              ("click", "Install Play pack"), ("point", 1240, 800, 600), ("wait", 800), ("still", "settings-packs"),
              ("do", lambda: call("setSetting", "packsAsked", False)), ("wait", 100), ("do", lambda: stop(0))]
     at(400, lambda: run(steps))
+elif scene == "live":
+    # the live ISO: Install Firelamp OS in the dock and the Firelamp menu
+    steps = [("wait", 1200), ("find", "Install Firelamp OS"), ("wait", 900), ("still", "live-dock"),
+             ("click", "Firelamp menu"), ("wait", 600), ("still", "live-menu"),
+             ("point", 900, 600, 500), ("do", lambda: tap(900, 600)), ("wait", 300),
+             ("click", "Install Firelamp OS"), ("wait", 900), ("still", "live-toast"), ("do", lambda: stop(0))]
+    at(300, lambda: (mouse(900, 600), pos.update(x=900, y=600), run(steps)))
 elif scene == "effort":
     # Settings › Assistant: the effort picker, Jev (Instant) by default
     at(300, lambda: call("launch", "settings"))

@@ -75,7 +75,7 @@ Rectangle {
                Component.onCompleted: root.userList = root.put(root.userList, index, { name: name, realName: realName, icon: icon }) } }
     Column {
         id: who
-        anchors.horizontalCenter: parent.horizontalCenter; y: root.height * 0.56; spacing: 14
+        anchors.horizontalCenter: parent.horizontalCenter; y: Math.round(root.height * 0.58 - 190); spacing: 14   // the field lands near 58%
         readonly property var u: root.userList[root.userIndex]
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter

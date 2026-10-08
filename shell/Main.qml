@@ -38,6 +38,7 @@ Window {
 
     function launch(id) {
         if (id === "downloads") id = "files";
+        if (id === "install") return Os.installOS();
         if (id === "trash") return;
         if (desktop.registry[id]) desktop.open(id);
     }
@@ -127,7 +128,8 @@ Window {
             anchors.bottomMargin: screen.booted && !tucked ? 7 : -110
             Behavior on anchors.bottomMargin { SequentialAnimation { PauseAnimation { duration: 250 } NumberAnimation { duration: 900; easing.type: Easing.OutQuint } } }
             items: win.apps.filter(function (a) { return !a.noDock; }).map(function (a) { return { id: a.id, icon: a.icon, title: a.title }; })
-                   .concat(["-", { id: "downloads", icon: "downloads", title: "Downloads" }, { id: "trash", icon: "trash", title: "Trash" }])
+                   .concat(["-"], Os.live ? [{ id: "install", icon: "install", title: "Install Firelamp OS" }] : [],
+                           [{ id: "downloads", icon: "downloads", title: "Downloads" }, { id: "trash", icon: "trash", title: "Trash" }])
             aiActiveId: agent.mode !== "idle" ? "assistant" : ""
             onLaunch: (id) => win.launch(id)
         }
@@ -248,6 +250,7 @@ Window {
         if (flag("reset")) Os.settings.assistantName = "";
         if (opt("name")) Os.settings.assistantName = opt("name");
         if (flag("demo-installs")) Os.demoInstalls = true;
+        if (flag("live")) Os.live = true; else Os.checkLive();
         Os.root = screen; Os.desktop = desktop; Os.dock = dock; Os.agent = agent; Os.cursor = cursor;
         if (flag("nosplash")) { if (!Os.settings.assistantName) nameCard.shown = true; else screen.booted = true; }
     }
