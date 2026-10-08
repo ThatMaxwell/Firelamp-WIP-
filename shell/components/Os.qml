@@ -27,6 +27,7 @@ QtObject {
         property string modelBalanced: ""
         property bool reasoning: false
         property string jevKey: ""             // Jev is bring-your-own-key (TypeSafe)
+        property string puterUser: ""          // signed-in Puter name; Fast to Ultra run through Puter.js
         property string appTrust2: ""         // per app: "all" | "risky" (default) | "never"
     }
     // Risky means deleting, sending, paying or sharing; those always ask, whatever this says.

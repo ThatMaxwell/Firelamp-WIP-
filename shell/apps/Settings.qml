@@ -101,23 +101,14 @@ Item {
                 Group {
                     id: brain
                     title: "Effort"
-                    // Jev answers instantly; each step up trades speed for a bigger model
+                    // one list, one choice: Jev answers instantly, each step down trades speed for a bigger model
                     readonly property var tiers: [
-                        { name: "Instant", model: "Jev by TypeSafe", hint: "Decides in milliseconds. The default." },
-                        { name: "Fast", pick: "modelFast", hint: "Your pick of a fast model, with web search." },
-                        { name: "Balanced", pick: "modelBalanced", hint: "Your pick of a second model." },
-                        { name: "High", model: "Grok 4.5", hint: "Fast and smart, sounds human." },
-                        { name: "Max", model: "Grok 4.6", hint: "More careful on long tasks." },
-                        { name: "Ultra", model: "Grok 4.7", hint: "The most capable. The slowest." } ]
-                    Item {
-                        width: parent ? parent.width : 0; height: 64
-                        Segmented {
-                            x: 16; anchors.verticalCenter: parent.verticalCenter
-                            options: brain.tiers.map(function (t) { return t.name; })
-                            current: Os.settings.effort
-                            onPicked: (i) => Os.settings.effort = i
-                        }
-                    }
+                        { name: "Instant", model: "Jev by TypeSafe", hint: "Decides in milliseconds" },
+                        { name: "Fast", pick: "modelFast", hint: "Your pick of a fast model, with web search" },
+                        { name: "Balanced", pick: "modelBalanced", hint: "Your pick of a second model" },
+                        { name: "High", model: "Grok 4.5", hint: "Fast and smart, sounds human" },
+                        { name: "Max", model: "Grok 4.6", hint: "More careful on long tasks" },
+                        { name: "Ultra", model: "Grok 4.7", hint: "The most capable, the slowest" } ]
                     Repeater {
                         model: brain.tiers
                         Item {
@@ -125,51 +116,72 @@ Item {
                             required property var modelData
                             required property int index
                             readonly property bool on: Os.settings.effort === index
-                            width: parent ? parent.width : 0; height: 44
-                            Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
-                            Rectangle { x: 16; width: 6; height: 6; radius: 3; anchors.verticalCenter: parent.verticalCenter; color: tr.on ? Theme.text : "transparent"; border.color: Theme.text3; border.width: tr.on ? 0 : 1 }
+                            readonly property bool jev: index === 0
+                            readonly property bool needsKey: jev && !Os.settings.jevKey
+                            property string aiName: modelData.name + " effort"; property string aiRole: "radio"
+                            function aiActivate() { Os.settings.effort = index; }
+                            width: parent ? parent.width : 0; height: jev ? 88 : 52
+                            Rectangle { visible: tr.index > 0; width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
+                            MouseArea { anchors.fill: parent; onClicked: tr.aiActivate() }
                             Column {
-                                x: 34; anchors.verticalCenter: parent.verticalCenter; spacing: 1
-                                Text { text: tr.modelData.name; color: tr.on ? Theme.text : Theme.text2; font.family: Theme.font; font.pixelSize: 13; font.weight: tr.on ? Font.Medium : Font.Normal }
-                                Text { text: tr.modelData.hint; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
+                                x: 16; y: 10; spacing: 2
+                                Text { text: tr.modelData.name; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: tr.on ? Font.DemiBold : Font.Medium }
+                                Row {
+                                    spacing: 6
+                                    Text { visible: !!tr.modelData.model; text: tr.needsKey ? "Needs a key" : tr.modelData.model || ""; color: Theme.text2; font.family: Theme.font; font.pixelSize: 11 }
+                                    Text { visible: !!tr.modelData.model; text: "·"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
+                                    Text { text: tr.modelData.hint; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
+                                }
                             }
-                            // named tiers show their model; the open ones take any model you type
-                            Text {
-                                visible: !tr.modelData.pick
-                                anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
-                                text: tr.modelData.model || ""; color: Theme.text2; font.family: Theme.font; font.pixelSize: 12
+                            // Jev is bring-your-own-key: the key lives in its row
+                            Row {
+                                visible: tr.jev; x: 16; y: 52; spacing: 10
+                                Rectangle {
+                                    width: 220; height: 26; radius: 6; color: Theme.surface0; border.color: jk.input.activeFocus ? Theme.line3 : Theme.hairline; border.width: 1
+                                    Field {
+                                        id: jk; x: 8; width: parent.width - 16; height: parent.height; pixelSize: 11
+                                        label: "Jev API key"; placeholder: "Paste your Jev API key"
+                                        input.echoMode: TextInput.Password
+                                        Component.onCompleted: text = Os.settings.jevKey
+                                        onTextChanged: Os.settings.jevKey = text.trim()
+                                    }
+                                }
+                                Text {
+                                    property string aiName: "Get a Jev key"; property string aiRole: "link"
+                                    function aiActivate() { Qt.openUrlExternally("https://typesafe.ai"); }
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "Get a key ›"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11
+                                    MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor; onClicked: parent.aiActivate() }
+                                }
                             }
-                            Rectangle {
-                                visible: !!tr.modelData.pick
-                                anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter
-                                width: 150; height: 26; radius: 6; color: Theme.surface0; border.color: mf.input.activeFocus ? Theme.line3 : Theme.hairline; border.width: 1
-                                Field {
-                                    id: mf; x: 8; width: parent.width - 16; height: parent.height; pixelSize: 11
-                                    label: tr.modelData.name + " model"; placeholder: "Any model"
-                                    Component.onCompleted: if (tr.modelData.pick) text = Os.settings[tr.modelData.pick]
-                                    onTextChanged: if (tr.modelData.pick) Os.settings[tr.modelData.pick] = text.trim()
+                            // the right side holds the check, or the field for an open tier
+                            Row {
+                                anchors.right: parent.right; anchors.rightMargin: 16; y: tr.jev ? 14 : (parent.height - height) / 2; spacing: 10
+                                Text { visible: tr.on; anchors.verticalCenter: parent.verticalCenter; text: "✓"; color: Theme.text; font.family: Theme.font; font.pixelSize: 13 }
+                                Rectangle {
+                                    visible: !!tr.modelData.pick
+                                    width: 150; height: 26; radius: 6; color: Theme.surface0; border.color: mf.input.activeFocus ? Theme.line3 : Theme.hairline; border.width: 1
+                                    Field {
+                                        id: mf; x: 8; width: parent.width - 16; height: parent.height; pixelSize: 11
+                                        label: tr.modelData.name + " model"; placeholder: "Any model"
+                                        Component.onCompleted: if (tr.modelData.pick) text = Os.settings[tr.modelData.pick]
+                                        onTextChanged: if (tr.modelData.pick) Os.settings[tr.modelData.pick] = text.trim()
+                                    }
                                 }
                             }
                         }
                     }
                     Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
-                    // Jev is bring-your-own-key; the bigger tiers go through Puter.js
+                    // Fast to Ultra go through Puter.js, signed in as the user
                     Row2 {
-                        title: "Jev API key"
-                        hint: Os.settings.jevKey ? "Saved. Instant uses your TypeSafe key" : "Instant needs your own key from TypeSafe"
-                        Rectangle {
-                            width: 190; height: 26; radius: 6; color: Theme.surface0; border.color: jk.input.activeFocus ? Theme.line3 : Theme.hairline; border.width: 1
-                            Field {
-                                id: jk; x: 8; width: parent.width - 16; height: parent.height; pixelSize: 11
-                                label: "Jev API key"; placeholder: "Paste your key"
-                                input.echoMode: TextInput.Password
-                                Component.onCompleted: text = Os.settings.jevKey
-                                onTextChanged: Os.settings.jevKey = text.trim()
-                            }
+                        title: "Puter account"; hint: "Fast to Ultra run on your Puter account."
+                        Text {
+                            property string aiName: Os.settings.puterUser ? "Puter account" : "Sign in to Puter"; property string aiRole: "link"
+                            function aiActivate() { if (!Os.settings.puterUser) Qt.openUrlExternally("https://puter.com"); }
+                            text: Os.settings.puterUser || "Sign in ›"; color: Os.settings.puterUser ? Theme.text2 : Theme.text; font.family: Theme.font; font.pixelSize: 12
+                            MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor; onClicked: parent.aiActivate() }
                         }
                     }
-                    Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
-                    Row2 { title: "Fast to Ultra"; hint: "Run through Puter.js, on your Puter account" }
                     Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
                     Row2 {
                         title: "Reasoning"
@@ -178,10 +190,21 @@ Item {
                                  onToggled: (c) => Os.settings.reasoning = c }
                     }
                 }
+                Item {
+                    width: parent.width; height: 1
+                    Text { x: 4; y: -40; text: "Higher effort is slower and may cost more."; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
+                }
                 Group {
+                    id: safety
                     title: "Safety"
-                    Row2 { title: "Ask before risky actions"; hint: "Deleting, sending, paying. The OS asks you, never the AI."
-                           Toggle { label: "Ask before risky actions"; checked: Os.settings.askBeforeRisky; onToggled: (c) => Os.settings.askBeforeRisky = c } }
+                    Row2 {
+                        id: askLink
+                        title: "When to ask, per app"; hint: "Deleting, sending, paying and sharing always ask"
+                        property string aiName: title; property string aiRole: "link"
+                        function aiActivate() { app.scrollTo(perApp.y - 40); }
+                        Text { text: "›"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 15 }
+                        MouseArea { parent: askLink; anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: askLink.aiActivate() }
+                    }
                     Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
                     Row2 { title: "Pause or stop instantly"; hint: "Works from anywhere, even mid-click"; Kbd { k: "⌃ Space" } Kbd { k: "Esc" } }
                 }

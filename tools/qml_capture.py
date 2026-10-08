@@ -252,7 +252,7 @@ elif scene == "desktops":
 elif scene == "effort":
     # Settings › Assistant: the effort picker, Jev (Instant) by default
     at(300, lambda: call("launch", "settings"))
-    at(1400, lambda: call("settingsScroll", 120))
+    at(1400, lambda: call("settingsScroll", 82))
     still("settings-effort", 2300)
     stop(2600)
 elif scene == "panels":
