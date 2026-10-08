@@ -31,8 +31,10 @@ for f in [*out.glob("*.png"), *out.glob("*.jpg")]:
 
 # first boot runs from scratch: splash, no name, then naming
 base = ["firelamp", "--windowed", "--reset"] if scene == "firstboot" else ["firelamp", "--nosplash", "--windowed", "--name=Juniper"]
-if scene in ("stuck", "autopause"):
+if scene in ("stuck", "autopause", "desktops"):
     base.append("--pointer")
+if scene == "desktops":
+    base.append("--demo-installs")
 app = QGuiApplication([*base, *sys.argv[3:]])
 engine = QQmlApplicationEngine()
 engine.warnings.connect(lambda ws: [print("QML:", w.toString(), file=sys.stderr) for w in ws])
@@ -232,6 +234,27 @@ elif scene == "trust":
     still("settings-trust", 2400)
     at(2500, lambda: (call("setTrust", "terminal", "risky"), call("setTrust", "web", "risky")))
     stop(2800)
+elif scene == "desktops":
+    # Settings › Desktops: Plasma is in use, Hyprland gets installed with one click
+    at(300, lambda: call("openSettings", "Desktops"))
+    at(400, lambda: mouse(1250, 820))
+    still("desktops", 2000)
+    start(2100)
+
+    def press():
+        call("probe", "Install Hyprland")
+        x, y = win.property("probeX"), win.property("probeY")
+        glide(1250, 820, x, y, 900, lambda: (mouse(x, y, "press"), mouse(x, y, "release")))
+    at(2600, press)
+    still("desktops-installing", 5200)
+    still("desktops-installed", 11000)
+    stop(11800)
+elif scene == "effort":
+    # Settings › Assistant: the effort picker, Jev (Instant) by default
+    at(300, lambda: call("launch", "settings"))
+    at(1400, lambda: call("settingsScroll", 120))
+    still("settings-effort", 2300)
+    stop(2600)
 elif scene == "panels":
     at(300, lambda: call("launch", "notes"))
     at(1200, lambda: call("openAsk"))

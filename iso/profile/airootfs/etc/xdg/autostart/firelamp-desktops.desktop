@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Firelamp desktop installer
+Comment=Local API for Settings › Desktops (installs other desktops on demand)
+Exec=/usr/local/bin/firelamp-desktops serve
+NoDisplay=true
+X-KDE-autostart-phase=1

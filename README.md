@@ -41,6 +41,9 @@ sign the name. There is no default name.
 - **Pause, Resume, Stop.** Moving your own mouse into the window the AI is working in pauses it ("Paused · you're using Mail").
 - **Stuck means stop.** After two failed tries it stops and says what blocked it, with Show me (click the thing for it) and Stop.
 
+### Desktops
+Firelamp runs on KDE Plasma with the Firelamp shell on top. Settings › Desktops installs GNOME, COSMIC, Xfce, Hyprland, niri or Sway with one click; nothing extra ships on the ISO. The page talks to `firelamp-desktops serve` (iso/profile/airootfs/usr/local/bin), which runs `pacman -S --needed` for a fixed package list per entry. `firelamp-desktops list` shows the same list from a terminal.
+
 ## Run it
 
 ```sh

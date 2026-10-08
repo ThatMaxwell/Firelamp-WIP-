@@ -6,7 +6,8 @@ import "../js/art.js" as Art
 Item {
     id: app
     property var win
-    function start(opts) {}
+    property string pane: "Assistant"
+    function start(opts) { if (opts && opts.pane) pane = opts.pane; }
     function scrollTo(y) { fl.contentY = Math.max(0, Math.min(y, fl.contentHeight - fl.height)); }
 
     component Row2: Item {
@@ -63,11 +64,18 @@ Item {
     Sidebar {
         id: side
         Repeater {
-            model: [["Assistant", "sparkle"], ["Permissions", "shield"], ["Fire Cursor", "cursor"], ["Activity", "clock"], ["Appearance", "moon"], ["Wi-Fi", "wifi"], ["Sound", "volume"], ["Bluetooth", "bluetooth"]]
-            SideItem { required property var modelData; text: modelData[0]; glyph: modelData[1]; selected: modelData[0] === "Assistant" }
+            model: [["Assistant", "sparkle"], ["Desktops", "grid"], ["Permissions", "shield"], ["Fire Cursor", "cursor"], ["Activity", "clock"], ["Appearance", "moon"], ["Wi-Fi", "wifi"], ["Sound", "volume"], ["Bluetooth", "bluetooth"]]
+            SideItem { required property var modelData; text: modelData[0]; glyph: modelData[1]; selected: modelData[0] === app.pane
+                       onClicked: if (modelData[0] === "Assistant" || modelData[0] === "Desktops") app.pane = modelData[0] }
         }
     }
+    DesktopsPane {
+        visible: app.pane === "Desktops"
+        active: visible
+        anchors { left: side.right; right: parent.right; top: parent.top; bottom: parent.bottom }
+    }
     Item {
+        visible: app.pane === "Assistant"
         anchors { left: side.right; right: parent.right; top: parent.top; bottom: parent.bottom }
         Text { x: 24; y: 16; text: "Assistant"; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.Bold }
         Flickable {
@@ -88,6 +96,68 @@ Item {
                                     onAccepted: if (text.trim()) Os.settings.assistantName = text.trim() }
                         }
                         Text { width: 300; wrapMode: Text.WordWrap; text: "The name your assistant answers to. Until you pick one, it is just “Assistant”."; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
+                    }
+                }
+                Group {
+                    id: brain
+                    title: "Effort"
+                    // Jev answers instantly; each step up trades speed for a bigger model
+                    readonly property var tiers: [
+                        { name: "Instant", model: "Jev by TypeSafe", hint: "Decides in milliseconds. The default." },
+                        { name: "Fast", pick: "modelFast", hint: "Your pick of a fast model, with web search." },
+                        { name: "Balanced", pick: "modelBalanced", hint: "Your pick of a second model." },
+                        { name: "High", model: "Grok 4.5", hint: "Fast and smart, sounds human." },
+                        { name: "Max", model: "Grok 4.6", hint: "More careful on long tasks." },
+                        { name: "Ultra", model: "Grok 4.7", hint: "The most capable. The slowest." } ]
+                    Item {
+                        width: parent ? parent.width : 0; height: 64
+                        Segmented {
+                            x: 16; anchors.verticalCenter: parent.verticalCenter
+                            options: brain.tiers.map(function (t) { return t.name; })
+                            current: Os.settings.effort
+                            onPicked: (i) => Os.settings.effort = i
+                        }
+                    }
+                    Repeater {
+                        model: brain.tiers
+                        Item {
+                            id: tr
+                            required property var modelData
+                            required property int index
+                            readonly property bool on: Os.settings.effort === index
+                            width: parent ? parent.width : 0; height: 44
+                            Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
+                            Rectangle { x: 16; width: 6; height: 6; radius: 3; anchors.verticalCenter: parent.verticalCenter; color: tr.on ? Theme.text : "transparent"; border.color: Theme.text3; border.width: tr.on ? 0 : 1 }
+                            Column {
+                                x: 34; anchors.verticalCenter: parent.verticalCenter; spacing: 1
+                                Text { text: tr.modelData.name; color: tr.on ? Theme.text : Theme.text2; font.family: Theme.font; font.pixelSize: 13; font.weight: tr.on ? Font.Medium : Font.Normal }
+                                Text { text: tr.modelData.hint; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
+                            }
+                            // named tiers show their model; the open ones take any model you type
+                            Text {
+                                visible: !tr.modelData.pick
+                                anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
+                                text: tr.modelData.model || ""; color: Theme.text2; font.family: Theme.font; font.pixelSize: 12
+                            }
+                            Rectangle {
+                                visible: !!tr.modelData.pick
+                                anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter
+                                width: 150; height: 26; radius: 6; color: Theme.surface0; border.color: mf.input.activeFocus ? Theme.line3 : Theme.hairline; border.width: 1
+                                Field {
+                                    id: mf; x: 8; width: parent.width - 16; height: parent.height; pixelSize: 11
+                                    label: tr.modelData.name + " model"; placeholder: "Any model"
+                                    Component.onCompleted: if (tr.modelData.pick) text = Os.settings[tr.modelData.pick]
+                                    onTextChanged: if (tr.modelData.pick) Os.settings[tr.modelData.pick] = text.trim()
+                                }
+                            }
+                        }
+                    }
+                    Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
+                    Row2 {
+                        title: "Reasoning"
+                        hint: Os.settings.effort === 0 ? "Not used on Instant: Jev decides without a reasoning pass" : "Think it through before acting. Slower; off by default"
+                        Toggle { label: "Reasoning"; checked: Os.settings.reasoning; enabled: Os.settings.effort > 0; opacity: enabled ? 1 : 0.4
+                                 onToggled: (c) => Os.settings.reasoning = c }
                     }
                 }
                 Group {

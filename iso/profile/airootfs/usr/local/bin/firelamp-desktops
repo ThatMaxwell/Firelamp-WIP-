@@ -1,88 +1,109 @@
 #!/usr/bin/env python3
-"""Install or remove extra desktops and window managers. Backs the
-"Desktops" page in Firelamp Settings.
+"""Install other desktops and window managers on demand, so the ISO only ships KDE Plasma.
 
-    firelamp-desktops list [--json]      catalog with installed status
-    firelamp-desktops install <id>       install a desktop's packages
-    firelamp-desktops remove <id>        remove packages only it uses
+    firelamp-desktops list             what can be installed, and what already is
+    firelamp-desktops install ID       install one (pacman, --needed)
+    firelamp-desktops serve            local API for Settings > Desktops (127.0.0.1:7341)
 
-New sessions show up on the login screen. The catalog is
-/usr/share/firelamp/desktops.json.
+The shell's Settings page talks to `serve` over plain HTTP on localhost:
+    GET  /desktops        -> [{id, name, installed, state, log}]
+    POST /install/ID      -> starts the install, returns at once
+Only the IDs below can be installed; nothing else is passed to pacman.
+Each one ships a wayland-sessions/xsessions entry, so it shows up at login.
 """
-import json
-import os
-import subprocess
-import sys
+import json, os, shutil, subprocess, sys, threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-CATALOG = "/usr/share/firelamp/desktops.json"
-SESSION_DIRS = ("/usr/share/wayland-sessions", "/usr/share/xsessions")
-
-
-def load():
-    with open(CATALOG) as fh:
-        return json.load(fh)
-
-
-def installed(entry):
-    # A desktop counts as installed when its login session file exists.
-    for d in SESSION_DIRS:
-        try:
-            names = os.listdir(d)
-        except OSError:
-            continue
-        if any(n.split(".")[0] == entry["session"] or n.startswith(entry["session"] + "-") for n in names):
-            return True
-    return False
+PORT = 7341
+CATALOG = {
+    "plasma":   {"name": "KDE Plasma", "probe": "plasma-desktop", "packages": ["plasma-meta"]},
+    "gnome":    {"name": "GNOME", "probe": "gnome-shell", "packages": ["gnome"]},
+    "cosmic":   {"name": "COSMIC", "probe": "cosmic-session", "packages": ["cosmic"]},
+    "xfce":     {"name": "Xfce", "probe": "xfce4-session", "packages": ["xfce4", "xfce4-goodies"]},
+    "hyprland": {"name": "Hyprland", "probe": "hyprland",
+                 "packages": ["hyprland", "xdg-desktop-portal-hyprland", "hyprpaper", "hyprlock", "waybar", "fuzzel", "mako", "kitty"]},
+    "niri":     {"name": "niri", "probe": "niri",
+                 "packages": ["niri", "xdg-desktop-portal-gnome", "swaybg", "swaylock", "waybar", "fuzzel", "mako", "alacritty"]},
+    "sway":     {"name": "Sway", "probe": "sway",
+                 "packages": ["sway", "swaybg", "swayidle", "swaylock", "waybar", "fuzzel", "mako", "foot"]},
+}
+jobs = {}   # id -> {"state": "installing"|"installed"|"failed", "log": last line}
 
 
-def as_root(cmd):
-    if os.geteuid() == 0:
-        return cmd
+def installed(pkg):
+    return subprocess.run(["pacman", "-Q", pkg], capture_output=True).returncode == 0
+
+
+def privileged(cmd):
+    # the live user has passwordless sudo; an installed system asks through polkit
     if subprocess.run(["sudo", "-n", "true"], capture_output=True).returncode == 0:
-        return ["sudo", "-n"] + cmd
-    return ["pkexec"] + cmd
+        return ["sudo", "-n", *cmd]
+    if shutil.which("pkexec"):
+        return ["pkexec", *cmd]
+    return cmd
 
 
-def find(entries, ident):
-    for e in entries:
-        if e["id"] == ident:
-            return e
-    sys.exit(f"firelamp-desktops: unknown desktop '{ident}' (see: firelamp-desktops list)")
+def install(did):
+    d = CATALOG[did]
+    jobs[did] = {"state": "installing", "log": "Starting"}
+    cmd = privileged(["pacman", "-S", "--needed", "--noconfirm", *d["packages"]])
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    for line in p.stdout:
+        line = line.strip()
+        if line:
+            jobs[did]["log"] = line[-120:]
+    ok = p.wait() == 0 and installed(d["probe"])
+    jobs[did] = {"state": "installed" if ok else "failed", "log": jobs[did]["log"]}
+    return ok
+
+
+def listing():
+    out = []
+    for did, d in CATALOG.items():
+        j = jobs.get(did, {})
+        out.append({"id": did, "name": d["name"], "installed": installed(d["probe"]),
+                    "state": j.get("state", ""), "log": j.get("log", ""), "packages": d["packages"]})
+    return out
+
+
+class Api(BaseHTTPRequestHandler):
+    def reply(self, code, body):
+        data = json.dumps(body).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def do_GET(self):
+        if self.path == "/desktops":
+            return self.reply(200, listing())
+        self.reply(404, {"error": "not found"})
+
+    def do_POST(self):
+        did = self.path.rsplit("/", 1)[-1]
+        if not self.path.startswith("/install/") or did not in CATALOG:
+            return self.reply(404, {"error": "unknown desktop"})
+        if jobs.get(did, {}).get("state") == "installing":
+            return self.reply(202, {"state": "installing"})
+        threading.Thread(target=install, args=(did,), daemon=True).start()
+        self.reply(202, {"state": "installing"})
+
+    def log_message(self, *a):
+        pass
 
 
 def main():
-    args = sys.argv[1:]
-    if not args or args[0] in ("-h", "--help"):
-        print(__doc__.strip())
-        return
-    catalog = load()
-    entries = catalog["desktops"]
-    cmd = args[0]
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "list"
     if cmd == "list":
-        rows = [dict(e, installed=installed(e)) for e in entries]
-        if "--json" in args:
-            print(json.dumps({"default": catalog.get("default"), "desktops": rows}, indent=2))
-        else:
-            for r in rows:
-                mark = "installed" if r["installed"] else ""
-                print(f"{r['id']:<10} {r['kind']:<8} {r['name']:<12} {mark}")
-    elif cmd in ("install", "remove") and len(args) == 2:
-        e = find(entries, args[1])
-        if cmd == "remove" and e.get("preinstalled"):
-            sys.exit(f"firelamp-desktops: {e['name']} is the default desktop and stays installed")
-        if cmd == "install":
-            pac = ["pacman", "-S", "--needed", "--noconfirm"] + e["packages"]
-        else:
-            # Keep packages another installed desktop also lists.
-            shared = {p for o in entries if o is not e and installed(o) for p in o["packages"]}
-            mine = [p for p in e["packages"] if p not in shared]
-            have = subprocess.run(["pacman", "-Qq"] + mine, capture_output=True, text=True).stdout.split()
-            if not have:
-                return
-            pac = ["pacman", "-Rns", "--noconfirm"] + have
-        sys.exit(subprocess.run(as_root(pac)).returncode)
+        for d in listing():
+            print(f"{d['id']:10} {'installed' if d['installed'] else '-':10} {' '.join(d['packages'])}")
+    elif cmd == "install" and len(sys.argv) > 2 and sys.argv[2] in CATALOG:
+        sys.exit(0 if install(sys.argv[2]) else 1)
+    elif cmd == "serve":
+        ThreadingHTTPServer(("127.0.0.1", PORT), Api).serve_forever()
     else:
-        sys.exit(__doc__.strip())
+        sys.exit(__doc__)
 
 
 if __name__ == "__main__":

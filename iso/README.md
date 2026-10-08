@@ -9,7 +9,7 @@ from a profile based on Arch's `releng`.
 | --- | --- | --- |
 | Base | Arch Linux + the [CachyOS](https://cachyos.org) repo, `linux-cachyos` kernel, `cachyos-settings` | performance-tuned kernel and system defaults |
 | Desktop | KDE Plasma 6 on Wayland, SDDM autologin | the default desktop, with the Firelamp shell on top |
-| Other desktops | one-click installs (`firelamp-desktops`) | GNOME, COSMIC, Xfce, Cinnamon, niri, Hyprland, Sway, labwc; nothing extra is preinstalled |
+| Other desktops | one-click installs (`firelamp-desktops`) | GNOME, COSMIC, Xfce, Hyprland, niri, Sway; nothing extra is preinstalled |
 | UI toolkit | Qt 6 / QML, `layer-shell-qt` | the Firelamp shell is QML |
 | UI tree for the AI | AT-SPI2 (`at-spi2-core`, `python-atspi`) | live, labelled tree of every window and control, no screenshots |
 | AI input | `ydotool`, `wtype` | synthetic pointer and keyboard for the fire cursor |
@@ -29,9 +29,9 @@ starts the Firelamp shell.
 
 ## Desktops and window managers
 
-`firelamp-desktops list --json` prints the catalog (`/usr/share/firelamp/desktops.json`)
-with installed status; `firelamp-desktops install <id>` and `remove <id>` do the pacman work.
-Settings calls these. Installed desktops appear as sessions on the SDDM login screen.
+`firelamp-desktops` (from the Settings work) installs GNOME, COSMIC, Xfce, Hyprland, niri
+or Sway on demand; `firelamp-desktops serve` is the local API Settings > Desktops talks to.
+Installed desktops appear as sessions on the SDDM login screen.
 
 ## The shell contract
 
