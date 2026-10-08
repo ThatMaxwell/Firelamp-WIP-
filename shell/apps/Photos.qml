@@ -8,14 +8,13 @@ Item {
     function start(opts) {}
     // real photographs (CC0 / public domain, see assets/CREDITS), with their aspect ratios
     readonly property var days: [
-        { title: "Today", photos: [["launch-dusk", 1.5], ["espresso", 1.5], ["deep-field", 1.147]] },
-        { title: "Sunday, October 6", photos: [["chelsea", 1.503], ["chelsea-close", 1.506], ["espresso-spoon", 1.125], ["launch-tower", 0.653]] },
-        { title: "September 28", photos: [["deep-field-detail", 1.147], ["brick", 1], ["gravel", 1]] }
+        { title: "Today", photos: [["launch-dusk", 1.5], ["espresso", 1.5], ["chelsea", 1.503]] },
+        { title: "September 28", photos: [["deep-field", 1.147], ["brick", 1], ["gravel", 1]] }
     ]
     Row {
         x: 92; y: 15; spacing: 10
         Text { id: lib; text: "Library"; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.Bold }
-        Text { text: "10 photos"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 13; anchors.baseline: lib.baseline }
+        Text { text: "6 photos"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 13; anchors.baseline: lib.baseline }
     }
     SearchPill { anchors.right: parent.right; anchors.rightMargin: 12; y: 12 }
     Flickable {
@@ -34,7 +33,7 @@ Item {
                     id: day
                     required property var modelData
                     readonly property real sum: modelData.photos.reduce(function (s, p) { return s + p[1]; }, 0)
-                    readonly property real rowH: Math.min(220, (col.width - 4 * (modelData.photos.length - 1)) / sum)
+                    readonly property real rowH: Math.min(260, (col.width - 4 * (modelData.photos.length - 1)) / sum)
                     width: col.width; spacing: 8
                     Text { text: day.modelData.title; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold; topPadding: 6 }
                     Row {

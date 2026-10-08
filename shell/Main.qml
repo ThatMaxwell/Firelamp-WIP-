@@ -30,7 +30,7 @@ Window {
         { id: "notes", title: "Notes", icon: "notes", src: "Notes", w: 820, h: 540 },
         { id: "terminal", title: "Terminal", icon: "terminal", src: "Terminal", w: 680, h: 440, titled: true },
         { id: "calendar", title: "Calendar", icon: "calendar", src: "Calendar", w: 780, h: 560 },
-        { id: "photos", title: "Photos", icon: "photos", src: "Photos", w: 760, h: 520 },
+        { id: "photos", title: "Photos", icon: "photos", src: "Photos", w: 760, h: 528 },
         { id: "music", title: "Music", icon: "music", src: "Music", w: 340, h: 700 },
         { id: "settings", title: "System Settings", icon: "settings", src: "Settings", w: 720, h: 520 },
         { id: "about", title: "About Firelamp OS", icon: "assistant", src: "About", w: 360, h: 480, noDock: true }
