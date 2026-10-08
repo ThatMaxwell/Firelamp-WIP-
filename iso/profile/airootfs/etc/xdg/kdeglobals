@@ -1,0 +1,12 @@
+[General]
+ColorScheme=BreezeDark
+AccentColor=255,106,43
+font=Inter,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+fixed=JetBrains Mono,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+
+[KDE]
+LookAndFeelPackage=org.kde.breezedark.desktop
+SingleClick=false
+
+[Icons]
+Theme=Papirus-Dark

@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Install or remove extra desktops and window managers. Backs the
+"Desktops" page in Firelamp Settings.
+
+    firelamp-desktops list [--json]      catalog with installed status
+    firelamp-desktops install <id>       install a desktop's packages
+    firelamp-desktops remove <id>        remove packages only it uses
+
+New sessions show up on the login screen. The catalog is
+/usr/share/firelamp/desktops.json.
+"""
+import json
+import os
+import subprocess
+import sys
+
+CATALOG = "/usr/share/firelamp/desktops.json"
+SESSION_DIRS = ("/usr/share/wayland-sessions", "/usr/share/xsessions")
+
+
+def load():
+    with open(CATALOG) as fh:
+        return json.load(fh)
+
+
+def installed(entry):
+    # A desktop counts as installed when its login session file exists.
+    for d in SESSION_DIRS:
+        try:
+            names = os.listdir(d)
+        except OSError:
+            continue
+        if any(n.split(".")[0] == entry["session"] or n.startswith(entry["session"] + "-") for n in names):
+            return True
+    return False
+
+
+def as_root(cmd):
+    if os.geteuid() == 0:
+        return cmd
+    if subprocess.run(["sudo", "-n", "true"], capture_output=True).returncode == 0:
+        return ["sudo", "-n"] + cmd
+    return ["pkexec"] + cmd
+
+
+def find(entries, ident):
+    for e in entries:
+        if e["id"] == ident:
+            return e
+    sys.exit(f"firelamp-desktops: unknown desktop '{ident}' (see: firelamp-desktops list)")
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__.strip())
+        return
+    catalog = load()
+    entries = catalog["desktops"]
+    cmd = args[0]
+    if cmd == "list":
+        rows = [dict(e, installed=installed(e)) for e in entries]
+        if "--json" in args:
+            print(json.dumps({"default": catalog.get("default"), "desktops": rows}, indent=2))
+        else:
+            for r in rows:
+                mark = "installed" if r["installed"] else ""
+                print(f"{r['id']:<10} {r['kind']:<8} {r['name']:<12} {mark}")
+    elif cmd in ("install", "remove") and len(args) == 2:
+        e = find(entries, args[1])
+        if cmd == "remove" and e.get("preinstalled"):
+            sys.exit(f"firelamp-desktops: {e['name']} is the default desktop and stays installed")
+        if cmd == "install":
+            pac = ["pacman", "-S", "--needed", "--noconfirm"] + e["packages"]
+        else:
+            # Keep packages another installed desktop also lists.
+            shared = {p for o in entries if o is not e and installed(o) for p in o["packages"]}
+            mine = [p for p in e["packages"] if p not in shared]
+            have = subprocess.run(["pacman", "-Qq"] + mine, capture_output=True, text=True).stdout.split()
+            if not have:
+                return
+            pac = ["pacman", "-Rns", "--noconfirm"] + have
+        sys.exit(subprocess.run(as_root(pac)).returncode)
+    else:
+        sys.exit(__doc__.strip())
+
+
+if __name__ == "__main__":
+    main()

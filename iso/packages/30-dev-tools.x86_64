@@ -1,0 +1,20 @@
+# Developer tools.
+base-devel
+git
+github-cli
+cmake
+ninja
+meson
+clang
+gdb
+python
+python-pip
+python-virtualenv
+nodejs
+npm
+go
+rustup
+neovim
+code
+qt6-tools
+podman
