@@ -2,12 +2,14 @@
 // The package lists match firelamp-desktops' PACKS; sizes are rough download sizes.
 .pragma library
 
+// `preinstalled`: the ISO ships these (Carrot asked for dev and ricing tools out of the box);
+// first boot shows them as Included and only asks about the rest.
 var PACKS = [
-    { id: "dev", name: "Dev", glyph: "type", what: "Code, containers and the usual toolchains", size: "1.2 GB",
+    { id: "dev", name: "Dev", glyph: "type", preinstalled: true, what: "Code, containers and the usual toolchains", size: "1.2 GB",
       packages: ["git", "base-devel", "neovim", "code", "podman", "nodejs", "npm", "python", "rustup", "go"] },
     { id: "make", name: "Make", glyph: "image", what: "Photos, drawing, video and streaming", size: "950 MB",
       packages: ["gimp", "krita", "inkscape", "kdenlive", "obs-studio"] },
-    { id: "rice", name: "Rice", glyph: "moon", what: "Theming and a terminal that shows off", size: "40 MB",
+    { id: "rice", name: "Rice", glyph: "moon", preinstalled: true, what: "Theming and a terminal that shows off", size: "40 MB",
       packages: ["kvantum", "fastfetch", "starship", "btop", "cava"] },
     { id: "play", name: "Play", glyph: "play", what: "Steam, Lutris and smoother frames", size: "650 MB",
       packages: ["steam", "lutris", "gamemode", "mangohud"] },

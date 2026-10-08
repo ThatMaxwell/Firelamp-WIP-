@@ -49,7 +49,7 @@ Item {
                             id: row
                             required property var modelData
                             required property int index
-                            readonly property var st: pp.status[modelData.id] || {}
+                            readonly property var st: pp.status[modelData.id] || (modelData.preinstalled ? { installed: true } : {})
                             readonly property bool working: st.state === "installing"
                             readonly property bool have: !!st.installed
                             readonly property bool expanded: pp.open === modelData.id

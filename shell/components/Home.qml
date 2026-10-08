@@ -98,7 +98,7 @@ Item {
                 property string aiName: "Remove " + host.modelData.kind + " widget"; property string aiRole: "button"
                 function aiActivate() { host.leaving = true; gone.start(); }
                 x: -7; y: -7; width: 20; height: 20; radius: 10
-                color: Theme.surface3; border.color: Theme.hairline2; border.width: 1
+                color: Theme.light ? Theme.surface2 : Theme.surface3; border.color: Theme.hairline2; border.width: 1
                 opacity: home.edit; visible: opacity > 0
                 scale: 0.6 + 0.4 * home.edit
                 Text { anchors.centerIn: parent; anchors.verticalCenterOffset: -1; text: "×"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 14 }

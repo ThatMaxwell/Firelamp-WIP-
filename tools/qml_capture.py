@@ -329,7 +329,7 @@ elif scene == "edithome":
         ("click", "Add Photo frame widget"), ("wait", 600),
         # Up next grows from M to L
         ("drag", "Resize upnext widget", 0, 0, 10, 190), ("wait", 900), ("still", "edit-home-widgets"),
-        ("click", "Wallpaper"), ("wait", 500), ("click", "Dusk wallpaper"), ("wait", 900), ("still", "edit-home-wallpaper"),
+        ("click", "Wallpaper"), ("wait", 500), ("click", "Lamp wallpaper"), ("wait", 900), ("still", "edit-home-wallpaper"),
         ("click", "Dock & bar"), ("wait", 500), ("click", "Large"), ("wait", 900), ("still", "edit-home-dock"),
         ("click", "Medium"), ("wait", 400), ("click", "Done"), ("wait", 300), ("point", 1300, 640, 600), ("wait", 900),
         ("still", "home-after"), ("wait", 300),
@@ -370,6 +370,15 @@ elif scene == "live":
              ("point", 900, 600, 500), ("do", lambda: tap(900, 600)), ("wait", 300),
              ("click", "Install Firelamp OS"), ("wait", 900), ("still", "live-toast"), ("do", lambda: stop(0))]
     at(300, lambda: (mouse(900, 600), pos.update(x=900, y=600), run(steps)))
+elif scene == "walls":
+    # every wallpaper we ship, full screen, with the home widgets on top
+    names = ["graphite", "dynamic", "hills", "lamp", "fog", "dune", "night", "deep-field"]
+    steps = [("wait", 900)]
+    for n in names:
+        steps += [("do", lambda n=n: call("setSetting", "wallpaper", n)), ("wait", 700), ("still", "wall-" + n)]
+    steps += [("do", lambda: call("setSetting", "wallpaper", "lamp")), ("do", lambda: call("editHome", True, "Wallpaper")), ("wait", 800), ("still", "edit-home-wallpapers"),
+              ("do", lambda: call("editHome", False, "")), ("do", lambda: call("setSetting", "wallpaper", "graphite")), ("wait", 100), ("do", lambda: stop(0))]
+    at(300, lambda: run(steps))
 elif scene == "effort":
     # Settings › Assistant: the effort picker, Jev (Instant) by default
     at(300, lambda: call("launch", "settings"))
