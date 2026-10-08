@@ -136,22 +136,27 @@
       <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/vision.jpg"><source src="media/vision.webm" type="video/webm"><source src="media/vision.mp4" type="video/mp4"></video></figure>
     </article>
     <article class="feat reveal">
-      <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/cursor.jpg"><source src="media/cursor.webm" type="video/webm"><source src="media/cursor.mp4" type="video/mp4"></video></figure>
-      <div class="feat-text"><span class="num">02</span><h3 data-i18n="s2.t">It has its own cursor.</h3><p data-i18n="s2.p">The fire cursor moves, clicks and types right next to yours. Keep working, or sit back and watch.</p></div>
+      <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/plan.jpg"><source src="media/plan.webm" type="video/webm"><source src="media/plan.mp4" type="video/mp4"></video></figure>
+      <div class="feat-text"><span class="num">02</span><h3 data-i18n="pl.t">It shows you the plan first.</h3><p data-i18n="pl.p">Before it touches anything, you see every step it's about to take. Say go, or change the plan.</p></div>
     </article>
     <article class="feat feat-r reveal">
-      <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/ask.jpg"><source src="media/ask.webm" type="video/webm"><source src="media/ask.mp4" type="video/mp4"></video></figure>
-      <div class="feat-text"><span class="num">03</span><h3 data-i18n="s3.t">It asks first.</h3><p data-i18n="s3.p">Deleting files, sending messages, paying for things. The OS itself stops and asks you, every single time.</p></div>
+      <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/cursor.jpg"><source src="media/cursor.webm" type="video/webm"><source src="media/cursor.mp4" type="video/mp4"></video></figure>
+      <div class="feat-text"><span class="num">03</span><h3 data-i18n="s2.t">It has its own cursor.</h3><p data-i18n="s2.p">The fire cursor moves, clicks and types right next to yours. Keep working, or sit back and watch.</p></div>
     </article>
-    <article class="feat control reveal" id="control">
+    <article class="feat reveal">
+      <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/ask.jpg"><source src="media/ask.webm" type="video/webm"><source src="media/ask.mp4" type="video/mp4"></video></figure>
+      <div class="feat-text"><span class="num">04</span><h3 data-i18n="s3.t">It asks first.</h3><p data-i18n="s3.p">Deleting files, sending messages, paying for things. The OS itself stops and asks you, every single time.</p></div>
+    </article>
+    <article class="feat feat-r control reveal" id="control">
       <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/pause.jpg"><source src="media/pause.webm" type="video/webm"><source src="media/pause.mp4" type="video/mp4"></video></figure>
-      <div class="feat-text"><span class="num">04</span><h3 data-i18n="ctl.h">You can stop it. Instantly.</h3><p data-i18n="ctl.p">See the little fire cursor wandering around this page? Press Esc, or the key below. That's how pausing works in Firelamp, too.</p>
+      <div class="feat-text"><span class="num">05</span><h3 data-i18n="ctl.h">You can stop it. Instantly.</h3><p data-i18n="ctl.p">Reach into the window it's working in and it pauses itself. Press Esc and it stops.</p>
+        <p class="ctl-try" data-i18n="ctl.try">Try it on the fire cursor wandering around this page.</p>
         <button class="keycap" id="escKey"><span>esc</span></button>
         <p class="ctl-state" id="ctlState" data-i18n="ctl.run">It's running.</p></div>
     </article>
-    <article class="feat feat-r reveal">
+    <article class="feat reveal">
       <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/timeline.jpg"><source src="media/timeline.webm" type="video/webm"><source src="media/timeline.mp4" type="video/mp4"></video></figure>
-      <div class="feat-text"><span class="num">05</span><h3 data-i18n="s4.t">It shows its work.</h3><p data-i18n="s4.p">Everything it did lands in a timeline you can actually read: what, where, and why.</p></div>
+      <div class="feat-text"><span class="num">06</span><h3 data-i18n="s4.t">It shows its work.</h3><p data-i18n="s4.p">Everything it did lands in a timeline you can actually read: what, where, and why.</p></div>
     </article>
 
     <!-- brain + reflexes -->
@@ -174,12 +179,15 @@
       </div>
     </section>
 
-    <!-- name -->
-    <section class="name" id="name">
-      <h2 class="h2" data-i18n="nm.h">No default name.</h2>
-      <p class="lede" data-i18n="nm.p">Your assistant is called whatever you call it. Try it: the fire cursor on this page will wear the name.</p>
-      <button class="link name-ask" id="nameAsk" data-i18n="nm.ask">Or let the fire cursor type one</button>
-      <label class="name-field"><input id="aiName" maxlength="16" autocomplete="off" spellcheck="false" data-i18n-ph="nm.ph" placeholder="Type a name"><svg class="boil" viewBox="0 0 400 14" preserveAspectRatio="none"><path d="M3 8 C70 3 140 12 210 7 S330 4 397 9" fill="none" stroke="#f26a2e" stroke-width="2.4" stroke-linecap="round"/></svg></label>
+    <!-- name: the real first boot, next to a field you can try -->
+    <section class="feat name reveal" id="name">
+      <figure class="feat-media"><video class="clip" muted loop playsinline preload="none" poster="media/firstboot.jpg"><source src="media/firstboot.webm" type="video/webm"><source src="media/firstboot.mp4" type="video/mp4"></video></figure>
+      <div class="feat-text">
+        <h3 data-i18n="nm.h">No default name.</h3>
+        <p data-i18n="nm.p">The first time you turn it on, you name it, and the fire cursor signs it. Try it here: the cursor on this page will wear the name.</p>
+        <label class="name-field"><input id="aiName" maxlength="16" autocomplete="off" spellcheck="false" data-i18n-ph="nm.ph" placeholder="Type a name"><svg class="boil" viewBox="0 0 400 14" preserveAspectRatio="none"><path d="M3 8 C70 3 140 12 210 7 S330 4 397 9" fill="none" stroke="#f26a2e" stroke-width="2.4" stroke-linecap="round"/></svg></label>
+        <button class="link name-ask" id="nameAsk" data-i18n="nm.ask">Or let the fire cursor type one</button>
+      </div>
     </section>
 
     <!-- end -->
