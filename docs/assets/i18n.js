@@ -53,7 +53,8 @@ window.I18N = {
     'end.p': 'Coming soon. Built in the open.',
     'dl.btn': 'Download', 'dl.win': 'Windows', 'dl.nix': 'Linux & macOS',
     'dl.note': 'Paste this into a terminal. It downloads the 3.7 GB ISO, joins its two parts and checks it.',
-    'dl.copy': 'Copy', 'dl.copied': 'Copied', 'dl.into': 'Saves to'
+    'dl.copy': 'Copy', 'dl.copied': 'Copied', 'dl.into': 'Saves to',
+    'dl.direct': 'Or download the two parts and checksum directly', 'dl.next': 'Next: write it to a USB stick with', 'dl.or': 'or'
   },
 
   pt: {
@@ -109,6 +110,7 @@ window.I18N = {
     'end.p': 'Em breve. Desenvolvido em público.',
     'dl.btn': 'Baixar', 'dl.win': 'Windows', 'dl.nix': 'Linux e macOS',
     'dl.note': 'Cole isto num terminal. Ele baixa a ISO de 3,7 GB, junta as duas partes e confere o arquivo.',
-    'dl.copy': 'Copiar', 'dl.copied': 'Copiado', 'dl.into': 'Salva em'
+    'dl.copy': 'Copiar', 'dl.copied': 'Copiado', 'dl.into': 'Salva em',
+    'dl.direct': 'Ou baixe as duas partes e o checksum direto', 'dl.next': 'Depois: grave num pendrive com o', 'dl.or': 'ou o'
   }
 };

@@ -270,15 +270,18 @@ img, video { display: block; max-width: 100%; }
 .dl-tabs button[aria-selected="true"] { background: var(--s2); color: var(--t1); }
 .dl-note { margin: 16px 0 12px; font-size: 14px; color: var(--t2); }
 .dl-code { position: relative; border-radius: 12px; background: #0c0b0a; border: 1px solid var(--line-2); }
-.dl-code pre { margin: 0; padding: 16px 20px 18px; overflow-x: auto; font: 400 12px/1.75 var(--mono); color: var(--t2); white-space: pre; tab-size: 2; }
+.dl-code pre { margin: 0; padding: 16px 20px 18px; font: 400 12px/1.75 var(--mono); color: var(--t2); white-space: pre-wrap; word-break: break-all; }
+.dl-code pre > span { display: block; padding-left: 2.5ch; text-indent: -2.5ch; }
 .dl-code pre b { font-weight: 400; color: var(--t1); }
 .dl-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 8px 20px; border-bottom: 1px solid var(--line); font: 11px var(--mono); color: var(--t3); }
 .dl-copy { height: 28px; padding: 0 12px; border-radius: 8px; font-size: 12px; background: var(--s2); color: var(--t1); border: 1px solid var(--line-2); transition: background .2s; }
 .dl-copy:hover { background: #33302d; }
-.dl-meta { margin-top: 12px; font-size: 13px; color: var(--t3); }
+.dl-meta { margin-top: 10px; font-size: 13px; color: var(--t3); }
 .dl-meta code { font: 12px var(--mono); color: var(--t2); }
 .dl-meta a { color: var(--t2); }
 .dl-meta a:hover { color: var(--t1); }
+.dl-next { color: var(--t3); }
+@media (max-width: 600px) { .dl-code pre { font-size: 12px; padding: 14px 16px 16px; } }
 
 .foot { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 28px var(--gut) max(28px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); font-size: 13px; color: var(--t3); }
 .by { display: flex; align-items: center; gap: 12px; color: var(--t1); font-weight: 600; font-size: 15px; }

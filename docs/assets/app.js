@@ -245,13 +245,13 @@
     ] }
   };
   const dlBtn = $('#dlBtn'), dlPanel = $('#dlPanel'), dlCode = $('#dlCode'), dlCopy = $('#dlCopy');
-  let dlOs = /Windows/i.test(navigator.userAgent) ? 'win' : 'nix';
+  let dlOs = /Windows/i.test(navigator.userAgent) ? 'win' : 'nix'; // reduced UAs still name Windows
   const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
   function dlShow(os) {
     dlOs = os;
     $$('.dl-tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.os === os));
     // commands bright, arguments quieter, so the six steps read at a glance
-    dlCode.innerHTML = CMD[os].text.map(l => esc(l).replace(/^(\S+)/, '<b>$1</b>')).join('\n');
+    dlCode.innerHTML = CMD[os].text.map(l => '<span>' + esc(l).replace(/^(\S+)/, '<b>$1</b>') + '</span>').join('');
     $('#dlPath').textContent = CMD[os].path;
     $('#dlShell').textContent = os === 'win' ? 'PowerShell' : 'Terminal';
     dlCopy.textContent = T[lang]['dl.copy'];
@@ -271,7 +271,7 @@
   dlCopy.addEventListener('click', async () => {
     const text = CMD[dlOs].text.join('\n');
     try { await navigator.clipboard.writeText(text); }
-    catch (e) { const r = document.createRange(); r.selectNodeContents(dlCode); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); document.execCommand('copy'); }
+    catch (e) { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'; document.body.append(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
     dlCopy.textContent = T[lang]['dl.copied'];
     clearTimeout(dlCopy._t); dlCopy._t = setTimeout(() => (dlCopy.textContent = T[lang]['dl.copy']), 1800);
   });
