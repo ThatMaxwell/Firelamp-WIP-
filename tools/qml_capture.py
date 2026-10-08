@@ -31,10 +31,12 @@ for f in [*out.glob("*.png"), *out.glob("*.jpg")]:
 
 # first boot runs from scratch: splash, no name, then naming
 base = ["firelamp", "--windowed", "--reset"] if scene == "firstboot" else ["firelamp", "--nosplash", "--windowed", "--name=Juniper"]
-if scene in ("stuck", "autopause", "desktops", "edithome", "packs"):
+if scene in ("stuck", "autopause", "desktops", "edithome", "packs", "live", "browsers"):
     base.append("--pointer")
-if scene in ("desktops", "packs"):
+if scene in ("desktops", "packs", "browsers"):
     base.append("--demo-installs")
+if scene == "live":
+    base.append("--live")
 app = QGuiApplication([*base, *sys.argv[3:]])
 engine = QQmlApplicationEngine()
 engine.warnings.connect(lambda ws: [print("QML:", w.toString(), file=sys.stderr) for w in ws])
@@ -327,7 +329,7 @@ elif scene == "edithome":
         ("click", "Add Photo frame widget"), ("wait", 600),
         # Up next grows from M to L
         ("drag", "Resize upnext widget", 0, 0, 10, 190), ("wait", 900), ("still", "edit-home-widgets"),
-        ("click", "Wallpaper"), ("wait", 500), ("click", "Dusk wallpaper"), ("wait", 900), ("still", "edit-home-wallpaper"),
+        ("click", "Wallpaper"), ("wait", 500), ("click", "Lamp wallpaper"), ("wait", 900), ("still", "edit-home-wallpaper"),
         ("click", "Dock & bar"), ("wait", 500), ("click", "Large"), ("wait", 900), ("still", "edit-home-dock"),
         ("click", "Medium"), ("wait", 400), ("click", "Done"), ("wait", 300), ("point", 1300, 640, 600), ("wait", 900),
         ("still", "home-after"), ("wait", 300),
@@ -361,6 +363,40 @@ elif scene == "packs":
              ("click", "Install Play pack"), ("point", 1240, 800, 600), ("wait", 800), ("still", "settings-packs"),
              ("do", lambda: call("setSetting", "packsAsked", False)), ("wait", 100), ("do", lambda: stop(0))]
     at(400, lambda: run(steps))
+elif scene == "browsers":
+    # First boot's "Pick your browser": filter, search, pick Brave; then Settings › Browser
+    def typed(text):
+        return [("do", lambda ch=ch: key(ch)) for ch in text]
+    at(200, lambda: call("showBrowsers"))
+    start(300)
+    steps = [("wait", 1000), ("still", "browser-firstboot"),
+             ("click", "Show all browsers"), ("wait", 900), ("still", "browser-all"),
+             ("click", "Private"), ("wait", 700), ("click", "Helium"), ("wait", 500), ("still", "browser-private"),
+             ("click", "All"), ("wait", 300), ("click", "Search browsers"), ("wait", 200), *typed("bra"), ("wait", 700), ("still", "browser-search"),
+             ("click", "Brave"), ("wait", 600), ("still", "browser-brave"),
+             *[("do", lambda: key(code=Qt.Key_Backspace)) for _ in range(3)], ("wait", 600),
+             ("click", "Use browser"), ("wait", 1200), ("still", "browser-toast"),
+             ("wait", 600), ("do", lambda: call("closeTop")), ("wait", 500),
+             ("do", lambda: call("openSettings", "Browser")), ("wait", 700), ("point", 1240, 800, 400), ("still", "settings-browser-installing"),
+             ("wait", 4200), ("still", "settings-browser"),
+             ("do", lambda: call("setSetting", "browserAsked", False)), ("wait", 100), ("do", lambda: stop(0))]
+    at(400, lambda: (mouse(900, 760), pos.update(x=900, y=760), run(steps)))
+elif scene == "live":
+    # the live ISO: Install Firelamp OS in the dock and the Firelamp menu
+    steps = [("wait", 1200), ("find", "Install Firelamp OS"), ("wait", 900), ("still", "live-dock"),
+             ("click", "Firelamp menu"), ("wait", 600), ("still", "live-menu"),
+             ("point", 900, 600, 500), ("do", lambda: tap(900, 600)), ("wait", 300),
+             ("click", "Install Firelamp OS"), ("wait", 900), ("still", "live-toast"), ("do", lambda: stop(0))]
+    at(300, lambda: (mouse(900, 600), pos.update(x=900, y=600), run(steps)))
+elif scene == "walls":
+    # every wallpaper we ship, full screen, with the home widgets on top
+    names = ["graphite", "dynamic", "hills", "lamp", "fog", "dune", "night", "deep-field"]
+    steps = [("wait", 900)]
+    for n in names:
+        steps += [("do", lambda n=n: call("setSetting", "wallpaper", n)), ("wait", 700), ("still", "wall-" + n)]
+    steps += [("do", lambda: call("setSetting", "wallpaper", "lamp")), ("do", lambda: call("editHome", True, "Wallpaper")), ("wait", 800), ("still", "edit-home-wallpapers"),
+              ("do", lambda: call("editHome", False, "")), ("do", lambda: call("setSetting", "wallpaper", "graphite")), ("wait", 100), ("do", lambda: stop(0))]
+    at(300, lambda: run(steps))
 elif scene == "effort":
     # Settings › Assistant: the effort picker, Jev (Instant) by default
     at(300, lambda: call("launch", "settings"))

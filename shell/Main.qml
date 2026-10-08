@@ -38,6 +38,7 @@ Window {
 
     function launch(id) {
         if (id === "downloads") id = "files";
+        if (id === "install") return Os.installOS();
         if (id === "trash") return;
         if (desktop.registry[id]) desktop.open(id);
     }
@@ -79,6 +80,7 @@ Window {
     function resetHome() { Os.resetHome(); }
     function setSetting(k, v) { Os.settings[k] = v; }
     function showPacks() { packsCard.picked = {}; packsCard.shown = true; }
+    function showBrowsers() { browserCard.shown = true; }
     // recorder: activate a control by name, the way the AI would
     function probeTap(name) { var n = Tree.find(win.contentItem, { name: name }); if (n && n.item.aiActivate) n.item.aiActivate(); }
     property real probeX: -1
@@ -127,7 +129,8 @@ Window {
             anchors.bottomMargin: screen.booted && !tucked ? 7 : -110
             Behavior on anchors.bottomMargin { SequentialAnimation { PauseAnimation { duration: 250 } NumberAnimation { duration: 900; easing.type: Easing.OutQuint } } }
             items: win.apps.filter(function (a) { return !a.noDock; }).map(function (a) { return { id: a.id, icon: a.icon, title: a.title }; })
-                   .concat(["-", { id: "downloads", icon: "downloads", title: "Downloads" }, { id: "trash", icon: "trash", title: "Trash" }])
+                   .concat(["-"], Os.live ? [{ id: "install", icon: "install", title: "Install Firelamp OS" }] : [],
+                           [{ id: "downloads", icon: "downloads", title: "Downloads" }, { id: "trash", icon: "trash", title: "Trash" }])
             aiActiveId: agent.mode !== "idle" ? "assistant" : ""
             onLaunch: (id) => win.launch(id)
         }
@@ -173,8 +176,9 @@ Window {
     Item { id: menuLayer; anchors.fill: parent; z: 60
         MouseArea { anchors.fill: parent; enabled: bar.menu !== null; onPressed: bar.closeMenu() } }
     // after naming, the desktop isn't empty: the Assistant is open with what it noticed
-    NameCard { id: nameCard; z: 70; onDone: { if (!Os.settings.packsAsked) packsCard.shown = true; else { screen.booted = true; openAssistant.start(); } } }
-    PacksCard { id: packsCard; z: 71; onDone: { screen.booted = true; openAssistant.start(); } }
+    NameCard { id: nameCard; z: 70; onDone: { if (!Os.settings.packsAsked) packsCard.shown = true; else if (!Os.settings.browserAsked) browserCard.shown = true; else { screen.booted = true; openAssistant.start(); } } }
+    PacksCard { id: packsCard; z: 71; onDone: { if (!Os.settings.browserAsked) browserCard.shown = true; else { screen.booted = true; openAssistant.start(); } } }
+    BrowserCard { id: browserCard; z: 72; onDone: { screen.booted = true; openAssistant.start(); } }
     Timer { id: openAssistant; interval: 900; onTriggered: win.launch("assistant") }
     Splash {
         anchors.fill: parent; z: 80
@@ -248,6 +252,7 @@ Window {
         if (flag("reset")) Os.settings.assistantName = "";
         if (opt("name")) Os.settings.assistantName = opt("name");
         if (flag("demo-installs")) Os.demoInstalls = true;
+        if (flag("live")) Os.live = true; else Os.checkLive();
         Os.root = screen; Os.desktop = desktop; Os.dock = dock; Os.agent = agent; Os.cursor = cursor;
         if (flag("nosplash")) { if (!Os.settings.assistantName) nameCard.shown = true; else screen.booted = true; }
     }

@@ -1,6 +1,7 @@
 // The wallpaper: graphite, with one faint lamp glow low in the corner, like a room
 // lit by a single lamp. Static by default; `breathe` lets the glow drift very slowly.
 import QtQuick
+import "../js/walls.js" as Walls
 
 Rectangle {
     id: wp
@@ -38,15 +39,21 @@ Rectangle {
     // a photo wallpaper, when one is picked: it crossfades in and is dimmed a little so the
     // widgets and dock stay legible on it
     property string pick: Os.settings.wallpaper
+    property int hour: new Date().getHours()
+    Timer { interval: 60000; running: wp.pick === "dynamic"; repeat: true; onTriggered: wp.hour = new Date().getHours() }
+    // a photo of your own (file:…), one of ours drawn as SVG, or a bundled photo
+    readonly property url pickUrl: !pick || pick === "graphite" ? "" : pick.indexOf("file:") === 0 ? pick
+        : Walls.GENERATED.indexOf(pick) >= 0 ? Walls.uri(pick, hour) : Qt.resolvedUrl("../assets/photos/" + pick + ".jpg")
+    readonly property bool drawn: Walls.GENERATED.indexOf(pick) >= 0
     Image {
         id: photo
         anchors.fill: parent
         fillMode: Image.PreserveAspectCrop
-        sourceSize: Qt.size(1920, 1200)
-        source: wp.pick && wp.pick !== "graphite" ? Qt.resolvedUrl("../assets/photos/" + wp.pick + ".jpg") : ""
+        sourceSize: Qt.size(Math.min(1920, Math.max(64, wp.width * 1.4)), Math.min(1200, Math.max(40, wp.height * 1.4)))
+        source: wp.pickUrl
         opacity: wp.pick !== "graphite" && status === Image.Ready ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
-        Rectangle { anchors.fill: parent; color: "black"; opacity: 0.22 }
+        Rectangle { anchors.fill: parent; color: "black"; opacity: wp.drawn ? 0.06 : 0.22 }
     }
     // film grain, so the dark gradients never band and the screen feels like a material
     Image {

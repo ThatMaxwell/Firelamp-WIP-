@@ -9,6 +9,7 @@ Item {
     property bool shown: false
     property bool aiHidden: !shown
     property var picked: ({})
+    readonly property var included: Packs.PACKS.filter(function (p) { var st = Os.packStatus[p.id]; return st ? !!st.installed : !!p.preinstalled; }).map(function (p) { return p.name; })
     readonly property int count: { var n = 0; for (var k in picked) if (picked[k]) n++; return n; }
     signal done()
     anchors.fill: parent
@@ -46,7 +47,7 @@ Item {
         Item { width: 1; height: 10 }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Pick any, or none. You can change this later in Settings › Packs."
+            text: pc.included.length ? pc.included.join(" and ") + " come with Firelamp. Add any of the rest, or none." : "Pick any, or none. You can change this later in Settings › Packs."
             color: Theme.text2; font.family: Theme.font; font.pixelSize: 15
         }
         Item { width: 1; height: 44 }
@@ -58,22 +59,30 @@ Item {
                 Rectangle {
                     id: card
                     required property var modelData
+                    // already on the system: shown, never asked about
+                    readonly property bool included: { var st = Os.packStatus[modelData.id]; return st ? !!st.installed : !!modelData.preinstalled; }
                     readonly property bool on: !!pc.picked[modelData.id]
-                    property string aiName: modelData.name; property string aiRole: "checkbox"
-                    function aiActivate() { pc.toggle(modelData.id); }
+                    property string aiName: modelData.name; property string aiRole: included ? "listitem" : "checkbox"
+                    function aiActivate() { if (!included) pc.toggle(modelData.id); }
                     width: 168; height: 196; radius: 14
-                    color: on ? Theme.surface2 : Qt.rgba(1, 1, 1, 0.03)
+                    color: on ? Theme.surface2 : included ? "transparent" : Qt.rgba(1, 1, 1, 0.03)
                     border.color: on ? Theme.text : Theme.hairline2; border.width: on ? 1.5 : 1
                     Behavior on color { ColorAnimation { duration: 160 } }
                     scale: ma.pressed ? 0.98 : 1
                     Behavior on scale { NumberAnimation { duration: 120 } }
-                    MouseArea { id: ma; anchors.fill: parent; onClicked: card.aiActivate() }
+                    MouseArea { id: ma; anchors.fill: parent; enabled: !card.included; onClicked: card.aiActivate() }
                     Rectangle {
                         x: 18; y: 18; width: 36; height: 36; radius: 9; color: Theme.surface3
                         Glyph { anchors.centerIn: parent; name: card.modelData.glyph; width: 18; height: 18; color: card.on ? Theme.text : Theme.text2 }
                     }
                     // picked: a cream check in the corner
+                    Text {
+                        visible: card.included
+                        anchors.right: parent.right; anchors.rightMargin: 16; y: 16
+                        text: "Included"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.Medium
+                    }
                     Rectangle {
+                        visible: !card.included
                         anchors.right: parent.right; anchors.rightMargin: 14; y: 14
                         width: 20; height: 20; radius: 10
                         color: card.on ? Theme.text : "transparent"; border.color: card.on ? Theme.text : Theme.text4; border.width: 1

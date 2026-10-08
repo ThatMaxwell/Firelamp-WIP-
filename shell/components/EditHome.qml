@@ -2,6 +2,9 @@
 // dock with four tabs. Every change previews live on the desktop; there is no Apply.
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Dialogs
+import QtCore
+import "../js/walls.js" as Walls
 
 Item {
     id: eh
@@ -170,36 +173,63 @@ Item {
                 }
             }
 
-            // Wallpaper: ours, then the photos that ship with Firelamp
-            Row {
+            // Wallpaper: ours (drawn), Dynamic (follows the time of day), two photos, then yours
+            ListView {
+                id: walls
                 visible: eh.tab === "Wallpaper"
-                spacing: 14
-                Repeater {
-                    model: [["graphite", "Graphite"], ["launch-dusk", "Dusk"], ["deep-field", "Deep field"], ["gravel", "Gravel"], ["brick", "Brick"], ["espresso", "Espresso"]]
+                anchors.fill: parent
+                orientation: ListView.Horizontal; spacing: 12; clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                model: Walls.LIST
+                footer: Item {
+                    width: 144 + 12; height: walls.height
                     Column {
-                        id: wpc
-                        required property var modelData
-                        readonly property bool on: Os.settings.wallpaper === modelData[0]
-                        property string aiName: modelData[1] + " wallpaper"; property string aiRole: "radio"
-                        function aiActivate() { Os.settings.wallpaper = modelData[0]; }
-                        spacing: 8
+                        x: 12; spacing: 8
+                        property string aiName: "Your photos"; property string aiRole: "button"
+                        function aiActivate() { picker.open(); }
                         Rectangle {
-                            width: 144; height: 90; radius: 10; color: "transparent"
-                            border.color: wpc.on ? Theme.text : "transparent"; border.width: 2
-                            Item {
-                                anchors.fill: parent; anchors.margins: 4
-                                layer.enabled: true
-                                layer.effect: MultiEffect { maskEnabled: true; maskSource: wpMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
-                                Wallpaper { anchors.fill: parent; visible: wpc.modelData[0] === "graphite"; pick: "graphite" }
-                                Image { anchors.fill: parent; visible: wpc.modelData[0] !== "graphite"; fillMode: Image.PreserveAspectCrop; sourceSize: Qt.size(280, 180)
-                                        source: wpc.modelData[0] !== "graphite" ? Qt.resolvedUrl("../assets/photos/" + wpc.modelData[0] + ".jpg") : "" }
-                            }
-                            Rectangle { id: wpMask; anchors.fill: parent; anchors.margins: 4; radius: 7; visible: false; layer.enabled: true }
-                            MouseArea { anchors.fill: parent; onClicked: wpc.aiActivate() }
+                            width: 144; height: 90; radius: 10; color: "transparent"; border.color: Theme.hairline2; border.width: 1
+                            Text { anchors.centerIn: parent; text: "+"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 20 }
+                            MouseArea { anchors.fill: parent; onClicked: picker.open() }
                         }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: wpc.modelData[1]; color: wpc.on ? Theme.text : Theme.text2; font.family: Theme.font; font.pixelSize: 12; font.weight: wpc.on ? Font.Medium : Font.Normal }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Your photos…"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 12 }
                     }
                 }
+                delegate: Column {
+                    id: wpc
+                    required property var modelData
+                    readonly property bool on: Os.settings.wallpaper === modelData[0]
+                    property string aiName: modelData[1] + " wallpaper"; property string aiRole: "radio"
+                    function aiActivate() { Os.settings.wallpaper = modelData[0]; }
+                    spacing: 8
+                    Rectangle {
+                        width: 144; height: 90; radius: 10; color: "transparent"
+                        border.color: wpc.on ? Theme.text : "transparent"; border.width: 2
+                        Item {
+                            anchors.fill: parent; anchors.margins: 4
+                            layer.enabled: true
+                            layer.effect: MultiEffect { maskEnabled: true; maskSource: wpMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
+                            Wallpaper { anchors.fill: parent; pick: wpc.modelData[0]; Rectangle { anchors.fill: parent; color: "transparent" } }
+                        }
+                        Rectangle { id: wpMask; anchors.fill: parent; anchors.margins: 4; radius: 7; visible: false; layer.enabled: true }
+                        // Dynamic shows its four lights as a strip along the bottom
+                        Row {
+                            visible: wpc.modelData[0] === "dynamic"
+                            anchors.bottom: parent.bottom; anchors.bottomMargin: 8; anchors.horizontalCenter: parent.horizontalCenter; spacing: 3
+                            Repeater { model: ["dawn", "day", "dusk", "night"]
+                                Rectangle { required property string modelData; width: 14; height: 4; radius: 2; color: Walls.LIGHTS[modelData].sky[1]; border.color: Qt.rgba(1, 1, 1, 0.25); border.width: 0.5 } }
+                        }
+                        MouseArea { anchors.fill: parent; onClicked: wpc.aiActivate() }
+                    }
+                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: wpc.modelData[1]; color: wpc.on ? Theme.text : Theme.text2; font.family: Theme.font; font.pixelSize: 12; font.weight: wpc.on ? Font.Medium : Font.Normal }
+                }
+            }
+            FileDialog {
+                id: picker
+                title: "Choose a wallpaper"
+                nameFilters: ["Images (*.jpg *.jpeg *.png *.webp)"]
+                currentFolder: StandardPaths.writableLocation(StandardPaths.PicturesLocation)
+                onAccepted: Os.settings.wallpaper = selectedFile.toString()
             }
 
             // Dock & bar: the few things people actually change, live
@@ -246,16 +276,30 @@ Item {
                             readonly property bool on: eh.isCurrent(modelData)
                             property string aiName: modelData.name + " look"; property string aiRole: "radio"
                             function aiActivate() { eh.applyLook(modelData); }
-                            width: 138; height: 112; radius: 12
+                            width: 138; height: 140; radius: 12
                             color: Qt.rgba(1, 1, 1, 0.03)
                             border.color: on ? Theme.text : Theme.hairline2; border.width: on ? 2 : 1
                             MouseArea { anchors.fill: parent; onClicked: lk.aiActivate() }
+                            // a diagram of the Look in its own colours: top bar, one window, the dock
+                            Rectangle {
+                                id: plan
+                                x: 12; y: 12; width: parent.width - 24; height: 50; radius: 6
+                                color: lk.pal.wall[0]; border.color: Theme.hairline2; border.width: 1
+                                readonly property real r: (lk.modelData.winRadius !== undefined ? lk.modelData.winRadius : 12) / 4
+                                Rectangle { width: parent.width; height: 4; radius: 0; color: lk.pal.bg; opacity: 0.9 }
+                                Rectangle { x: 14; y: 9; width: parent.width * 0.58; height: 27; radius: plan.r; color: lk.pal.s[0]; border.color: Qt.rgba(lk.pal.line[0] / 255, lk.pal.line[1] / 255, lk.pal.line[2] / 255, 0.16); border.width: 1
+                                    Rectangle { x: 5; y: 6; width: parent.width * 0.5; height: 2; radius: 1; color: lk.pal.t[0] }
+                                    Rectangle { x: 5; y: 11; width: parent.width * 0.35; height: 2; radius: 1; color: lk.pal.t[2] } }
+                                Rectangle { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 3
+                                            width: parent.width * (lk.modelData.dockSize === 0 ? 0.32 : 0.42); height: 6; radius: Math.min(3, plan.r + 1)
+                                            color: Qt.rgba(lk.pal.dock[0] / 255, lk.pal.dock[1] / 255, lk.pal.dock[2] / 255, 1) }
+                            }
                             // the palette itself, as swatches: background, surfaces, text
                             Row {
-                                x: 12; y: 14; spacing: -6
+                                x: 12; y: 70; spacing: -4
                                 Repeater {
                                     model: [lk.pal.bg, lk.pal.s[1], lk.pal.s[3], lk.pal.t[2], lk.pal.t[0]]
-                                    Rectangle { required property var modelData; width: 26; height: 26; radius: 13; color: modelData; border.color: Theme.hairline2; border.width: 1 }
+                                    Rectangle { required property var modelData; width: 16; height: 16; radius: 8; color: modelData; border.color: Theme.hairline2; border.width: 1 }
                                 }
                             }
                             Column {
@@ -268,7 +312,7 @@ Item {
                     Rectangle {
                         property string aiName: "Save as Look"; property string aiRole: "button"
                         function aiActivate() { eh.saveLook(); }
-                        width: 112; height: 112; radius: 12; color: "transparent"; border.color: Theme.hairline2; border.width: 1
+                        width: 112; height: 140; radius: 12; color: "transparent"; border.color: Theme.hairline2; border.width: 1
                         Column { anchors.centerIn: parent; spacing: 6
                             Text { anchors.horizontalCenter: parent.horizontalCenter; text: "+"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 20 }
                             Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Save as Look"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.Medium } }

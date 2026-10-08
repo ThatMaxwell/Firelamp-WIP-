@@ -5,6 +5,8 @@
     firelamp-desktops install ID       install one (pacman, --needed)
     firelamp-desktops packs            the software packs (Dev, Make, Rice, Play, Office)
     firelamp-desktops install-pack ID  install a pack;  remove-pack ID removes it
+    firelamp-desktops browsers         the browsers you can pick, and which one is the default
+    firelamp-desktops browser ID       install it if needed and make it the default
     firelamp-desktops serve            local API for Settings > Desktops and Packs (127.0.0.1:7341)
 
 The shell's Settings page talks to `serve` over plain HTTP on localhost:
@@ -12,6 +14,10 @@ The shell's Settings page talks to `serve` over plain HTTP on localhost:
     POST /install/ID      -> starts the install, returns at once
     GET  /packs           -> [{id, name, installed, state, log, packages}]
     POST /install-pack/ID, /remove-pack/ID
+    GET  /browsers        -> {default, browsers:[{id, installed, state, log}]}
+    POST /browser/ID      -> install (if needed) and set as the default browser
+    GET  /live            -> {live}: true on the live ISO (/run/archiso exists)
+    POST /install-os      -> opens the installer (firelamp-install), live ISO only
 Only the IDs below can be installed; nothing else is passed to pacman.
 Each one ships a wayland-sessions/xsessions entry, so it shows up at login.
 """
@@ -40,6 +46,45 @@ PACKS = {
     "play":   {"name": "Play", "packages": ["steam", "lutris", "gamemode", "mangohud"]},
     "office": {"name": "Office", "packages": ["libreoffice-fresh", "thunderbird"]},
 }
+# Browsers: how to get each one, and the .desktop file that makes it the default.
+# repo = Arch/CachyOS packages (root), flatpak = Flathub per user, aur = paru when present.
+FLATHUB = "https://dl.flathub.org/repo/flathub.flatpakrepo"
+BROWSERS = {
+    "firefox":     ("repo", "firefox", "firefox.desktop"),
+    "chrome":      ("flatpak", "com.google.Chrome", None),
+    "brave":       ("flatpak", "com.brave.Browser", None),
+    "edge":        ("flatpak", "com.microsoft.Edge", None),
+    "vivaldi":     ("repo", "vivaldi", "vivaldi-stable.desktop"),
+    "opera":       ("flatpak", "com.opera.Opera", None),
+    "helium":      ("aur", "helium-browser-bin", None),
+    "librewolf":   ("flatpak", "io.gitlab.librewolf-community", None),
+    "mullvad":     ("flatpak", "net.mullvad.MullvadBrowser", None),
+    "tor":         ("repo", "torbrowser-launcher", "torbrowser.desktop"),
+    "ungoogled":   ("flatpak", "io.github.ungoogled_software.ungoogled_chromium", None),
+    "zen":         ("flatpak", "app.zen_browser.zen", None),
+    "floorp":      ("flatpak", "one.ablaze.floorp", None),
+    "waterfox":    ("flatpak", "net.waterfox.waterfox", None),
+    "chromium":    ("repo", "chromium", "chromium.desktop"),
+    "thorium":     ("aur", "thorium-browser-bin", None),
+    "falkon":      ("repo", "falkon", "org.kde.falkon.desktop"),
+    "konqueror":   ("repo", "konqueror", "org.kde.konqueror.desktop"),
+    "epiphany":    ("repo", "epiphany", "org.gnome.Epiphany.desktop"),
+    "qutebrowser": ("repo", "qutebrowser", "org.qutebrowser.qutebrowser.desktop"),
+    "nyxt":        ("repo", "nyxt", "nyxt.desktop"),
+    "ladybird":    ("aur", "ladybird-git", None),
+}
+# The app icon each tile shows, the way the dock shows any app: the installed launcher's Icon=,
+# else the icon from Flathub's appstream data (the Flathub id doubles as the lookup for repo
+# browsers that are also on Flathub). No icon: the shell falls back to a monogram.
+FLATHUB_IDS = {
+    "firefox": "org.mozilla.firefox", "vivaldi": "com.vivaldi.Vivaldi", "tor": "org.torproject.torbrowser-launcher",
+    "chromium": "org.chromium.Chromium", "falkon": "org.kde.falkon", "konqueror": "org.kde.konqueror",
+    "epiphany": "org.gnome.Epiphany", "qutebrowser": "org.qutebrowser.qutebrowser", "nyxt": "engineer.atlas.Nyxt",
+}
+ICON_ROOTS = [os.path.expanduser("~/.local/share/flatpak/exports/share/icons/hicolor"),
+              "/var/lib/flatpak/exports/share/icons/hicolor", "/usr/share/icons/hicolor"]
+APPSTREAM = [os.path.expanduser("~/.local/share/flatpak/appstream/flathub/{arch}/active/icons/128x128"),
+             "/var/lib/flatpak/appstream/flathub/{arch}/active/icons/128x128"]
 jobs = {}   # id -> {"state": "installing"|"installed"|"failed", "log": last line}
 
 
@@ -78,6 +123,132 @@ def run_job(key, cmd, check):
 def install(did):
     d = CATALOG[did]
     return run_job(did, ["pacman", "-S", "--needed", "--noconfirm", *d["packages"]], lambda: installed(d["probe"]))
+
+
+def run_quiet(cmd):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True)
+    except FileNotFoundError:
+        return subprocess.CompletedProcess(cmd, 127, "", "")
+
+
+def browser_desktop(bid):
+    via, name, desktop = BROWSERS[bid]
+    if via == "flatpak":
+        return name + ".desktop"
+    if desktop:
+        return desktop
+    # AUR packages: find the launcher the package ships
+    for line in run_quiet(["pacman", "-Qlq", name]).stdout.splitlines():
+        if line.startswith("/usr/share/applications/") and line.endswith(".desktop"):
+            return os.path.basename(line)
+    return None
+
+
+def browser_installed(bid):
+    via, name, _ = BROWSERS[bid]
+    if via == "flatpak":
+        return run_quiet(["flatpak", "info", "--user", name]).returncode == 0 or run_quiet(["flatpak", "info", name]).returncode == 0
+    return query(name)
+
+
+def theme_icon(name):
+    if os.path.isabs(name):
+        return name if os.path.isfile(name) else None
+    for root in ICON_ROOTS:
+        for size in ("scalable", "256x256", "128x128", "96x96", "64x64", "48x48"):
+            for ext in (".svg", ".png"):
+                f = os.path.join(root, size, "apps", name + ext)
+                if os.path.isfile(f):
+                    return f
+    for ext in (".svg", ".png"):
+        if os.path.isfile("/usr/share/pixmaps/" + name + ext):
+            return "/usr/share/pixmaps/" + name + ext
+    return None
+
+
+def browser_icon(bid):
+    via, name, _ = BROWSERS[bid]
+    desktop = browser_desktop(bid) if browser_installed(bid) else None
+    if desktop:
+        for d in ("~/.local/share/flatpak/exports/share/applications", "/var/lib/flatpak/exports/share/applications", "/usr/share/applications"):
+            f = os.path.join(os.path.expanduser(d), desktop)
+            if os.path.isfile(f):
+                with open(f, errors="replace") as fh:
+                    for line in fh:
+                        if line.startswith("Icon="):
+                            icon = theme_icon(line[5:].strip())
+                            if icon:
+                                return icon
+                            break
+                break
+    fid = name if via == "flatpak" else FLATHUB_IDS.get(bid)
+    if fid:
+        arch = os.uname().machine
+        for d in APPSTREAM:
+            f = os.path.join(d.format(arch=arch), fid + ".png")
+            if os.path.isfile(f):
+                return f
+    return None
+
+
+def refresh_appstream():
+    """Fetch Flathub's catalog once, so tiles get real icons before anything is installed."""
+    if shutil.which("flatpak"):
+        run_quiet(["flatpak", "remote-add", "--user", "--if-not-exists", "flathub", FLATHUB])
+        run_quiet(["flatpak", "update", "--user", "--appstream", "flathub"])
+
+
+def default_browser():
+    cur = run_quiet(["xdg-settings", "get", "default-web-browser"]).stdout.strip()
+    for bid in BROWSERS:
+        if cur and cur == browser_desktop(bid):
+            return bid
+    return "firefox" if not cur else cur
+
+
+def pick_browser(bid):
+    """Install the browser if it isn't there, then make it the default."""
+    via, name, _ = BROWSERS[bid]
+    key = "browser:" + bid
+    ok = True
+    if not browser_installed(bid):
+        if via == "repo":
+            ok = run_job(key, ["pacman", "-S", "--needed", "--noconfirm", name], lambda: browser_installed(bid))
+        elif via == "flatpak":
+            run_quiet(["flatpak", "remote-add", "--user", "--if-not-exists", "flathub", FLATHUB])
+            jobs[key] = {"state": "installing", "log": "Downloading from Flathub"}
+            p = subprocess.Popen(["flatpak", "install", "--user", "-y", "--noninteractive", "flathub", name],
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            for line in p.stdout:
+                if line.strip():
+                    jobs[key]["log"] = line.strip()[-120:]
+            ok = p.wait() == 0 and browser_installed(bid)
+        elif via == "aur":
+            if not shutil.which("paru"):
+                jobs[key] = {"state": "failed", "log": "Needs the AUR helper paru"}
+                return False
+            jobs[key] = {"state": "installing", "log": "Building from the AUR"}
+            p = subprocess.Popen(["paru", "-S", "--needed", "--noconfirm", "--skipreview", "--sudo", "pkexec", name],
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            for line in p.stdout:
+                if line.strip():
+                    jobs[key]["log"] = line.strip()[-120:]
+            ok = p.wait() == 0 and browser_installed(bid)
+    if ok:
+        desktop = browser_desktop(bid)
+        ok = bool(desktop) and run_quiet(["xdg-settings", "set", "default-web-browser", desktop]).returncode == 0
+    jobs[key] = {"state": "installed" if ok else "failed", "log": jobs.get(key, {}).get("log", "")}
+    return ok
+
+
+def browser_listing():
+    out = []
+    for bid in BROWSERS:
+        j = jobs.get("browser:" + bid, {})
+        out.append({"id": bid, "installed": browser_installed(bid), "via": BROWSERS[bid][0],
+                    "state": j.get("state", ""), "log": j.get("log", ""), "icon": browser_icon(bid)})
+    return {"default": default_browser(), "browsers": out}
 
 
 def pack_installed(pid):
@@ -129,10 +300,26 @@ class Api(BaseHTTPRequestHandler):
             return self.reply(200, listing())
         if self.path == "/packs":
             return self.reply(200, pack_listing())
+        if self.path == "/browsers":
+            return self.reply(200, browser_listing())
+        if self.path == "/live":
+            return self.reply(200, {"live": os.path.isdir("/run/archiso")})
         self.reply(404, {"error": "not found"})
 
     def do_POST(self):
+        if self.path == "/install-os":
+            if not os.path.isdir("/run/archiso") or not shutil.which("firelamp-install"):
+                return self.reply(404, {"error": "not a live session"})
+            subprocess.Popen(["firelamp-install"], start_new_session=True,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return self.reply(202, {"state": "opening"})
         did = self.path.rsplit("/", 1)[-1]
+        if self.path.startswith("/browser/"):
+            if did not in BROWSERS:
+                return self.reply(404, {"error": "unknown browser"})
+            if jobs.get("browser:" + did, {}).get("state") != "installing":
+                threading.Thread(target=pick_browser, args=(did,), daemon=True).start()
+            return self.reply(202, {"state": "installing"})
         for verb, fn in (("/install-pack/", install_pack), ("/remove-pack/", remove_pack)):
             if self.path.startswith(verb):
                 if did not in PACKS:
@@ -156,6 +343,13 @@ def main():
     if cmd == "list":
         for d in listing():
             print(f"{d['id']:10} {'installed' if d['installed'] else '-':10} {' '.join(d['packages'])}")
+    elif cmd == "browsers":
+        info = browser_listing()
+        for b in info["browsers"]:
+            mark = "default" if b["id"] == info["default"] else "installed" if b["installed"] else "-"
+            print(f"{b['id']:12} {b['via']:8} {mark:10} {b['icon'] or ''}")
+    elif cmd == "browser" and len(sys.argv) > 2 and sys.argv[2] in BROWSERS:
+        sys.exit(0 if pick_browser(sys.argv[2]) else 1)
     elif cmd == "packs":
         for d in pack_listing():
             print(f"{d['id']:8} {'installed' if d['installed'] else '-':10} {' '.join(d['packages'])}")
@@ -164,6 +358,7 @@ def main():
     elif cmd == "install" and len(sys.argv) > 2 and sys.argv[2] in CATALOG:
         sys.exit(0 if install(sys.argv[2]) else 1)
     elif cmd == "serve":
+        threading.Thread(target=refresh_appstream, daemon=True).start()
         ThreadingHTTPServer(("127.0.0.1", PORT), Api).serve_forever()
     else:
         sys.exit(__doc__)
