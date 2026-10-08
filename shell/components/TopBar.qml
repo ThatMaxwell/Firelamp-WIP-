@@ -9,7 +9,7 @@ Rectangle {
     property Item menuLayer
     property string aiApp: "menubar"
     height: Theme.menubarH
-    color: Qt.rgba(18 / 255, 17 / 255, 16 / 255, 0.85)
+    color: Theme.bar
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairline }
 
     property var menu: null
@@ -87,7 +87,7 @@ Rectangle {
         // the menu-bar mark is a plain cream glyph; colour stays with the AI
         BarItem { key: "logo"; label: "Firelamp menu"; width: 30
             Image { width: 12; height: 17; y: 2; x: 0; sourceSize: Qt.size(24, 34); smooth: true
-                source: "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="24 26 644 966"><path fill="#EFEAE4" d="' + L.PATHS.outer + '"/></svg>') } }
+                source: "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="24 26 644 966"><path fill="' + Theme.text + '" d="' + L.PATHS.outer + '"/></svg>') } }
         BarItem { key: "app"; label: "App menu"; BarText { text: bar.appName; font.weight: Font.Bold } }
         Repeater {
             model: ["File", "Edit", "View", "Window", "Help"]

@@ -78,6 +78,8 @@ Window {
     function desktopMenu(x, y) { desktop.contextMenu(x, y - Theme.menubarH); }
     function resetHome() { Os.resetHome(); }
     function setSetting(k, v) { Os.settings[k] = v; }
+    // recorder: activate a control by name, the way the AI would
+    function probeTap(name) { var n = Tree.find(win.contentItem, { name: name }); if (n && n.item.aiActivate) n.item.aiActivate(); }
     property real probeX: -1
     property real probeY: -1
     function probe(name) { var n = Tree.find(win.contentItem, { name: name }); probeX = n ? n.bounds.x + n.bounds.w / 2 : -1; probeY = n ? n.bounds.y + n.bounds.h / 2 : -1; }

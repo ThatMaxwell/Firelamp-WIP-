@@ -39,6 +39,9 @@ QtObject {
         property bool barSeconds: false
         property bool barDate: true
         property int winRadius: 12
+        property string look: "graphite"       // graphite | paper | midnight | moss | studio
+        property string accent: ""             // the user's color; empty = neutral. Never ember.
+        property string myLooks: "[]"           // saved Looks, JSON
     }
     // Risky means deleting, sending, paying or sharing; those always ask, whatever this says.
     function trust(app) { try { return JSON.parse(settings.appTrust)[app] || "risky"; } catch (e) { return "risky"; } }

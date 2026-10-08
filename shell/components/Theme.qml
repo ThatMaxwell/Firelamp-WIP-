@@ -4,20 +4,40 @@ pragma Singleton
 import QtQuick
 
 QtObject {
+    // ---- Looks (§13): one palette each; the ember never changes ----
+    readonly property var looks: ({
+        graphite: { bg: "#121110", s: ["#181716", "#1F1D1B", "#272422", "#312E2B"], line: [255, 244, 232],
+                    t: ["#EFEAE4", "#ABA49C", "#76706A", "#57524D"], dock: [0x23, 0x21, 0x20], wall: ["#141312", "#0f0e0d"], glow: "#2a221c", light: false },
+        paper:    { bg: "#ECE8E2", s: ["#F6F3EE", "#F1EDE7", "#FBF9F6", "#E4DFD8"], line: [40, 30, 20],
+                    t: ["#1D1B19", "#58524C", "#8A837C", "#ADA69E"], dock: [0xF4, 0xF1, 0xEC], wall: ["#EAE6E0", "#DCD7D0"], glow: "#F6EFE6", light: true },
+        midnight: { bg: "#000000", s: ["#0A0A0A", "#101010", "#171717", "#202020"], line: [255, 255, 255],
+                    t: ["#EDEDED", "#A3A3A3", "#6E6E6E", "#4E4E4E"], dock: [0x12, 0x12, 0x12], wall: ["#000000", "#000000"], glow: "#0c0c0c", light: false },
+        moss:     { bg: "#111410", s: ["#161A15", "#1C211B", "#242A22", "#2D342B"], line: [232, 244, 226],
+                    t: ["#E8EDE4", "#A3ACA0", "#717A6E", "#535B51"], dock: [0x20, 0x25, 0x1E], wall: ["#141813", "#0d100c"], glow: "#1f2a1c", light: false },
+        studio:   { bg: "#0F1011", s: ["#151617", "#1B1C1E", "#232527", "#2C2F31"], line: [230, 238, 244],
+                    t: ["#E6E9EC", "#9EA4AA", "#6C7278", "#50555A"], dock: [0x1C, 0x1E, 0x20], wall: ["#121315", "#0c0d0e"], glow: "#16191c", light: false } })
+    readonly property var pal: looks[Os.settings.look] || looks.graphite
+    readonly property bool light: pal.light
+    function _line(a) { return Qt.rgba(pal.line[0] / 255, pal.line[1] / 255, pal.line[2] / 255, a); }
+
     // ---- surfaces ----
-    readonly property color bg: "#121110"
-    readonly property color surface0: "#181716"
-    readonly property color surface1: "#1F1D1B"
-    readonly property color surface2: "#272422"
-    readonly property color surface3: "#312E2B"
-    readonly property color hairline: Qt.rgba(1, 244 / 255, 232 / 255, 0.07)
-    readonly property color hairline2: Qt.rgba(1, 244 / 255, 232 / 255, 0.12)
+    readonly property color bg: pal.bg
+    readonly property color surface0: pal.s[0]
+    readonly property color surface1: pal.s[1]
+    readonly property color surface2: pal.s[2]
+    readonly property color surface3: pal.s[3]
+    readonly property color hairline: _line(light ? 0.10 : 0.07)
+    readonly property color hairline2: _line(light ? 0.16 : 0.12)
 
     // ---- text ----
-    readonly property color text: "#EFEAE4"
-    readonly property color text2: "#ABA49C"
-    readonly property color text3: "#76706A"
-    readonly property color text4: "#57524D"
+    readonly property color text: pal.t[0]
+    readonly property color text2: pal.t[1]
+    readonly property color text3: pal.t[2]
+    readonly property color text4: pal.t[3]
+
+    // ---- your color: focus rings, selection, toggles, links. Never the AI's ember. ----
+    readonly property string userAccent: Os.settings.accent
+    readonly property color toggleOn: userAccent || ok
 
     // ---- the AI's colours ----
     readonly property color ember: "#F26A2E"
@@ -27,7 +47,7 @@ QtObject {
     // ---- status ----
     readonly property color danger: "#E5484D"
     readonly property color ok: "#3FB97A"
-    readonly property color focusRing: Qt.rgba(239 / 255, 234 / 255, 228 / 255, 0.4)
+    readonly property color focusRing: userAccent ? Qt.alpha(userAccent, 0.55) : Qt.alpha(text, 0.4)
 
     // older names, kept so every component reads from the same tokens
     readonly property color win: surface0
@@ -39,15 +59,16 @@ QtObject {
     readonly property color selStrong: surface3
     readonly property color line: hairline
     readonly property color line2: hairline2
-    readonly property color line3: Qt.rgba(1, 244 / 255, 232 / 255, 0.2)
-    readonly property color hover: Qt.rgba(1, 244 / 255, 232 / 255, 0.05)
-    readonly property color ink: Qt.rgba(239 / 255, 234 / 255, 228 / 255, 0.4)
+    readonly property color line3: userAccent ? Qt.alpha(userAccent, 0.7) : _line(0.2)
+    readonly property color hover: _line(0.05)
+    readonly property color ink: Qt.alpha(text, 0.4)
     readonly property color success: ok
     readonly property color accent: text             // primary actions are cream, not orange
     readonly property color onAccent: bg
 
-    readonly property color dock: Qt.rgba(0x23 / 255, 0x21 / 255, 0x20 / 255, 0.92)
-    readonly property color glass: Qt.rgba(0x1F / 255, 0x1D / 255, 0x1B / 255, 0.96)
+    readonly property color dock: Qt.rgba(pal.dock[0] / 255, pal.dock[1] / 255, pal.dock[2] / 255, 0.92)
+    readonly property color glass: Qt.alpha(surface1, 0.96)
+    readonly property color bar: Qt.alpha(bg, 0.85)
 
     // ---- type: Instrument Sans + Martian Mono, bundled (OFL) ----
     // static instances cut from the variable fonts (Martian Mono at normal width), one file per weight,

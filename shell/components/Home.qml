@@ -30,12 +30,13 @@ Item {
     Canvas {
         id: grid
         anchors.fill: parent
-        opacity: home.edit; visible: opacity > 0
+        opacity: home.edit * 0.6; visible: opacity > 0
         onWidthChanged: requestPaint(); onHeightChanged: requestPaint()
+        Connections { target: Os.settings; function onLookChanged() { grid.requestPaint(); } }
         onPaint: {
             var c = getContext("2d");
             c.reset();
-            c.fillStyle = Qt.rgba(1, 244 / 255, 232 / 255, 0.04);
+            c.fillStyle = Theme.hairline;
             for (var x = 0; x < width; x += home.snap) c.fillRect(x, 0, 1, height);
             for (var y = 0; y < height; y += home.snap) c.fillRect(0, y, width, 1);
         }
