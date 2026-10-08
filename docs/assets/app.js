@@ -251,7 +251,8 @@
     dlOs = os;
     $$('.dl-tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.os === os));
     // commands bright, arguments quieter, so the six steps read at a glance
-    dlCode.innerHTML = CMD[os].text.map(l => '<span>' + esc(l).replace(/^(\S+)/, '<b>$1</b>') + '</span>').join('');
+    // wrap at spaces only: a word joiner keeps flags like -Force whole, and long URLs may break after a slash
+    dlCode.innerHTML = CMD[os].text.map(l => '<span>' + esc(l).replace(/^(\S+)/, '<b>$1</b>').replace(/-/g, '-\u2060').replace(/(\w)\//g, '$1/<wbr>') + '</span>').join('');
     $('#dlPath').textContent = CMD[os].path;
     $('#dlShell').textContent = os === 'win' ? 'PowerShell' : 'Terminal';
     dlCopy.textContent = T[lang]['dl.copy'];
