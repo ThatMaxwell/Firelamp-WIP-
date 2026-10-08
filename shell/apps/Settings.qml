@@ -99,6 +99,68 @@ Item {
                     }
                 }
                 Group {
+                    id: brain
+                    title: "Effort"
+                    // Jev answers instantly; each step up trades speed for a bigger model
+                    readonly property var tiers: [
+                        { name: "Instant", model: "Jev by TypeSafe", hint: "Decides in milliseconds. The default." },
+                        { name: "Fast", pick: "modelFast", hint: "Your pick of a fast model, with web search." },
+                        { name: "Balanced", pick: "modelBalanced", hint: "Your pick of a second model." },
+                        { name: "High", model: "Grok 4.5", hint: "Fast and smart, sounds human." },
+                        { name: "Max", model: "Grok 4.6", hint: "More careful on long tasks." },
+                        { name: "Ultra", model: "Grok 4.7", hint: "The most capable. The slowest." } ]
+                    Item {
+                        width: parent ? parent.width : 0; height: 64
+                        Segmented {
+                            x: 16; anchors.verticalCenter: parent.verticalCenter
+                            options: brain.tiers.map(function (t) { return t.name; })
+                            current: Os.settings.effort
+                            onPicked: (i) => Os.settings.effort = i
+                        }
+                    }
+                    Repeater {
+                        model: brain.tiers
+                        Item {
+                            id: tr
+                            required property var modelData
+                            required property int index
+                            readonly property bool on: Os.settings.effort === index
+                            width: parent ? parent.width : 0; height: 44
+                            Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
+                            Rectangle { x: 16; width: 6; height: 6; radius: 3; anchors.verticalCenter: parent.verticalCenter; color: tr.on ? Theme.text : "transparent"; border.color: Theme.text3; border.width: tr.on ? 0 : 1 }
+                            Column {
+                                x: 34; anchors.verticalCenter: parent.verticalCenter; spacing: 1
+                                Text { text: tr.modelData.name; color: tr.on ? Theme.text : Theme.text2; font.family: Theme.font; font.pixelSize: 13; font.weight: tr.on ? Font.Medium : Font.Normal }
+                                Text { text: tr.modelData.hint; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
+                            }
+                            // named tiers show their model; the open ones take any model you type
+                            Text {
+                                visible: !tr.modelData.pick
+                                anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
+                                text: tr.modelData.model || ""; color: Theme.text2; font.family: Theme.font; font.pixelSize: 12
+                            }
+                            Rectangle {
+                                visible: !!tr.modelData.pick
+                                anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter
+                                width: 150; height: 26; radius: 6; color: Theme.surface0; border.color: mf.input.activeFocus ? Theme.line3 : Theme.hairline; border.width: 1
+                                Field {
+                                    id: mf; x: 8; width: parent.width - 16; height: parent.height; pixelSize: 11
+                                    label: tr.modelData.name + " model"; placeholder: "Any model"
+                                    Component.onCompleted: if (tr.modelData.pick) text = Os.settings[tr.modelData.pick]
+                                    onTextChanged: if (tr.modelData.pick) Os.settings[tr.modelData.pick] = text.trim()
+                                }
+                            }
+                        }
+                    }
+                    Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
+                    Row2 {
+                        title: "Reasoning"
+                        hint: Os.settings.effort === 0 ? "Not used on Instant: Jev decides without a reasoning pass" : "Think it through before acting. Slower; off by default"
+                        Toggle { label: "Reasoning"; checked: Os.settings.reasoning; enabled: Os.settings.effort > 0; opacity: enabled ? 1 : 0.4
+                                 onToggled: (c) => Os.settings.reasoning = c }
+                    }
+                }
+                Group {
                     title: "Safety"
                     Row2 { title: "Ask before risky actions"; hint: "Deleting, sending, paying. The OS asks you, never the AI."
                            Toggle { label: "Ask before risky actions"; checked: Os.settings.askBeforeRisky; onToggled: (c) => Os.settings.askBeforeRisky = c } }

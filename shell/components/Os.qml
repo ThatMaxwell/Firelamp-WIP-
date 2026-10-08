@@ -20,7 +20,13 @@ QtObject {
         property bool askBeforeRisky: true
         property real cursorSpeed: 1.0
         property bool idleFade: true
-        property string appTrust: "{}"         // per app: "all" | "risky" (default) | "never"
+        property string appTrust: "{}"
+        // which brain answers: 0 Instant (Jev by TypeSafe) … 5 Ultra (Grok 4.7)
+        property int effort: 0
+        property string modelFast: ""
+        property string modelBalanced: ""
+        property bool reasoning: false
+        property string appTrust2: ""         // per app: "all" | "risky" (default) | "never"
     }
     // Risky means deleting, sending, paying or sharing; those always ask, whatever this says.
     function trust(app) { try { return JSON.parse(settings.appTrust)[app] || "risky"; } catch (e) { return "risky"; } }

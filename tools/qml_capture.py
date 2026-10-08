@@ -249,6 +249,12 @@ elif scene == "desktops":
     still("desktops-installing", 5200)
     still("desktops-installed", 11000)
     stop(11800)
+elif scene == "effort":
+    # Settings › Assistant: the effort picker, Jev (Instant) by default
+    at(300, lambda: call("launch", "settings"))
+    at(1400, lambda: call("settingsScroll", 120))
+    still("settings-effort", 2300)
+    stop(2600)
 elif scene == "panels":
     at(300, lambda: call("launch", "notes"))
     at(1200, lambda: call("openAsk"))
