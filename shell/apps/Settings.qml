@@ -24,7 +24,7 @@ Item {
         width: parent ? parent.width : 0; height: groupCol.height
         radius: 10; color: Qt.rgba(1, 1, 1, 0.04); border.color: Theme.line; border.width: 0.5
         Column { id: groupCol; width: parent.width }
-        Text { y: -22; x: 4; text: parent.title; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.DemiBold }
+        Text { y: -26; x: 4; text: parent.title; color: Theme.text2; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold }
     }
     component Kbd: Rectangle {
         property string k
@@ -47,7 +47,7 @@ Item {
             x: 24; y: 56; width: parent.width - 48; height: parent.height - 56
             contentHeight: col.height + 30; clip: true; boundsBehavior: Flickable.StopAtBounds
             Column {
-                id: col; width: fl.width; spacing: 40
+                id: col; width: fl.width; spacing: 50
                 Row {
                     spacing: 18; topPadding: 8
                     Logo { width: 54; height: 63; animated: true }
@@ -63,14 +63,14 @@ Item {
                     }
                 }
                 Group {
-                    title: "SAFETY"
+                    title: "Safety"
                     Row2 { title: "Ask before risky actions"; hint: "Deleting, sending, paying. The OS asks you, never the AI."
                            Toggle { label: "Ask before risky actions"; checked: Os.settings.askBeforeRisky; onToggled: (c) => Os.settings.askBeforeRisky = c } }
                     Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
                     Row2 { title: "Pause or stop instantly"; hint: "Works from anywhere, even mid-click"; Kbd { k: "⌃ Space" } Kbd { k: "Esc" } }
                 }
                 Group {
-                    title: "FIRE CURSOR"
+                    title: "Fire cursor"
                     Row2 {
                         title: "Speed"; hint: "How fast it moves between things"
                         Item {

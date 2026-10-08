@@ -45,17 +45,23 @@ Item {
                 Glyph { x: 18; anchors.verticalCenter: parent.verticalCenter; name: "search"; color: Theme.text3 }
                 Text { x: 44; anchors.verticalCenter: parent.verticalCenter; text: "Search or ask anything"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 14 }
             }
-            Grid {
-                anchors.horizontalCenter: parent.horizontalCenter; columns: 4; columnSpacing: 26; rowSpacing: 16; topPadding: 8
+            // where you were, not a wall of letter tiles
+            Column {
+                width: 480; spacing: 2; topPadding: 6
+                Text { x: 4; text: "Recent"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold; bottomPadding: 6 }
                 Repeater {
-                    model: [["GitHub", "#2C2B2A"], ["Jev", "#3A3836"], ["Hearth", "#5B5550"], ["Arch Wiki", "#3A4A57"], ["Maps", "#5B6B57"], ["News", "#7A6C5D"], ["Music", "#4A3B47"], ["Docs", "#D9CDB5"]]
-                    Column {
+                    model: [["Installation guide", "wiki.archlinux.org", "doc"], ["Jev early access: getting started", "typesafe.ai/jev", "type"], ["ThatMaxwell/Firelamp-WIP-", "github.com", "code"]]
+                    Rectangle {
+                        id: rr
                         required property var modelData
                         property string aiName: modelData[0]; property string aiRole: "link"
-                        spacing: 6; width: 72
-                        Rectangle { width: 52; height: 52; radius: 14; color: parent.modelData[1]; anchors.horizontalCenter: parent.horizontalCenter
-                            Text { anchors.centerIn: parent; text: parent.parent.modelData[0][0]; color: parent.parent.modelData[0] === "Docs" ? "#2A2622" : "#EFEAE4"; font.family: Theme.font; font.pixelSize: 20; font.weight: Font.DemiBold } }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.modelData[0]; color: Theme.text2; font.family: Theme.font; font.pixelSize: 12 }
+                        width: 480; height: 40; radius: 8
+                        color: rma.containsMouse ? Theme.hover : "transparent"
+                        Rectangle { x: 8; width: 24; height: 24; radius: 6; anchors.verticalCenter: parent.verticalCenter; color: Theme.surface2; border.color: Theme.hairline; border.width: 1
+                            Glyph { anchors.centerIn: parent; width: 12; height: 12; name: "globe"; color: Theme.text3 } }
+                        Text { x: 44; anchors.verticalCenter: parent.verticalCenter; text: rr.modelData[0]; color: Theme.text; font.family: Theme.font; font.pixelSize: 13 }
+                        Text { anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; text: rr.modelData[1]; color: Theme.text3; font.family: Theme.font; font.pixelSize: 12 }
+                        MouseArea { id: rma; anchors.fill: parent; hoverEnabled: true }
                     }
                 }
             }

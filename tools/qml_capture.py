@@ -145,10 +145,12 @@ if scene == "desktop":
     still("desktop", 2600)
     stop(2800)
 elif scene == "apps":
+    # one window at a time on a clean desktop: each app is closed before the next opens
     for i, a in enumerate(["terminal", "settings", "calendar", "web", "photos", "music", "about"]):
-        at(500 + i * 2000, lambda a=a: call("launch", a))
-        still("app-" + a, 1900 + i * 2000)
-    stop(500 + 7 * 2000 + 300)
+        at(500 + i * 2400, lambda a=a: call("launch", a))
+        still("app-" + a, 2100 + i * 2400)
+        at(2300 + i * 2400, lambda: call("closeTop"))
+    stop(500 + 7 * 2400 + 300)
 elif scene == "dock":
     start(300)
     cx, y = 720, 900 - 40

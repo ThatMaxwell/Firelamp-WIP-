@@ -1,4 +1,4 @@
-// Photos: a library grid.
+// Photos: the library, grouped by day, each row justified to the window like a contact sheet.
 import QtQuick
 import "../components"
 
@@ -6,28 +6,53 @@ Item {
     id: app
     property var win
     function start(opts) {}
-    // a real-looking library: skies, sea, moss, stone, dusk; one warm evening, not twelve
-    readonly property var photos: [["#8DA2B4", "#3E4C59"], ["#C9C0B0", "#6E665A"], ["#5E6E58", "#26301F"], ["#2E3A48", "#11161C"], ["#B7C3C8", "#56656C"], ["#7A6C5D", "#2E2822"],
-                                   ["#D8A47A", "#4A3428"], ["#3F4A44", "#1B201D"], ["#A7B2A0", "#4F5A4A"], ["#606B78", "#262B31"], ["#D9D2C5", "#9A9183"], ["#4B5563", "#1E232A"]]
+    // real photographs (CC0 / public domain, see assets/CREDITS), with their aspect ratios
+    readonly property var days: [
+        { title: "Today", photos: [["launch-dusk", 1.5], ["espresso", 1.5], ["deep-field", 1.147]] },
+        { title: "Sunday, October 6", photos: [["chelsea", 1.503], ["chelsea-close", 1.506], ["espresso-spoon", 1.125], ["launch-tower", 0.653]] },
+        { title: "September 28", photos: [["deep-field-detail", 1.147], ["brick", 1], ["gravel", 1]] }
+    ]
     Row {
         x: 92; y: 15; spacing: 10
-        Text { text: "Library"; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.Bold }
-        Text { text: "Oct 2026"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 13; anchors.baseline: parent.children[0].baseline }
+        Text { id: lib; text: "Library"; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.Bold }
+        Text { text: "10 photos"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 13; anchors.baseline: lib.baseline }
     }
     SearchPill { anchors.right: parent.right; anchors.rightMargin: 12; y: 12 }
-    Grid {
-        id: g
-        x: 14; y: 54; columns: 4; spacing: 4
-        readonly property real cell: (app.width - 28 - 12) / 4
-        Repeater {
-            model: app.photos.length
-            Rectangle {
-                required property int index
-                property string aiName: "Photo " + (index + 1)
-                property string aiRole: "image"
-                width: g.cell; height: g.cell * 0.72; radius: 3
-                gradient: Gradient { GradientStop { position: 0; color: app.photos[index][0] } GradientStop { position: 1; color: app.photos[index][1] } }
-                Rectangle { x: parent.width * (0.2 + (index * 17 % 50) / 100); y: parent.height * (0.15 + (index * 11 % 40) / 100); width: parent.width * 0.32; height: width; radius: width / 2; color: "#F4EFE6"; opacity: 0.16 }
+    Flickable {
+        id: fl
+        x: 14; y: 52; width: parent.width - 28; height: parent.height - y
+        contentHeight: col.height + 14
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        Column {
+            id: col
+            width: fl.width
+            spacing: 6
+            Repeater {
+                model: app.days
+                Column {
+                    id: day
+                    required property var modelData
+                    readonly property real sum: modelData.photos.reduce(function (s, p) { return s + p[1]; }, 0)
+                    readonly property real rowH: Math.min(220, (col.width - 4 * (modelData.photos.length - 1)) / sum)
+                    width: col.width; spacing: 8
+                    Text { text: day.modelData.title; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold; topPadding: 6 }
+                    Row {
+                        spacing: 4
+                        Repeater {
+                            model: day.modelData.photos
+                            Image {
+                                required property var modelData
+                                property string aiName: "Photo " + modelData[0]
+                                property string aiRole: "image"
+                                width: Math.round(day.rowH * modelData[1]); height: Math.round(day.rowH)
+                                source: "../assets/photos/" + modelData[0] + ".jpg"
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true; smooth: true; mipmap: true
+                            }
+                        }
+                    }
+                }
             }
         }
     }
