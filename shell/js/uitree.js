@@ -1,115 +1,76 @@
 // The live UI tree. Instead of screenshots, the AI reads this: every window, button and
-// field with its role, label and exact bounds, and it hears about every change.
+// field with its role, label and exact bounds.
 //
-// On the real OS this tree comes from AT-SPI2 over D-Bus for native apps; the shell's own
-// surfaces publish theirs the same way. Here it is built from the shell's DOM.
-import { bus } from './store.js';
+// On the real system the same tree is published over AT-SPI2 (every control here also
+// sets Accessible.name / role), so native apps show up too. Inside the shell we walk
+// the Qt Quick item tree directly: any item with an `aiName` is something the AI can see.
+.pragma library
 
-const ids = new WeakMap();
-let nextId = 1;
-const idOf = el => ids.get(el) ?? (ids.set(el, nextId++), ids.get(el));
-
-const INTERACTIVE = 'button, input, textarea, select, a[href], [contenteditable="true"], [role], [aria-label], [data-ai]';
-
-function roleOf(el) {
-  const r = el.getAttribute('role');
-  if (r) return r;
-  switch (el.tagName) {
-    case 'BUTTON': return 'button';
-    case 'INPUT': return el.type === 'checkbox' ? 'checkbox' : el.type === 'range' ? 'slider' : 'textbox';
-    case 'TEXTAREA': return 'textbox';
-    case 'SELECT': return 'combobox';
-    case 'A': return 'link';
-  }
-  if (el.isContentEditable) return 'textbox';
-  return el.dataset.ai || 'item';
+function visibleIn(item, root) {
+    if (!item.visible || item.opacity < 0.05 || item.width < 2 || item.height < 2) return false;
+    var p = item.mapToItem(root, 0, 0);
+    return !(p.x + item.width < 0 || p.y + item.height < 0 || p.x > root.width || p.y > root.height);
 }
 
-function nameOf(el) {
-  return (el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('title') ||
-    el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 64);
+function appOf(item) {
+    for (var p = item; p; p = p.parent) if (p.aiApp !== undefined && p.aiApp !== "") return { app: p.aiApp, z: p.z || 0, win: p };
+    return { app: "system", z: 0, win: null };
 }
-
-function visible(el) {
-  if (el.closest('[data-ai-hidden]')) return false;
-  const r = el.getBoundingClientRect();
-  if (r.width < 2 || r.height < 2) return false;
-  if (r.bottom < 0 || r.right < 0 || r.top > innerHeight || r.left > innerWidth) return false;
-  const cs = getComputedStyle(el);
-  return cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0.05;
-}
-
-const ROOTS = ['#menubar', '#desktop', '#dock', '#modal-layer'];
 
 /** Flat list of every element the AI can perceive right now. */
-export function nodes() {
-  const out = [];
-  for (const sel of ROOTS) {
-    const root = document.querySelector(sel);
-    if (!root) continue;
-    for (const el of root.querySelectorAll(INTERACTIVE)) {
-      if (!visible(el)) continue;
-      const r = el.getBoundingClientRect();
-      const win = el.closest('.win');
-      out.push({
-        id: idOf(el), el, role: roleOf(el), name: nameOf(el),
-        value: 'value' in el ? el.value : undefined,
-        app: win?.dataset.app ?? (el.closest('#dock') ? 'dock' : el.closest('#menubar') ? 'menubar' : 'system'),
-        z: win ? +win.style.zIndex : 99999,
-        bounds: { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) },
-      });
-    }
-  }
-  return out;
+function nodes(root) {
+    var out = [];
+    (function walk(it) {
+        var kids = it.children;
+        for (var i = 0; i < kids.length; i++) {
+            var c = kids[i];
+            if (!c.visible || c.aiHidden === true) continue;
+            if (c.aiName !== undefined && c.aiName !== "" && visibleIn(c, root)) {
+                var p = c.mapToItem(root, 0, 0), a = appOf(c);
+                out.push({ item: c, role: c.aiRole || "item", name: c.aiName, app: a.app, z: a.z,
+                           bounds: { x: Math.round(p.x), y: Math.round(p.y), w: Math.round(c.width), h: Math.round(c.height) } });
+            }
+            walk(c);
+        }
+    })(root);
+    return out;
 }
 
-/** Nested tree, for the terminal's `tree` command and for debugging. */
-export function snapshot() {
-  const list = nodes();
-  const byApp = {};
-  for (const n of list) (byApp[n.app] ??= []).push(n);
-  return Object.entries(byApp).map(([app, children]) => ({ role: app === 'menubar' || app === 'dock' ? app : 'window', name: app, children }));
-}
-
-const norm = s => (s || '').toLowerCase().replace(/[^\p{L}\p{N} ]/gu, ' ').replace(/\s+/g, ' ').trim();
+function norm(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); }
 
 /**
  * Pick the element that best matches a target description. This is the "reflex" a fast
  * decision model (Jev) makes on the real system; here it is a small scorer over the tree.
  */
-export function find({ name, role, app, exact = false }) {
-  const want = norm(name);
-  let best = null, bestScore = 0;
-  for (const n of nodes()) {
-    if (app && n.app !== app) continue;
-    if (role && n.role !== role) continue;
-    const have = norm(n.name);
-    let s = 0;
-    if (have === want) s = 100;
-    else if (!exact && have.startsWith(want)) s = 70;
-    else if (!exact && have.includes(want)) s = 50;
-    else if (!exact) {
-      const words = want.split(' ');
-      const hits = words.filter(w => have.includes(w)).length;
-      s = hits ? 30 * hits / words.length : 0;
+function find(root, q) {
+    var want = norm(q.name), best = null, bestScore = 0, list = nodes(root);
+    for (var i = 0; i < list.length; i++) {
+        var n = list[i];
+        if (q.app && n.app !== q.app) continue;
+        if (q.role && n.role !== q.role) continue;
+        var have = norm(n.name), s = 0;
+        if (have === want) s = 100;
+        else if (have.indexOf(want) === 0) s = 70;
+        else if (have.indexOf(want) >= 0) s = 50;
+        else {
+            var words = want.split(" "), hits = 0;
+            for (var w = 0; w < words.length; w++) if (have.indexOf(words[w]) >= 0) hits++;
+            s = hits ? 30 * hits / words.length : 0;
+        }
+        if (!s) continue;
+        s += n.z / 1e5; // prefer what is on top
+        if (s > bestScore) { bestScore = s; best = n; }
     }
-    if (!s) continue;
-    s += n.z / 1e5; // prefer what is on top
-    if (s > bestScore) { bestScore = s; best = n; }
-  }
-  return best;
+    return best;
 }
 
-/** Notify listeners the moment anything on screen changes. */
-export function watch() {
-  let queued = false;
-  const mo = new MutationObserver(() => {
-    if (queued) return;
-    queued = true;
-    queueMicrotask(() => { queued = false; bus.emit('uitree:change'); });
-  });
-  for (const sel of ROOTS) {
-    const root = document.querySelector(sel);
-    if (root) mo.observe(root, { subtree: true, childList: true, attributes: true, characterData: true, attributeFilter: ['class', 'style', 'aria-label', 'value'] });
-  }
+/** Nested by app, for the terminal's `tree` command. */
+function snapshot(root) {
+    var list = nodes(root), byApp = {}, order = [];
+    for (var i = 0; i < list.length; i++) {
+        var n = list[i];
+        if (!byApp[n.app]) { byApp[n.app] = []; order.push(n.app); }
+        byApp[n.app].push(n);
+    }
+    return order.map(function (a) { return { name: a, children: byApp[a] }; });
 }

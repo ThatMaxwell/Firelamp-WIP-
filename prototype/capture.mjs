@@ -10,8 +10,8 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
-const BASE = process.env.FIRELAMP_URL || 'http://localhost:8765/shell/';
-const OUT = new URL('../docs/media/', import.meta.url).pathname;
+const BASE = process.env.FIRELAMP_URL || 'http://localhost:8765/prototype/web/';
+const OUT = new URL('../media/web/', import.meta.url).pathname;
 const TMP = join(OUT, '.video');
 const W = 1280, H = 800;
 mkdirSync(TMP, { recursive: true });
