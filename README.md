@@ -67,7 +67,7 @@ starts `shell/Main.qml` as the session. See [`iso/README.md`](iso/README.md).
 
 ## Launch site
 
-The launch site lives in [`docs/`](docs/) and is plain HTML, CSS and JS with no build step: a language picker (English / Português), a 2-second loader, a ~30s launch intro rendered live in code with a soundtrack synthesized in the browser (Web Audio), then the scroll-animated site.
+The launch site lives in [`docs/`](docs/) and is plain HTML, CSS and JS with no build step: a language picker (English / Português), a 2-second loader, a ~30s launch film cut from real recordings of the desktop with a soundtrack synthesized in the browser (Web Audio), then the scroll-animated site. Every OS picture in `docs/media` is a real capture of `shell/Main.qml`.
 
 To publish it: **Settings → Pages → Deploy from a branch → `main` / `/docs`**.
 
