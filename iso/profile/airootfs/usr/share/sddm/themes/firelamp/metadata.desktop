@@ -1,0 +1,11 @@
+[SddmGreeterTheme]
+Name=Firelamp
+Description=Firelamp's login screen: one name, one field, and the session in a corner.
+Type=sddm-theme
+Version=1.0
+Website=https://github.com/ThatMaxwell/Firelamp-WIP-
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=firelamp
+Theme-API=2.0
+QtVersion=6
