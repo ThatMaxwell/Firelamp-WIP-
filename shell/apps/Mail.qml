@@ -9,8 +9,9 @@ Item {
     property string folder: "Inbox"
     property int sel: 0
     property int rev: 0
+    // sample mail only in --demo; a real install has no account until you add one
     property var boxes: ({
-        Inbox: [
+        Inbox: !Os.demo ? [] : [
             { from: "Ana Souza", sub: "Launch sync tomorrow?", pre: "Hey! Could you send me the notes from today’s meeting when you get a sec? I want to prep the deck.", time: "11:02 PM", unread: true,
               body: "Hey!\n\nCould you send me the notes from today’s meeting when you get a sec? I want to prep the launch deck tonight.\n\nThanks,\nAna" },
             { from: "TypeSafe", sub: "Your Jev early access is live", pre: "Welcome aboard. Jev is ready to make fast, typed decisions for your agents.", time: "6:40 PM", unread: true,
@@ -30,6 +31,8 @@ Item {
     function unreadIn(f) { rev; return (boxes[f] || []).filter(function (m) { return m.unread; }).length; }
     function open(i) { sel = i; if (list[i]) list[i].unread = false; rev++; }
     function send() {
+        // no account behind it yet, so never pretend a message went out
+        if (!Os.demo) { Os.toast("mail", "Not sent", "Mail can't connect to an account yet. Your browser's mail works meanwhile."); return; }
         boxes.Sent.unshift({ to: to.text || "someone", sub: subject.text || "(no subject)", pre: msg.text.slice(0, 120), body: msg.text, time: "Now", fresh: true });
         boxes.Inbox.forEach(function (m) { if (m.from === "Ana Souza") m.unread = false; });
         Os.toast("mail", "Message sent", "To " + to.text + " · “" + subject.text + "”");
@@ -41,7 +44,7 @@ Item {
     Sidebar {
         id: side
         width: 190
-        SideHeader { text: "Hearth Mail" }
+        SideHeader { text: Os.demo ? "Hearth Mail" : "Mail" }
         Repeater {
             model: [["Inbox", "inbox"], ["Starred", "star"], ["Sent", "sent"], ["Drafts", "doc"], ["Trash", "trash"]]
             SideItem {
@@ -129,7 +132,8 @@ Item {
             Rectangle { width: parent.width; height: 0.5; color: Theme.line2 }
             Text { width: parent.width; text: app.cur ? app.cur.body : ""; wrapMode: Text.WordWrap; color: Theme.text2; font.family: Theme.font; font.pixelSize: 14; lineHeight: 1.25 }
         }
-        Text { visible: !app.cur; anchors.centerIn: parent; text: "No message selected"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 13 }
+        Text { visible: !app.cur && Os.demo; anchors.centerIn: parent; text: "No message selected"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 13 }
+        EmptyState { visible: !Os.demo; glyph: "inbox"; title: "No mail account"; hint: "Mail can't connect to an account yet.\nUse your browser's mail for now." }
 
         // ---- compose sheet ----
         Item {

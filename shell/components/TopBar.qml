@@ -48,8 +48,8 @@ Rectangle {
             { label: "Sleep" }, { label: "Restart…" }, { label: "Shut Down…" }, "-", { label: "Lock Screen", sc: "⌃⌘Q" }]);
         if (key === "app") return [{ label: "About " + appName }, "-", { label: "Settings…", sc: "⌘,", action: function () { Os.desktop.open("settings"); } }, "-", { label: "Hide " + appName, sc: "⌘H" }, { label: "Quit " + appName, sc: "⌘Q", action: function () { Os.desktop.closeFocused(); } }];
         if (key === "control") return [{ label: "Focus", sc: "Off" }, { label: "Screen Mirroring" }, "-", { label: "Pause " + Os.name, sc: "⌃Space", action: function () { Os.agent.togglePause(); } }, { label: "Stop " + Os.name, sc: "Esc", action: function () { Os.agent.stop(); } }];
-        if (key === "wifi") return [{ label: "Wi-Fi", sc: "On" }, "-", { label: "Hearth", sc: "●" }, { label: "Kitchen 5G" }, "-", { label: "Network Settings…" }];
-        if (key === "battery") return [{ label: "Battery 87%", disabled: true }, { label: "Power Source: Battery", disabled: true }, "-", { label: "Battery Settings…" }];
+        if (key === "wifi") return Os.demo ? [{ label: "Wi-Fi", sc: "On" }, "-", { label: "Hearth", sc: "●" }, { label: "Kitchen 5G" }, "-", { label: "Network Settings…" }] : [{ label: "Wi-Fi", sc: "On" }, "-", { label: "Network Settings…" }];
+        if (key === "battery") return [{ label: "Battery " + (Os.demo ? 87 : Os.battery) + "%", disabled: true }, { label: "Power Source: " + (Os.demo || !Os.charging ? "Battery" : "Power Adapter"), disabled: true }, "-", { label: "Battery Settings…" }];
         return appMenus[key];
     }
 
@@ -106,6 +106,8 @@ Rectangle {
             Loader {
                 required property string modelData
                 anchors.verticalCenter: parent.verticalCenter
+                // desktops and VMs have no battery, so no battery item
+                visible: modelData !== "battery" || Os.demo || Os.battery >= 0
                 sourceComponent: ({ assistant: cAssistant, battery: cBattery, wifi: cWifi, search: cSearch, control: cControl, clock: cClock })[modelData]
             }
         }
@@ -136,7 +138,7 @@ Rectangle {
     Component { id: cBattery
         BarItem { key: "battery"; label: "Battery"; alignRight: true; height: 22
             Row { spacing: 5; height: parent.height
-                BarText { text: "87%"; color: Theme.text; font.features: { "tnum": 1 } }
+                BarText { text: (Os.demo ? 87 : Os.battery) + "%"; color: Theme.text; font.features: { "tnum": 1 } }
                 Glyph { name: "battery"; width: 25; height: 12; anchors.verticalCenter: parent.verticalCenter } } }
     }
     Component { id: cWifi

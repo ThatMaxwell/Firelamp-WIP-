@@ -5,7 +5,7 @@ import "../components"
 Rectangle {
     id: app
     property var win
-    property bool playing: true
+    property bool playing: Os.demo
     function start(opts) {}
     color: Theme.surface0
 
@@ -27,7 +27,9 @@ Rectangle {
         }
     }
 
+    EmptyState { visible: !Os.demo; glyph: "music"; title: "Nothing playing"; hint: "The player isn't hooked up to your music yet." }
     Column {
+        visible: Os.demo
         anchors.horizontalCenter: parent.horizontalCenter
         y: 56; width: parent.width - 48; spacing: 16
         Cover {

@@ -1,7 +1,10 @@
 // One home-screen widget (DIRECTION §13): surface at 72% with a hairline, 18px radius, 14px
 // padding, the type scale. Each kind draws itself for S, M or L. The only ember allowed is the
-// Assistant widget's status dot.
+// Assistant widget's status dot. Everything shown is real (your notes, your Downloads, this
+// machine); the sample content only appears with --demo.
 import QtQuick
+import QtCore
+import Qt.labs.folderlistmodel
 import "../js/art.js" as Art
 
 Item {
@@ -32,6 +35,8 @@ Item {
         font.capitalization: Font.AllUppercase
     }
     component Line: Text { color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium; elide: Text.ElideRight }
+    // nothing to show yet: one quiet line where the content would be
+    component Empty: Text { y: 24; width: body.width; wrapMode: Text.WordWrap; color: Theme.text3; font.family: Theme.font; font.pixelSize: 12 }
     component Sub: Text { color: Theme.text3; font.family: Theme.font; font.pixelSize: 11; elide: Text.ElideRight }
 
     property date now: new Date()
@@ -111,6 +116,8 @@ Item {
     Component { id: weather
         Item {
             Label { text: "Weather" }
+            Empty { visible: !Os.demo; text: "No location set" }
+            Item { visible: Os.demo; anchors.fill: parent
             Text { y: 22; text: "18°"; color: Theme.text; font.family: Theme.font; font.pixelSize: hw.small ? 44 : 52; font.weight: Font.Bold; font.letterSpacing: -1 }
             Column {
                 anchors.bottom: parent.bottom; spacing: 2
@@ -126,15 +133,20 @@ Item {
                         Text { text: modelData[1]; color: Theme.text2; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium } }
                 }
             }
+            }
         }
     }
     Component { id: upnext
         Item {
             Label { text: "Up next" }
+            Empty { visible: !list.length; text: "Nothing coming up" }
+            readonly property var list: (Os.demo ? [["Jev onboarding", "Tomorrow · 10:00 AM"], ["Site goes live", "Wed, Oct 14 · all day"], ["Firelamp 0.1", "Wed, Oct 21"], ["Dock review", "Thu, Oct 22 · 2:00 PM"], ["Van for the move", "Sat, Oct 24 · 9:00 AM"]]
+                : (function () { var out = [], n = new Date(); Object.keys(Os.events).map(Number).sort(function (a, b) { return a - b; }).forEach(function (d) {
+                    if (d >= n.getDate()) Os.events[d].forEach(function (e) { out.push([e[0], d === n.getDate() ? "Today" : Qt.formatDate(new Date(n.getFullYear(), n.getMonth(), d), "ddd, MMM d")]); }); }); return out; })())
             Column {
                 y: 24; width: parent.width; spacing: 12
                 Repeater {
-                    model: [["Jev onboarding", "Tomorrow · 10:00 AM"], ["Site goes live", "Wed, Oct 14 · all day"], ["Firelamp 0.1", "Wed, Oct 21"], ["Dock review", "Thu, Oct 22 · 2:00 PM"], ["Van for the move", "Sat, Oct 24 · 9:00 AM"]].slice(0, hw.small ? 1 : hw.large ? 5 : 2)
+                    model: parent.parent.list.slice(0, hw.small ? 1 : hw.large ? 5 : 2)
                     Row { required property var modelData; spacing: 10; width: parent.width
                         Rectangle { width: 2; height: 32; radius: 1; color: Theme.text3 }
                         Column { spacing: 2; width: parent.width - 12
@@ -146,6 +158,9 @@ Item {
     }
     Component { id: nowplaying
         Item {
+            Label { visible: !Os.demo; text: "Now playing" }
+            Empty { visible: !Os.demo; text: "Nothing playing" }
+            Item { visible: Os.demo; anchors.fill: parent
             Image {
                 id: cover
                 width: hw.small ? 64 : 76; height: width; fillMode: Image.PreserveAspectCrop
@@ -168,14 +183,16 @@ Item {
                 visible: !hw.small; anchors.bottom: parent.bottom; anchors.bottomMargin: 4; width: parent.width; height: 3; radius: 1.5; color: Theme.surface3
                 Rectangle { width: parent.width * 0.34; height: 3; radius: 1.5; color: Theme.text2 }
             }
+            }
         }
     }
     Component { id: notes
         Item {
             Label { text: "Notes" }
+            Empty { visible: !Os.demo && !Os.notes.length; text: "No notes yet" }
             Column {
                 y: 24; spacing: 6
-                Repeater { model: ["Buy oat milk", "Reply to Leo", "Book the van for Saturday", "Dock icon sizes"].slice(0, hw.small ? 2 : hw.large ? 4 : 3)
+                Repeater { model: (Os.demo ? ["Buy oat milk", "Reply to Leo", "Book the van for Saturday", "Dock icon sizes"] : Os.notes.map(Os.noteTitle)).slice(0, hw.small ? 2 : hw.large ? 4 : 3)
                     Line { required property string modelData; text: modelData; width: body.width; font.weight: Font.Normal; color: Theme.text2 } }
             }
         }
@@ -183,10 +200,14 @@ Item {
     Component { id: folder
         Item {
             Label { text: "Downloads" }
+            FolderListModel { id: dl; folder: Os.demo || hw.preview ? "" : StandardPaths.writableLocation(StandardPaths.DownloadLocation); sortField: FolderListModel.Time; showDirsFirst: false }
+            readonly property var list: { if (Os.demo) return [["iso", "firelamp-0.2.iso"], ["pdf", "Invoice 0412.pdf"], ["jpg", "dusk.jpg"], ["gz", "dotfiles.tar.gz"]];
+                var out = []; for (var i = 0; i < Math.min(dl.count, 4); i++) { var n = dl.get(i, "fileName"); out.push([dl.get(i, "fileIsDir") ? "folder" : n.split(".").pop(), n]); } return out; }
+            Empty { visible: !parent.list.length; text: "Downloads is empty" }
             Grid {
                 y: 26; columns: hw.small ? 2 : 4; rowSpacing: 10; columnSpacing: (body.width - columns * 52) / (columns - 1)
                 Repeater {
-                    model: [["iso", "firelamp-0.2.iso"], ["pdf", "Invoice 0412.pdf"], ["jpg", "dusk.jpg"], ["gz", "dotfiles.tar.gz"]].slice(0, hw.small ? 2 : 4)
+                    model: parent.parent.list.slice(0, hw.small ? 2 : 4)
                     Column { required property var modelData; spacing: 4; width: 52
                         Image { width: 32; height: 32; anchors.horizontalCenter: parent.horizontalCenter; sourceSize: Qt.size(64, 64); source: Art.fileIcon(modelData[0]) }
                         Sub { text: modelData[1]; width: 52; horizontalAlignment: Text.AlignHCenter; font.pixelSize: 9 } }
@@ -196,10 +217,15 @@ Item {
     }
     Component { id: photo
         Item {
-            // the photo is full-bleed, so it ignores the padding
+            // the newest picture in ~/Pictures (a sample with --demo); full-bleed, so it ignores the padding
+            FolderListModel { id: pics; folder: Os.demo || hw.preview ? "" : StandardPaths.writableLocation(StandardPaths.PicturesLocation)
+                              nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.JPG", "*.PNG"]; showDirs: false; sortField: FolderListModel.Time }
+            Label { visible: !Os.demo && !pics.count; text: "Photo" }
+            Empty { visible: !Os.demo && !pics.count; text: "No photos in Pictures" }
             Image {
+                visible: Os.demo || pics.count > 0
                 x: -14; y: -14; width: hw.width; height: hw.height; fillMode: Image.PreserveAspectCrop
-                source: Qt.resolvedUrl("../assets/photos/chelsea.jpg"); sourceSize: Qt.size(hw.width * 2, hw.height * 2)
+                source: Os.demo ? Qt.resolvedUrl("../assets/photos/chelsea.jpg") : pics.count ? pics.get(0, "fileUrl") : ""; sourceSize: Qt.size(hw.width * 2, hw.height * 2)
                 layer.enabled: true
                 Rectangle { anchors.fill: parent; radius: 18; color: "transparent"; border.color: Theme.hairline2; border.width: 1 }
             }
@@ -211,16 +237,19 @@ Item {
             Column {
                 y: 24; spacing: 8; width: parent.width
                 Repeater {
-                    model: hw.small ? [["CPU", "12%"], ["RAM", "5.1/32G"]] : [["CPU", "12%"], ["RAM", "5.1/32G"], ["TEMP", "46°C"]]
+                    readonly property var rows: Os.demo ? [["CPU", "12%"], ["RAM", "5.1/32G"], ["TEMP", "46°C"]]
+                        : [["CPU", Os.sys.cpu + "%"], ["RAM", Os.sys.used.toFixed(1) + "/" + Math.round(Os.sys.total) + "G"]].concat(Os.sys.temp >= 0 ? [["TEMP", Os.sys.temp + "°C"]] : [])
+                    model: rows.slice(0, hw.small ? 2 : 3)
                     Row { required property var modelData; required property int index; spacing: 10
                         Text { width: 40; text: modelData[0]; color: Theme.text3; font.family: Theme.mono; font.pixelSize: 10 }
                         Text { width: 64; text: modelData[1]; color: Theme.text; font.family: Theme.mono; font.pixelSize: 11 }
                         // a mono sparkline, bars only
                         Row {
-                            visible: !hw.small; spacing: 2; height: 14
+                            visible: !hw.small && (Os.demo || parent.index === 0); spacing: 2; height: 14
                             Repeater { model: 22
                                 Rectangle { required property int index; anchors.bottom: parent.bottom; width: 3; radius: 1; color: Theme.text3
-                                    height: 3 + 11 * Math.abs(Math.sin((index + 1) * 1.7 + parent.parent.index * 2.3 + hw.now.getSeconds() * 0.35)) } }
+                                    height: Os.demo || parent.parent.index !== 0 ? 3 + 11 * Math.abs(Math.sin((index + 1) * 1.7 + parent.parent.index * 2.3 + hw.now.getSeconds() * 0.35))
+                                        : 3 + 11 * (Os.sys.hist[Os.sys.hist.length - 22 + index] || 0) / 100 } }
                         }
                     }
                 }
@@ -234,10 +263,12 @@ Item {
                 Rectangle { width: 6; height: 6; radius: 3; color: Theme.ember; anchors.verticalCenter: parent.verticalCenter }
                 Label { text: Os.name }
             }
+            Empty { visible: !Os.demo && !Os.activity.count; y: 22; text: "Nothing done yet. Ask me anything." }
             Column {
                 y: 22; spacing: 5; width: parent.width
                 Repeater {
-                    model: ["Sorted 3 documents", "Emailed Ana the notes", "Opened Downloads"].slice(0, hw.small ? 2 : 3)
+                    model: { if (Os.demo) return ["Sorted 3 documents", "Emailed Ana the notes", "Opened Downloads"].slice(0, hw.small ? 2 : 3);
+                             var out = []; for (var i = 0; i < Os.activity.count && out.length < (hw.small ? 2 : 3); i++) if (!Os.activity.get(i).live && !Os.activity.get(i).undone) out.push(Os.activity.get(i).title); return out; }
                     Row { required property string modelData; spacing: 6
                         Text { text: "✓"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
                         Line { text: modelData; font.weight: Font.Normal; color: Theme.text2; font.pixelSize: 12 } }

@@ -185,7 +185,7 @@ Rectangle {
         Item { width: 1; height: 6 }
         Text { x: 8; text: "Try"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.DemiBold; bottomPadding: 4 }
         Repeater {
-            model: Plans.SUGGESTIONS
+            model: Os.suggestions
             Rectangle {
                 id: chip
                 required property var modelData

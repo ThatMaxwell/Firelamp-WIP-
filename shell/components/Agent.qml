@@ -346,7 +346,13 @@ Item {
 
     function handle(text) {
         var p = Plans.match(text);
-        if (!p) { Os.say("I'm running in demo mode, so I only know a few tasks so far. Try “Email Ana my meeting notes”, “Tidy up my Downloads” or “Show me what you see”."); return; }
+        // the hand-written plans act on the sample notes, mail and Downloads, so only --demo runs them
+        if (p && !Os.demo && p !== Plans.vision) p = null;
+        if (!p) {
+            if (Os.demo) Os.say("I'm running in demo mode, so I only know a few tasks so far. Try “Email Ana my meeting notes”, “Tidy up my Downloads” or “Show me what you see”.");
+            else Os.say("I can't do that one yet: this build only knows “Show me what you see”. Nothing on your computer was touched.");
+            return;
+        }
         if (mode !== "idle") { Os.say("I'm still working on the last thing. Pause or stop me first."); return; }
         // simple things just happen; multi-step or risky ones show the plan first
         if (!p.lines) return run(p);

@@ -38,7 +38,7 @@ Item {
                 width: 60; height: 70; anchors.horizontalCenter: parent.horizontalCenter
                 Logo { anchors.fill: parent }
             }
-            Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Good evening, Carrot"; color: Theme.text; font.family: Theme.font; font.pixelSize: 26; font.weight: Font.DemiBold }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: Os.demo ? "Good evening, Carrot" : ["Good night", "Good morning", "Good afternoon", "Good evening"][Math.floor(new Date().getHours() / 6)]; color: Theme.text; font.family: Theme.font; font.pixelSize: 26; font.weight: Font.DemiBold }
             Rectangle {
                 property string aiName: "Search the web"; property string aiRole: "textbox"
                 anchors.horizontalCenter: parent.horizontalCenter; width: 480; height: 44; radius: 12; color: Theme.surface2; border.color: Theme.hairline2; border.width: 1
@@ -47,6 +47,7 @@ Item {
             }
             // where you were, not a wall of letter tiles
             Column {
+                visible: Os.demo
                 width: 480; spacing: 2; topPadding: 6
                 Text { x: 4; text: "Recent"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold; bottomPadding: 6 }
                 Repeater {

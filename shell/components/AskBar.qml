@@ -34,13 +34,13 @@ Item {
     readonly property var rows: {
         var out = [], lq = q.toLowerCase();
         if (q) out.push({ kind: "ai", title: q, sub: "Ask " + Os.name });
-        else out.push({ kind: "ai", title: Plans.SUGGESTIONS[0].text, sub: "Suggested" });
+        else out.push({ kind: "ai", title: Os.suggestions[0].text, sub: "Suggested" });
         apps.forEach(function (a) {
             if (!q || a.title.toLowerCase().indexOf(lq) === 0 || (lq.length > 1 && a.title.toLowerCase().indexOf(lq) > 0))
                 out.push({ kind: "app", id: a.id, title: a.title, icon: a.icon, sub: "Application" });
         });
         if (!q) out = out.slice(0, 5);
-        Plans.SUGGESTIONS.forEach(function (sg, i) {
+        Os.suggestions.forEach(function (sg, i) {
             if ((q ? sg.text.toLowerCase().indexOf(lq) >= 0 && sg.text !== q : i > 0) && out.length < 8)
                 out.push({ kind: "ai", title: sg.text, sub: "Ask " + Os.name });
         });

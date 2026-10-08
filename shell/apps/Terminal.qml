@@ -7,7 +7,7 @@ Rectangle {
     id: app
     property var win
     color: Theme.bg
-    readonly property string prompt: "<font color=\"#7FB98A\">carrot@firelamp</font> <font color=\"#ABA49C\">~</font> <font color=\"#76706A\">%</font> "
+    readonly property string prompt: "<font color=\"#7FB98A\">" + Os.user + "@" + Os.host + "</font> <font color=\"#ABA49C\">~</font> <font color=\"#76706A\">%</font> "
     function start(opts) {
         echo("<font color=\"#5f5c59\">Last login: " + new Date().toDateString() + " on ttys001</font>");
         run("fetch", true);
@@ -25,7 +25,7 @@ Rectangle {
         if (!cmd) return;
         if (cmd === "help") echo(c("fetch") + "   system info          " + c("tree") + "   the live UI tree the AI reads\n" + c("ask") + " …   hand a task to " + esc(Os.name) + "   " + c("whoami") + " " + c("date") + " " + c("clear"));
         else if (cmd === "clear") out.clear();
-        else if (cmd === "whoami") echo("carrot");
+        else if (cmd === "whoami") echo(Os.user);
         else if (cmd === "date") echo(new Date().toString());
         else if (cmd === "fetch") { out.append({ kind: "fetch", html: "" }); Qt.callLater(lv.positionViewAtEnd); }
         else if (cmd === "tree") {
@@ -73,7 +73,7 @@ Rectangle {
                 spacing: 1
                 Repeater {
                     model: [
-                        "<font color=\"#7FB98A\">carrot</font>@<font color=\"#7FB98A\">firelamp</font>",
+                        "<font color=\"#7FB98A\">" + app.esc(Os.user) + "</font>@<font color=\"#7FB98A\">" + app.esc(Os.host) + "</font>",
                         "<font color=\"#5f5c59\">──────────────────</font>",
                         "<font color=\"#9aa6b2\">OS</font>        Firelamp OS 0.1 “Kindling” x86_64",
                         "<font color=\"#9aa6b2\">Base</font>      Arch Linux",

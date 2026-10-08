@@ -2,6 +2,7 @@
 pragma Singleton
 import QtQuick
 import QtCore
+import "../js/plans.js" as Plans
 
 QtObject {
     id: os
@@ -44,6 +45,7 @@ QtObject {
         property string look: "graphite"       // graphite | paper | midnight | moss | studio
         property string accent: ""             // the user's color; empty = neutral. Never ember.
         property string myLooks: "[]"           // saved Looks, JSON
+        property string notes: "[]"            // your notes, JSON [{body, at}]
         property bool packsAsked: false        // first boot showed "What do you do?"
         property bool browserAsked: false      // first boot showed "Pick your browser"
     }
@@ -151,7 +153,15 @@ QtObject {
     // ---- home widgets: sizes are S 2×2, M 4×2, L 4×4 on a 76px unit with 24px gutters ----
     property bool editingHome: false
     readonly property var widgetSizes: ({ S: [152, 152], M: [328, 152], L: [328, 328] })
-    readonly property var defaultHome: [
+    // a fresh install's home holds only widgets that show something real
+    readonly property var defaultHome: demo ? demoHome : [
+        { uid: 1, kind: "clock", size: "M", x: 72, y: 64 },
+        { uid: 2, kind: "system", size: "S", x: 424, y: 64 },
+        { uid: 3, kind: "upnext", size: "M", x: 72, y: 240 },
+        { uid: 4, kind: "notes", size: "S", x: 424, y: 240 },
+        { uid: 5, kind: "folder", size: "M", x: -400, y: 64 },
+        { uid: 6, kind: "assistant", size: "M", x: -400, y: 240 } ]
+    readonly property var demoHome: [
         { uid: 1, kind: "clock", size: "M", x: 72, y: 64 },
         { uid: 2, kind: "weather", size: "S", x: 424, y: 64 },
         { uid: 3, kind: "upnext", size: "M", x: 72, y: 240 },
@@ -189,9 +199,69 @@ QtObject {
     readonly property var barDefault: ["assistant", "battery", "wifi", "search", "control", "clock"]
     readonly property var barItems: { try { var o = JSON.parse(settings.barOrder); return o.length === barDefault.length ? o : barDefault; } catch (e) { return barDefault; } }
     function resetHome() { settings.homeLayout = ""; widgets = defaultHome.slice(); }
-    Component.onCompleted: loadHome()
+    Component.onCompleted: { loadHome(); loadNotes(); readSys(); readFile("/etc/hostname", function (t) { if (t.trim()) os.realHost = t.trim(); }); }
+    // captures and the site's recordings pass --demo for sample notes, mail, photos and plans;
+    // a real install starts empty and everything in it is yours
+    onDemoChanged: { loadNotes(); if (!settings.homeLayout) loadHome(); }
     property bool vision: false
     property bool demo: false
+    readonly property var suggestions: demo ? Plans.SUGGESTIONS : Plans.SUGGESTIONS.filter(function (s) { return s.icon === "eye"; })
+
+    // ---- notes: the Notes app and the Notes widget share them ----
+    readonly property var sampleNotes: [
+        { title: "Launch sync — Oct 7", date: "10:31 PM", body: "• Site goes live with the intro video, EN + PT.\n• Dock: final icons are in. Trash glass approved.\n• Fire cursor gets the hand-drawn boil on the flame only.\n• Jev early access: wire it up as the reflex layer.\n• Next sync: Thursday, 4pm." },
+        { title: "Groceries", date: "Yesterday", body: "Coffee beans, oat milk, lemons, bread, matches for the candle." },
+        { title: "Ideas for the dock", date: "Mon", body: "A little ember under the assistant icon while it works. Done!" },
+        { title: "Books to read", date: "Sep 28", body: "The Design of Everyday Things\nCalm Technology\nThe Timeless Way of Building" }
+    ]
+    property var notes: []
+    function loadNotes() { if (demo) { notes = sampleNotes.slice(); return; } try { notes = JSON.parse(settings.notes) || []; } catch (e) { notes = []; } }
+    function saveNotes(list) { notes = list; if (!demo) settings.notes = JSON.stringify(list.filter(function (n) { return n.body.trim(); })); }
+    function noteTitle(n) {
+        if (!n) return "";
+        if (n.title) return n.title;
+        var l = n.body.split("\n").filter(function (s) { return s.trim(); })[0];
+        return l ? l.trim() : "New Note";
+    }
+
+    // ---- who and where: the real account and hostname (the captures' sample user is "carrot") ----
+    readonly property string user: { if (demo) return "carrot"; var h = String(StandardPaths.writableLocation(StandardPaths.HomeLocation)).split("/"); return h[h.length - 1] || "you"; }
+    property string realHost: "firelamp"
+    readonly property string host: demo ? "firelamp" : realHost
+    // ---- calendar events by day of this month; none until you add some ----
+    readonly property var events: demo ? ({ 7: [["Launch sync", 0], ["Dock review", 1]], 9: [["Jev onboarding", 0]], 14: [["Site goes live", 0]], 21: [["Firelamp 0.1", 1]] }) : ({})
+
+    // ---- this machine, read from /proc for the System widget ----
+    property var sys: ({ cpu: 0, used: 0, total: 0, temp: -1, hist: [] })
+    property var cpuLast: null
+    property int battery: -1                      // percent, -1 when there is no battery
+    property bool charging: false
+    function readFile(path, cb) {
+        var x = new XMLHttpRequest();
+        x.onreadystatechange = function () { if (x.readyState === XMLHttpRequest.DONE) cb(x.responseText || ""); };
+        x.open("GET", "file://" + path); x.send();
+    }
+    function readSys() {
+        if (demo) return;
+        readFile("/sys/class/power_supply/BAT0/capacity", function (t) { os.battery = t.trim() ? Number(t) : -1; });
+        readFile("/sys/class/power_supply/BAT0/status", function (t) { os.charging = /Charging|Full/.test(t); });
+        readFile("/proc/stat", function (t) {
+            var f = (t.split("\n")[0] || "").trim().split(/\s+/).slice(1).map(Number);
+            if (f.length < 4) return;
+            var idle = f[3] + (f[4] || 0), total = f.reduce(function (a, b) { return a + b; }, 0);
+            var c = os.cpuLast ? Math.round(100 * (1 - (idle - os.cpuLast[0]) / Math.max(1, total - os.cpuLast[1]))) : 0;
+            os.cpuLast = [idle, total];
+            readFile("/proc/meminfo", function (m) {
+                var kb = function (k) { var r = new RegExp("^" + k + ":\\s+(\\d+)", "m").exec(m); return r ? Number(r[1]) : 0; };
+                var tot = kb("MemTotal"), av = kb("MemAvailable");
+                readFile("/sys/class/thermal/thermal_zone0/temp", function (tt) {
+                    var h = os.sys.hist.concat([c]).slice(-22);
+                    os.sys = { cpu: c, used: (tot - av) / 1048576, total: tot / 1048576, temp: tt.trim() ? Math.round(Number(tt) / 1000) : -1, hist: h };
+                });
+            });
+        });
+    }
+    property Timer sysTimer: Timer { interval: 2000; repeat: true; running: !os.demo; onTriggered: os.readSys() }
     property bool demoInstalls: false             // recorder/dev: stand-in installs when the helper isn't running
     property bool demoUnlabeledSend: false        // recorder: Mail's Send button loses its label
 
