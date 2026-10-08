@@ -1,7 +1,10 @@
 # Firelamp OS live image packages (Arch x86_64).
-# Base system and boot
+# Base system and boot (CachyOS kernel; see packages/ for the desktop and tool sets)
+cachyos-keyring
+cachyos-mirrorlist
+cachyos-settings
 base
-linux
+linux-cachyos
 linux-firmware
 linux-firmware-marvell
 sof-firmware
@@ -47,11 +50,10 @@ smartmontools
 usbutils
 
 # Networking
-iwd
+networkmanager
 iw
 wireless-regdb
 wpa_supplicant
-dhcpcd
 systemd-resolvconf
 openssh
 curl
@@ -70,25 +72,13 @@ vulkan-intel
 vulkan-radeon
 libva-mesa-driver
 
-# Wayland session
-# labwc: small wlroots stacking compositor with layer-shell, so the QML shell
-# (top bar, dock) can sit on screen edges while apps get normal floating windows.
-# cage: kiosk compositor, a fallback that runs the shell full screen.
-labwc
-cage
-xorg-xwayland
-wlr-randr
+# Input injection for the AI cursor, and Wayland helpers used by the AI layer
 wl-clipboard
-grim
-slurp
 wtype
 ydotool
-swaybg
-xdg-desktop-portal
-xdg-desktop-portal-wlr
+xorg-xwayland
 xdg-utils
 polkit
-foot
 foot-terminfo
 
 # Qt 6 / QML (the Firelamp shell is written in QML)

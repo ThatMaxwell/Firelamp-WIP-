@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Runs once at the start of every graphical session, whatever the desktop
+# (KDE Plasma by default, or any desktop installed from Settings).
+#
+#  1. Turns on the AT-SPI2 accessibility bus, as a screen reader would. Qt and
+#     GTK apps only publish their UI tree once this is set, and the AI reads
+#     the screen through that tree.
+#  2. Starts the Firelamp shell on top of the desktop, unless turned off with
+#     `touch ~/.config/firelamp/no-shell` or the firelamp.noshell boot option.
+#  3. Records what the AI can see, for boot diagnostics.
+state="${XDG_STATE_HOME:-$HOME/.local/state}/firelamp"
+mkdir -p "$state"
+
+busctl --user call org.a11y.Bus /org/a11y/bus org.a11y.Bus GetAddress >/dev/null 2>&1
+busctl --user set-property org.a11y.Bus /org/a11y/bus org.a11y.Status IsEnabled b true >/dev/null 2>&1
+
+if [[ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/firelamp/no-shell" ]] && ! grep -qw firelamp.noshell /proc/cmdline; then
+    /usr/local/bin/firelamp-shell >>"$state/shell.log" 2>&1 &
+fi
+
+/usr/local/bin/firelamp-a11y-probe --boot-report >/dev/null 2>&1 &

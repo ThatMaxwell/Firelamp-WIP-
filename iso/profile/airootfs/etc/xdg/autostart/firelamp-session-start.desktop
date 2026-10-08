@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Firelamp
+Comment=Turns on the accessibility bus and starts the Firelamp shell
+Exec=/usr/local/bin/firelamp-session-start
+NoDisplay=true
+X-KDE-autostart-phase=2
+X-GNOME-Autostart-Phase=Applications

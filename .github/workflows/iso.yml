@@ -3,6 +3,7 @@ name: Firelamp ISO
 on:
   push:
     branches: [main, master]
+    tags: ['v*']
     paths: ['iso/**', 'shell/**', '.github/workflows/iso.yml']
   pull_request:
     paths: ['iso/**', 'shell/**', '.github/workflows/iso.yml']
@@ -11,6 +12,9 @@ on:
 concurrency:
   group: iso-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   build-and-boot:
@@ -38,7 +42,7 @@ jobs:
         run: python3 iso/test-boot.py iso/out/*.iso --out boot-test/bios
 
       - name: Boot in QEMU (UEFI)
-        if: always()
+        if: always() && hashFiles('iso/out/*.iso') != ''
         run: python3 iso/test-boot.py iso/out/*.iso --out boot-test/uefi --uefi
 
       - name: Print desktop screenshot (base64 JPEG, for tools without artifact access)
@@ -73,3 +77,23 @@ jobs:
           path: iso/out/*.iso
           compression-level: 0
           retention-days: 14
+
+      # Tags (v*) publish the boot-tested ISO as a GitHub Release. Release
+      # assets are capped at 2 GiB, so a bigger ISO is split into parts.
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd iso/out
+          iso=$(ls *.iso)
+          sha256sum "$iso" > "$iso.sha256"
+          if [ "$(stat -c%s "$iso")" -gt 2000000000 ]; then
+            split -b 1900M -d -a 2 "$iso" "$iso.part"
+            assets=$(ls "$iso".part* "$iso.sha256")
+          else
+            assets="$iso $iso.sha256"
+          fi
+          sed "s/@ISO@/$iso/g" ../RELEASE.md > notes.md
+          cp ../../boot-test/bios/desktop.png "firelamp-desktop.png" 2>/dev/null && assets="$assets firelamp-desktop.png"
+          gh release create "$GITHUB_REF_NAME" $assets --title "Firelamp OS $GITHUB_REF_NAME" --notes-file notes.md

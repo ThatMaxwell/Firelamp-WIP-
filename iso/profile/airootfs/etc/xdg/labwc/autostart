@@ -1,19 +1,4 @@
-# Firelamp OS session autostart (run by labwc)
-
-# Hand the Wayland display to D-Bus/systemd so activated services
-# (portals, AT-SPI) can reach it.
-dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORM QT_LINUX_ACCESSIBILITY_ALWAYS_ON QT_ACCESSIBILITY >/dev/null 2>&1
-
-# Turn on the AT-SPI2 accessibility bus, as a screen reader would. Qt and GTK
-# apps only publish their UI tree once this is set, and the AI depends on it.
-busctl --user call org.a11y.Bus /org/a11y/bus org.a11y.Bus GetAddress >/dev/null 2>&1
-busctl --user set-property org.a11y.Bus /org/a11y/bus org.a11y.Status IsEnabled b true >/dev/null 2>&1
-
-# Warm dark backdrop behind everything.
+# Firelamp OS: labwc session autostart (labwc is installable from Settings).
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE >/dev/null 2>&1
 swaybg -c '#140d0b' >/dev/null 2>&1 &
-
-# The desktop shell.
-/usr/local/bin/firelamp-shell >>"${XDG_STATE_HOME:-$HOME/.local/state}/firelamp/shell.log" 2>&1 &
-
-# Snapshot of what the AI can see over AT-SPI2, for boot diagnostics.
-/usr/local/bin/firelamp-a11y-probe --boot-report >/dev/null 2>&1 &
+/usr/local/bin/firelamp-session-start

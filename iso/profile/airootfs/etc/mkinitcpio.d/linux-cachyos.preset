@@ -1,0 +1,8 @@
+# mkinitcpio preset for linux-cachyos on the Firelamp OS live ISO.
+# The installer replaces this with the standard preset.
+PRESETS=('archiso')
+
+ALL_kver='/boot/vmlinuz-linux-cachyos'
+archiso_config='/etc/mkinitcpio.conf.d/archiso.conf'
+
+archiso_image="/boot/initramfs-linux-cachyos.img"

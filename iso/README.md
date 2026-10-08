@@ -7,16 +7,45 @@ from a profile based on Arch's `releng`.
 
 | Layer | Choice | Why |
 | --- | --- | --- |
-| Base | Arch Linux, `linux` kernel, systemd | rolling, current Qt and Mesa |
-| Compositor | [labwc](https://labwc.github.io/) (wlroots) | small stacking WM with layer-shell, so a QML top bar and dock can sit on screen edges while apps get normal floating windows |
-| Fallback compositor | cage | kiosk mode: boot with `firelamp.compositor=cage` to run the shell full screen |
-| UI toolkit | Qt 6 / QML (`qt6-declarative`, `qt6-wayland`, `layer-shell-qt`, `qt6-svg`, `qt6-5compat`, `qt6-shadertools`) | the desktop shell is QML |
+| Base | Arch Linux + the [CachyOS](https://cachyos.org) repo, `linux-cachyos` kernel, `cachyos-settings` | performance-tuned kernel and system defaults |
+| Desktop | KDE Plasma 6 on Wayland, SDDM autologin | the default desktop, with the Firelamp shell on top |
+| Other desktops | one-click installs (`firelamp-desktops`) | GNOME, COSMIC, Xfce, Hyprland, niri, Sway; nothing extra is preinstalled |
+| UI toolkit | Qt 6 / QML, `layer-shell-qt` | the Firelamp shell is QML |
 | UI tree for the AI | AT-SPI2 (`at-spi2-core`, `python-atspi`) | live, labelled tree of every window and control, no screenshots |
 | AI input | `ydotool`, `wtype` | synthetic pointer and keyboard for the fire cursor |
 | VM guests | VirtualBox, QEMU, VMware tools | VirtualBox is the dev target |
 
-The live user is `firelamp` (no password, passwordless sudo). It logs in on tty1 and
-`firelamp-session` starts labwc, which runs the shell.
+Package sets live in `packages/`, one file per set, and `build.sh` adds them all:
+`10-desktop-plasma`, `20-basic-tools` (Firefox, Dolphin, Konsole, Kate, archive and CLI basics),
+`30-dev-tools` (base-devel, git, gh, clang, cmake, Python, Node, Go, rustup, VS Code OSS, Podman),
+`40-ricing` (Kvantum, qt6ct, nwg-look, Nerd Fonts, Starship, kitty, cava, btop) and
+`50-ai-tools` (Ollama and a small Python stack). Add a package by adding a line.
+
+The CachyOS repo is the generic x86-64 one, so the ISO boots on any 64-bit PC.
+
+The live user is `firelamp` (no password, passwordless sudo). SDDM logs it into Plasma,
+and `/etc/xdg/autostart/firelamp-session-start.desktop` then turns on the AT-SPI2 bus and
+starts the Firelamp shell.
+
+## Desktops and window managers
+
+`firelamp-desktops` (from the Settings work) installs GNOME, COSMIC, Xfce, Hyprland, niri
+or Sway on demand; `firelamp-desktops serve` is the local API Settings > Desktops talks to.
+Installed desktops appear as sessions on the SDDM login screen.
+
+## Installer
+
+Calamares (the CachyOS build) does an offline install: it copies the live system from the
+ISO's squashfs, creates the user, removes the live-only bits (`firelamp-postinstall`),
+rebuilds the initramfs and installs GRUB for BIOS or UEFI. Btrfs with `@`, `@home`,
+`@cache` and `@log` subvolumes is the default; ext4 and XFS are offered. Its settings and
+branding live in `profile/airootfs/usr/share/firelamp/calamares/`, and `firelamp-install`
+(the "Install Firelamp OS" launcher) copies them over the package defaults before starting.
+
+## Releases
+
+Pushing a `v*` tag runs the same build and boot test, then publishes the ISO as a GitHub
+Release with its SHA-256 (split into parts when it is over the 2 GiB asset limit).
 
 ## The shell contract
 
@@ -25,14 +54,13 @@ The live user is `firelamp` (no password, passwordless sudo). It logs in on tty1
 1. `$FIRELAMP_SHELL_CMD`, any command (handy while developing)
 2. `/usr/lib/firelamp/shell/firelamp-shell`, a compiled shell binary
 3. `/usr/share/firelamp/shell/Main.qml`, run with Qt's `qml` tool
-4. the built-in placeholder screen
 
-`build.sh` copies the repo's `shell/` folder to `/usr/share/firelamp/shell`, so a
-`shell/Main.qml` in the repo is all it takes to ship the desktop. Extra Arch packages
-the shell needs go in `shell/packages.x86_64`, one per line.
+`build.sh` copies the repo's `shell/` folder to `/usr/share/firelamp/shell`, and
+`shell/packages.x86_64` adds packages. To boot into plain Plasma, add `firelamp.noshell`
+to the kernel line or `touch ~/.config/firelamp/no-shell`.
 
-Qt apps in the session run with `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1`, so they show up
-on the AT-SPI2 bus. `firelamp-a11y-probe` prints the tree the AI sees.
+Qt apps run with `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1`, so they show up on the AT-SPI2 bus.
+`firelamp-a11y-probe` prints the tree the AI sees.
 
 ## Build
 
@@ -42,7 +70,8 @@ On any Linux machine with Docker:
 sudo iso/build.sh --docker
 ```
 
-On Arch with `archiso` installed: `sudo iso/build.sh`. The ISO lands in `iso/out/`.
+On Arch with `archiso` installed: `sudo iso/build.sh` (it adds the CachyOS key and repo
+to the build host first, via `cachyos-setup.sh`). The ISO lands in `iso/out/`.
 
 GitHub Actions (`.github/workflows/iso.yml`) builds the ISO on every change to
 `iso/` or `shell/`, boots it in QEMU (BIOS and UEFI), and uploads the ISO,
@@ -67,6 +96,6 @@ to software rendering automatically.
 ## Boot options
 
 - **Firelamp OS**: the desktop
-- **console only**: boots to a shell (`firelamp.nosession`)
+- **console only**: boots to a text login (`systemd.unit=multi-user.target`)
 - **speech**: speakup screen reader
-- add `firelamp.compositor=cage` to the kernel line for kiosk mode
+- add `firelamp.noshell` to the kernel line for plain Plasma without the Firelamp shell
