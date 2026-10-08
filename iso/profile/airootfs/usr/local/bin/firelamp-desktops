@@ -3,11 +3,15 @@
 
     firelamp-desktops list             what can be installed, and what already is
     firelamp-desktops install ID       install one (pacman, --needed)
-    firelamp-desktops serve            local API for Settings > Desktops (127.0.0.1:7341)
+    firelamp-desktops packs            the software packs (Dev, Make, Rice, Play, Office)
+    firelamp-desktops install-pack ID  install a pack;  remove-pack ID removes it
+    firelamp-desktops serve            local API for Settings > Desktops and Packs (127.0.0.1:7341)
 
 The shell's Settings page talks to `serve` over plain HTTP on localhost:
     GET  /desktops        -> [{id, name, installed, state, log}]
     POST /install/ID      -> starts the install, returns at once
+    GET  /packs           -> [{id, name, installed, state, log, packages}]
+    POST /install-pack/ID, /remove-pack/ID
 Only the IDs below can be installed; nothing else is passed to pacman.
 Each one ships a wayland-sessions/xsessions entry, so it shows up at login.
 """
@@ -27,11 +31,27 @@ CATALOG = {
     "sway":     {"name": "Sway", "probe": "sway",
                  "packages": ["sway", "swaybg", "swayidle", "swaylock", "waybar", "fuzzel", "mako", "foot"]},
 }
+# Packs (DIRECTION §13): optional, nothing pre-selected. Official repos only; AUR tools such as
+# pywal16 and matugen are left out until there is a safe AUR path.
+PACKS = {
+    "dev":    {"name": "Dev", "packages": ["git", "base-devel", "neovim", "code", "podman", "nodejs", "npm", "python", "rustup", "go"]},
+    "make":   {"name": "Make", "packages": ["gimp", "krita", "inkscape", "kdenlive", "obs-studio"]},
+    "rice":   {"name": "Rice", "packages": ["kvantum", "fastfetch", "starship", "btop", "cava"]},
+    "play":   {"name": "Play", "packages": ["steam", "lutris", "gamemode", "mangohud"]},
+    "office": {"name": "Office", "packages": ["libreoffice-fresh", "thunderbird"]},
+}
 jobs = {}   # id -> {"state": "installing"|"installed"|"failed", "log": last line}
 
 
+def query(*pkgs):
+    try:
+        return subprocess.run(["pacman", "-Q", *pkgs], capture_output=True).returncode == 0
+    except FileNotFoundError:          # not an Arch system
+        return False
+
+
 def installed(pkg):
-    return subprocess.run(["pacman", "-Q", pkg], capture_output=True).returncode == 0
+    return query(pkg)
 
 
 def privileged(cmd):
@@ -43,18 +63,47 @@ def privileged(cmd):
     return cmd
 
 
-def install(did):
-    d = CATALOG[did]
-    jobs[did] = {"state": "installing", "log": "Starting"}
-    cmd = privileged(["pacman", "-S", "--needed", "--noconfirm", *d["packages"]])
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+def run_job(key, cmd, check):
+    jobs[key] = {"state": "installing", "log": "Starting"}
+    p = subprocess.Popen(privileged(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     for line in p.stdout:
         line = line.strip()
         if line:
-            jobs[did]["log"] = line[-120:]
-    ok = p.wait() == 0 and installed(d["probe"])
-    jobs[did] = {"state": "installed" if ok else "failed", "log": jobs[did]["log"]}
+            jobs[key]["log"] = line[-120:]
+    ok = p.wait() == 0 and check()
+    jobs[key] = {"state": "installed" if ok else "failed", "log": jobs[key]["log"]}
     return ok
+
+
+def install(did):
+    d = CATALOG[did]
+    return run_job(did, ["pacman", "-S", "--needed", "--noconfirm", *d["packages"]], lambda: installed(d["probe"]))
+
+
+def pack_installed(pid):
+    return query(*PACKS[pid]["packages"])
+
+
+def install_pack(pid):
+    return run_job("pack:" + pid, ["pacman", "-S", "--needed", "--noconfirm", *PACKS[pid]["packages"]], lambda: pack_installed(pid))
+
+
+def remove_pack(pid):
+    # -Rs takes each package and the dependencies nothing else needs; base-devel and git stay put
+    keep = {"base-devel", "git", "python"}
+    pkgs = [p for p in PACKS[pid]["packages"] if p not in keep and installed(p)]
+    if not pkgs:
+        return True
+    return run_job("pack:" + pid, ["pacman", "-Rs", "--noconfirm", *pkgs], lambda: not pack_installed(pid))
+
+
+def pack_listing():
+    out = []
+    for pid, d in PACKS.items():
+        j = jobs.get("pack:" + pid, {})
+        out.append({"id": pid, "name": d["name"], "installed": pack_installed(pid),
+                    "state": j.get("state", ""), "log": j.get("log", ""), "packages": d["packages"]})
+    return out
 
 
 def listing():
@@ -78,10 +127,19 @@ class Api(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/desktops":
             return self.reply(200, listing())
+        if self.path == "/packs":
+            return self.reply(200, pack_listing())
         self.reply(404, {"error": "not found"})
 
     def do_POST(self):
         did = self.path.rsplit("/", 1)[-1]
+        for verb, fn in (("/install-pack/", install_pack), ("/remove-pack/", remove_pack)):
+            if self.path.startswith(verb):
+                if did not in PACKS:
+                    return self.reply(404, {"error": "unknown pack"})
+                if jobs.get("pack:" + did, {}).get("state") != "installing":
+                    threading.Thread(target=fn, args=(did,), daemon=True).start()
+                return self.reply(202, {"state": "installing"})
         if not self.path.startswith("/install/") or did not in CATALOG:
             return self.reply(404, {"error": "unknown desktop"})
         if jobs.get(did, {}).get("state") == "installing":
@@ -98,6 +156,11 @@ def main():
     if cmd == "list":
         for d in listing():
             print(f"{d['id']:10} {'installed' if d['installed'] else '-':10} {' '.join(d['packages'])}")
+    elif cmd == "packs":
+        for d in pack_listing():
+            print(f"{d['id']:8} {'installed' if d['installed'] else '-':10} {' '.join(d['packages'])}")
+    elif cmd in ("install-pack", "remove-pack") and len(sys.argv) > 2 and sys.argv[2] in PACKS:
+        sys.exit(0 if (install_pack if cmd == "install-pack" else remove_pack)(sys.argv[2]) else 1)
     elif cmd == "install" and len(sys.argv) > 2 and sys.argv[2] in CATALOG:
         sys.exit(0 if install(sys.argv[2]) else 1)
     elif cmd == "serve":

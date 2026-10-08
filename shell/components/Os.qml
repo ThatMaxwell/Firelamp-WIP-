@@ -42,11 +42,29 @@ QtObject {
         property string look: "graphite"       // graphite | paper | midnight | moss | studio
         property string accent: ""             // the user's color; empty = neutral. Never ember.
         property string myLooks: "[]"           // saved Looks, JSON
+        property bool packsAsked: false        // first boot showed "What do you do?"
     }
     // Risky means deleting, sending, paying or sharing; those always ask, whatever this says.
     function trust(app) { try { return JSON.parse(settings.appTrust)[app] || "risky"; } catch (e) { return "risky"; } }
     function setTrust(app, v) { var t = {}; try { t = JSON.parse(settings.appTrust); } catch (e) {} t[app] = v; settings.appTrust = JSON.stringify(t); }
     readonly property string name: settings.assistantName || "Assistant"
+
+    // ---- packs: one shared status, so first boot and Settings › Packs agree ----
+    property var packStatus: ({})                 // id -> { installed, state, log, removing }
+    property bool packHelper: false               // firelamp-desktops answered
+    function setPack(id, f) { var st = Object.assign({}, packStatus); st[id] = Object.assign({}, st[id] || {}, f); packStatus = st; }
+    function installPack(id, remove) {
+        setPack(id, { state: "installing", log: "", removing: !!remove });
+        if (!packHelper && demoInstalls) { packDemo.queue.push([id, !!remove]); if (!packDemo.running) packDemo.start(); return; }
+        var x = new XMLHttpRequest();
+        x.open("POST", "http://127.0.0.1:7341" + (remove ? "/remove-pack/" : "/install-pack/") + id); x.send();
+    }
+    // recorder / dev builds without the helper: stand-in installs, one after another
+    property Timer packDemo: Timer {
+        property var queue: []
+        interval: 4500; repeat: true
+        onTriggered: { var j = queue.shift(); if (j) os.setPack(j[0], { state: "", installed: !j[1] }); if (!queue.length) stop(); }
+    }
 
     // ---- home widgets: sizes are S 2×2, M 4×2, L 4×4 on a 76px unit with 24px gutters ----
     property bool editingHome: false

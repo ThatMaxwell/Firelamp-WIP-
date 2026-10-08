@@ -31,9 +31,9 @@ for f in [*out.glob("*.png"), *out.glob("*.jpg")]:
 
 # first boot runs from scratch: splash, no name, then naming
 base = ["firelamp", "--windowed", "--reset"] if scene == "firstboot" else ["firelamp", "--nosplash", "--windowed", "--name=Juniper"]
-if scene in ("stuck", "autopause", "desktops", "edithome"):
+if scene in ("stuck", "autopause", "desktops", "edithome", "packs"):
     base.append("--pointer")
-if scene == "desktops":
+if scene in ("desktops", "packs"):
     base.append("--demo-installs")
 app = QGuiApplication([*base, *sys.argv[3:]])
 engine = QQmlApplicationEngine()
@@ -351,6 +351,16 @@ elif scene == "looks":
               ("do", lambda: [call("setSetting", k, v) for k, v in (("look", "graphite"), ("accent", ""), ("winRadius", 12), ("dockSize", 1), ("dockMag", 2))]),
               ("wait", 100), ("do", lambda: stop(0))]
     at(1200, lambda: run(steps))
+elif scene == "packs":
+    # First boot's optional "What do you do?", then the same packs in Settings
+    at(200, lambda: call("showPacks"))
+    steps = [("wait", 900), ("still", "packs-firstboot-empty"),
+             ("click", "Dev"), ("wait", 250), ("click", "Rice"), ("wait", 500), ("point", 900, 760, 500), ("wait", 300), ("still", "packs-firstboot"),
+             ("click", "Continue"), ("wait", 1200), ("still", "packs-toast"),
+             ("do", lambda: call("openSettings", "Packs")), ("wait", 900), ("click", "Dev pack", -200, 0), ("wait", 600),
+             ("click", "Install Play pack"), ("point", 1240, 800, 600), ("wait", 800), ("still", "settings-packs"),
+             ("do", lambda: call("setSetting", "packsAsked", False)), ("wait", 100), ("do", lambda: stop(0))]
+    at(400, lambda: run(steps))
 elif scene == "effort":
     # Settings › Assistant: the effort picker, Jev (Instant) by default
     at(300, lambda: call("launch", "settings"))
