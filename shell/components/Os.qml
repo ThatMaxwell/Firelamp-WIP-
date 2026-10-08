@@ -36,6 +36,8 @@ QtObject {
         property int dockMag: 2                // 0 off, 1 subtle, 2 full
         property bool dockBacking: true        // dark grey slab, or floating icons
         property bool dockAutohide: false
+        property string dockSide: "bottom"     // bottom | left | right
+        property string barOrder: ""           // JSON order of the top bar's right side; empty = default
         property bool barSeconds: false
         property bool barDate: true
         property int winRadius: 12
@@ -147,6 +149,26 @@ QtObject {
         saveHome(widgets.concat([{ uid: uid, kind: kind, size: size, x: x, y: y, fresh: true }]));
         return uid;
     }
+    // drop one widget on another of the same size and they become a stack; scroll to cycle
+    function stackWidgets(dragUid, targetUid) {
+        var d = null, t = null;
+        widgets.forEach(function (w) { if (w.uid === dragUid) d = w; if (w.uid === targetUid) t = w; });
+        if (!d || !t) return;
+        var under = t.kind === "stack" ? t.items : [t.kind];
+        var items = under.concat(d.kind === "stack" ? d.items : [d.kind]);
+        saveHome(widgets.filter(function (w) { return w.uid !== dragUid; }).map(function (w) {
+            return w.uid === targetUid ? Object.assign({}, w, { kind: "stack", items: items, page: under.length, fresh: false }) : w;
+        }));
+    }
+    // remember a stack's page without rebuilding the home (that would cut its slide short)
+    function notePage(uid, i) {
+        widgets.forEach(function (w) { if (w.uid === uid) w.page = i; });
+        settings.homeLayout = JSON.stringify(widgets);
+    }
+    // captures: turn a stack's page as if scrolled
+    signal pageStack(int uid, int i)
+    readonly property var barDefault: ["assistant", "battery", "wifi", "search", "control", "clock"]
+    readonly property var barItems: { try { var o = JSON.parse(settings.barOrder); return o.length === barDefault.length ? o : barDefault; } catch (e) { return barDefault; } }
     function resetHome() { settings.homeLayout = ""; widgets = defaultHome.slice(); }
     Component.onCompleted: loadHome()
     property bool vision: false

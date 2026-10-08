@@ -80,6 +80,9 @@ Window {
     function resetHome() { Os.resetHome(); }
     function setSetting(k, v) { Os.settings[k] = v; }
     function showPacks() { packsCard.picked = {}; packsCard.shown = true; }
+    function exportLook(url) { editHome.exportLook(url); }
+    function importLook(url) { editHome.importLook(url); }
+    function pageStack(uid, i) { Os.pageStack(uid, i); }
     function showBrowsers() { browserCard.shown = true; }
     // recorder: activate a control by name, the way the AI would
     function probeTap(name) { var n = Tree.find(win.contentItem, { name: name }); if (n && n.item.aiActivate) n.item.aiActivate(); }
@@ -122,12 +125,18 @@ Window {
 
         Dock {
             id: dock
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
-            // autohide: tucked away until your pointer reaches the bottom edge
-            readonly property bool tucked: Os.settings.dockAutohide && !Os.editingHome && (win.lastY < 0 || win.lastY < win.height - (dock.height + 20))
-            anchors.bottomMargin: screen.booted && !tucked ? 7 : -110
-            Behavior on anchors.bottomMargin { SequentialAnimation { PauseAnimation { duration: 250 } NumberAnimation { duration: 900; easing.type: Easing.OutQuint } } }
+            // bottom, or turned onto the left or right edge about its centre (mirrored on the right)
+            readonly property string side: Os.settings.dockSide
+            transform: [ Rotation { origin.x: dock.width / 2; origin.y: dock.height / 2; angle: dock.turn },
+                         Scale { origin.x: dock.width / 2; origin.y: dock.height / 2; xScale: dock.mirrored ? -1 : 1 } ]
+            // autohide: tucked away until your pointer reaches its edge
+            readonly property bool tucked: Os.settings.dockAutohide && !Os.editingHome && (side === "left" ? win.lastX < 0 || win.lastX > dock.height + 20
+                                           : side === "right" ? win.lastX < 0 || win.lastX < win.width - (dock.height + 20)
+                                           : win.lastY < 0 || win.lastY < win.height - (dock.height + 20))
+            property real edge: screen.booted && !tucked ? 7 : -110
+            Behavior on edge { SequentialAnimation { PauseAnimation { duration: 250 } NumberAnimation { duration: 900; easing.type: Easing.OutQuint } } }
+            x: side === "left" ? edge + height / 2 - width / 2 : side === "right" ? parent.width - edge - height / 2 - width / 2 : (parent.width - width) / 2
+            y: side === "bottom" ? parent.height - height - edge : (parent.height - height) / 2
             items: win.apps.filter(function (a) { return !a.noDock; }).map(function (a) { return { id: a.id, icon: a.icon, title: a.title }; })
                    .concat(["-"], Os.live ? [{ id: "install", icon: "install", title: "Install Firelamp OS" }] : [],
                            [{ id: "downloads", icon: "downloads", title: "Downloads" }, { id: "trash", icon: "trash", title: "Trash" }])

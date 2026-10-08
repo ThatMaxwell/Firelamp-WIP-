@@ -13,6 +13,9 @@ if ! compgen -G '/dev/dri/renderD*' >/dev/null; then
     export QT_QUICK_BACKEND=software
 fi
 
+# Looks export and import as .firelamp-look files, read and written from QML.
+export QML_XHR_ALLOW_FILE_READ=1 QML_XHR_ALLOW_FILE_WRITE=1
+
 if [[ -n "${FIRELAMP_SHELL_CMD:-}" ]]; then
     exec bash -c "$FIRELAMP_SHELL_CMD"
 elif [[ -x /usr/lib/firelamp/shell/firelamp-shell ]]; then

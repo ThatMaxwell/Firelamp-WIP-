@@ -9,8 +9,23 @@ Item {
     property real edit: Os.editingHome ? 1 : 0
     Behavior on edit { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
     readonly property int snap: 8
-    function px(w) { return w.x < 0 ? width + w.x : w.x; }
+    // a dock on the left or right edge nudges the widgets on that side out of its way
+    readonly property real insetL: Os.settings.dockSide === "left" ? 64 : 0
+    readonly property real insetR: Os.settings.dockSide === "right" ? 64 : 0
+    function px(w) { return w.x < 0 ? width + w.x - insetR : w.x + insetL; }
 
+    // the same-size widget under the centre of the one being dragged, if any
+    property int dropOn: -1
+    function stackTarget(host) {
+        var cx = host.x + host.width / 2, cy = host.y + host.height / 2;
+        for (var i = 0; i < Os.widgets.length; i++) {
+            var o = Os.widgets[i];
+            if (o.uid === host.modelData.uid || o.size !== host.size) continue;
+            var s = Os.widgetSizes[o.size], ox = px(o);
+            if (cx > ox + 20 && cx < ox + s[0] - 20 && cy > o.y + 20 && cy < o.y + s[1] - 20) return o.uid;
+        }
+        return -1;
+    }
     // a free spot for a new widget: scan the grid top-left first, avoiding the others
     function freeSpot(size) {
         var s = Os.widgetSizes[size], gap = 24;
@@ -74,7 +89,18 @@ Item {
                 anchors.fill: hw; radius: 18; blur: host.dragging ? 34 : 22; offset.y: host.dragging ? 12 : 8
                 color: Qt.rgba(0, 0, 0, 0.45); opacity: home.edit
             }
-            HomeWidget { id: hw; kind: host.modelData.kind; size: host.size }
+            HomeWidget {
+                id: hw; kind: host.modelData.kind; size: host.size; uid: host.modelData.uid
+                items: host.modelData.items || []; page: host.modelData.page || 0
+                onPaged: (i) => Os.notePage(host.modelData.uid, i)
+            }
+            // drop target: a widget of the same size held over this one makes a stack
+            Rectangle {
+                anchors.fill: hw; anchors.margins: -4; radius: 22; color: "transparent"
+                border.color: Theme.text; border.width: 1.5
+                opacity: home.dropOn === host.modelData.uid ? 1 : 0
+                Behavior on opacity { NumberAnimation { duration: 140 } }
+            }
 
             MouseArea {
                 id: mover
@@ -85,7 +111,13 @@ Item {
                 drag.threshold: 2
                 drag.minimumX: 0; drag.maximumX: home.width - host.width
                 drag.minimumY: 0; drag.maximumY: home.height - host.height
+                onPositionChanged: if (drag.active) home.dropOn = home.stackTarget(host)
                 onReleased: {
+                    if (home.dropOn >= 0) {
+                        var t = home.dropOn; home.dropOn = -1;
+                        Os.stackWidgets(host.modelData.uid, t);
+                        return;
+                    }
                     var nx = Math.round(host.x / home.snap) * home.snap, ny = Math.round(host.y / home.snap) * home.snap;
                     host.x = nx; host.y = ny;
                     settle.start();

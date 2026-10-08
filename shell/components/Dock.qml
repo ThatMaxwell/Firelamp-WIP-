@@ -20,6 +20,14 @@ Item {
     property string aiActiveId: ""
     property string trashIcon: Art.icon("trash")
     property string aiApp: "dock"
+    // left and right docks are the same dock turned on its side (and, on the right, mirrored so
+    // the first app is still at the top); icons and the label turn back upright
+    readonly property real turn: Os.settings.dockSide === "bottom" ? 0 : 90
+    readonly property bool mirrored: Os.settings.dockSide === "right"
+    component Upright: Item {
+        transform: [ Scale { origin.x: width / 2; origin.y: height / 2; xScale: dock.mirrored ? -1 : 1 },
+                     Rotation { origin.x: width / 2; origin.y: height / 2; angle: -dock.turn } ]
+    }
     signal launch(string id)
 
     // one per-frame step: ease the pointer and the amount toward their targets (critically damped)
@@ -41,7 +49,10 @@ Item {
     function iconRect(id) {
         for (var i = 0; i < rep.count; i++) {
             var it = rep.itemAt(i);
-            if (it && it.appId === id) { var p = it.mapToItem(Os.root, 0, it.height - it.size); return Qt.rect(p.x, p.y, it.size, it.size); }
+            if (it && it.appId === id) {
+                var a = it.mapToItem(Os.root, 0, it.height - it.size), b = it.mapToItem(Os.root, it.size, it.height);
+                return Qt.rect(Math.min(a.x, b.x), Math.min(a.y, b.y), it.size, it.size);
+            }
         }
         return null;
     }
@@ -123,18 +134,21 @@ Item {
                     x: 2; anchors.bottom: parent.bottom
                     property real lift: 0
                     transform: Translate { y: -iconBox.lift }
-                    Image {
-                        id: img
+                    Upright {
                         anchors.fill: parent
-                        source: di.sep ? "" : di.appId === "trash" ? dock.trashIcon : Art.icon(di.modelData.icon)
-                        sourceSize: Qt.size(176, 176)
-                        smooth: true; mipmap: true
-                        visible: false
-                    }
-                    MultiEffect {
-                        anchors.fill: img; source: img
-                        shadowEnabled: true; shadowBlur: 0.5; shadowVerticalOffset: 3; shadowOpacity: 0.45
-                        brightness: ima.pressed ? -0.3 : 0
+                        Image {
+                            id: img
+                            anchors.fill: parent
+                            source: di.sep ? "" : di.appId === "trash" ? dock.trashIcon : Art.icon(di.modelData.icon)
+                            sourceSize: Qt.size(176, 176)
+                            smooth: true; mipmap: true
+                            visible: false
+                        }
+                        MultiEffect {
+                            anchors.fill: img; source: img
+                            shadowEnabled: true; shadowBlur: 0.5; shadowVerticalOffset: 3; shadowOpacity: 0.45
+                            brightness: ima.pressed ? -0.3 : 0
+                        }
                     }
                     SequentialAnimation {
                         id: bounceAnim
@@ -184,7 +198,9 @@ Item {
         Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutQuint } }
         onAtChanged: if (at) tipText.text = at.aiName
         Binding on x { when: tip.at !== null; value: tip.at ? row.x + tip.at.x + tip.at.width / 2 - tip.width / 2 : 0 }
-        y: plate.y + plate.height - 7 - dock.tallest - height - 8
+        y: plate.y + plate.height - 7 - dock.tallest - height - 8 - (dock.turn ? (width - height) / 2 : 0)
+        transform: [ Scale { origin.x: tip.width / 2; origin.y: tip.height / 2; xScale: dock.mirrored ? -1 : 1 },
+                     Rotation { origin.x: tip.width / 2; origin.y: tip.height / 2; angle: -dock.turn } ]
         width: tipText.implicitWidth + 18; height: 22; radius: 11
         color: Theme.surface1
         border.color: Theme.hairline2; border.width: 1

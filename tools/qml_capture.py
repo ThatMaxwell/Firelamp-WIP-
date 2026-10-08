@@ -12,6 +12,7 @@ import os, subprocess, sys
 from pathlib import Path
 
 os.environ.setdefault("QSG_RENDER_LOOP", "basic")
+os.environ.update(QML_XHR_ALLOW_FILE_READ="1", QML_XHR_ALLOW_FILE_WRITE="1")
 # frame-exact mode: animations advance exactly 1/60 s per rendered frame, and every frame is
 # saved, so the clip is true 60 fps however slow the machine renders
 EXACT = len(sys.argv) > 1 and sys.argv[1] == "motion"
@@ -31,7 +32,7 @@ for f in [*out.glob("*.png"), *out.glob("*.jpg")]:
 
 # first boot runs from scratch: splash, no name, then naming
 base = ["firelamp", "--windowed", "--reset"] if scene == "firstboot" else ["firelamp", "--nosplash", "--windowed", "--name=Juniper"]
-if scene in ("stuck", "autopause", "desktops", "edithome", "packs", "live", "browsers"):
+if scene in ("stuck", "autopause", "desktops", "edithome", "packs", "live", "browsers", "round2"):
     base.append("--pointer")
 if scene in ("desktops", "packs", "browsers"):
     base.append("--demo-installs")
@@ -171,10 +172,17 @@ def run(steps):
             glide_to(x, y, 700, lambda: (tap(x, y), nxt()))
         elif kind == "find":
             glide_to(x, y, 700, nxt)
-        elif kind == "drag":               # ("drag", name, dx, dy, tx, ty)
+        elif kind == "drag":               # ("drag", name, dx, dy, tx, ty[, still]): a still while held
             tx, ty = step[4], step[5]
-            glide_to(x, y, 700, lambda: (mouse(x, y, "press"),
-                glide(x, y, x + tx, y + ty, 900, lambda: (mouse(x + tx, y + ty, "release"), pos.update(x=x + tx, y=y + ty), nxt()))))
+            held = step[6] if len(step) > 6 else None
+            def let_go():
+                mouse(x + tx, y + ty, "release"); pos.update(x=x + tx, y=y + ty); nxt()
+            def at_end():
+                if held:
+                    QTimer.singleShot(300, lambda: (still(held, 0), QTimer.singleShot(200, let_go)))
+                else:
+                    let_go()
+            glide_to(x, y, 700, lambda: (mouse(x, y, "press"), glide(x, y, x + tx, y + ty, 900, at_end)))
 
 
 def finished(fn, delay=0):
@@ -382,6 +390,38 @@ elif scene == "browsers":
              ("wait", 4200), ("still", "settings-browser"),
              ("do", lambda: call("setSetting", "browserAsked", False)), ("wait", 100), ("do", lambda: stop(0))]
     at(400, lambda: (mouse(900, 760), pos.update(x=900, y=760), run(steps)))
+elif scene == "round2":
+    # Edit home round 2: stack two widgets, turn the stack, move the dock to the sides,
+    # reorder the top bar, and round-trip a .firelamp-look file
+    for k, v in (("wallpaper", "graphite"), ("dockSide", "bottom"), ("barOrder", ""), ("look", "graphite"), ("accent", ""), ("dockSize", 1), ("dockMag", 2)):
+        call("setSetting", k, v)
+    call("resetHome")
+    look = str(Path(sys.argv[2]).resolve() / "Evening.firelamp-look")
+    start(300)
+    steps = [("do", lambda: (mouse(900, 600), pos.update(x=900, y=600))), ("wait", 400),
+             ("do", lambda: call("editHome", True, "Widgets")), ("wait", 1000),
+             # System (S) dropped on Weather (S): a stack
+             ("drag", "system widget", 0, 0, 0, -176, "stack-drop"), ("wait", 900), ("still", "stack-made"),
+             ("click", "Done"), ("wait", 600), ("point", 1100, 640, 500), ("wait", 500), ("still", "stack-home"),
+             ("do", lambda: call("pageStack", 2, 0)), ("wait", 150), ("still", "stack-turning"), ("wait", 700), ("still", "stack-weather"),
+             ("do", lambda: call("pageStack", 2, 1)), ("wait", 900),
+             # the dock on the left, then the right
+             ("do", lambda: call("editHome", True, "Dock & bar")), ("wait", 900), ("still", "dockbar-sheet"),
+             ("click", "Left"), ("wait", 1400), ("still", "dock-left-sheet"),
+             ("click", "Done"), ("wait", 900), ("point", 700, 500, 400), ("wait", 300), ("still", "dock-left"),
+             ("do", lambda: call("setSetting", "dockSide", "right")), ("wait", 1400), ("still", "dock-right"),
+             ("do", lambda: call("setSetting", "dockSide", "bottom")), ("wait", 1200),
+             # the top bar: the clock moves to the front
+             ("do", lambda: call("editHome", True, "Dock & bar")), ("wait", 900),
+             ("drag", "Clock in the top bar", 0, 0, -190, 0, "bar-order-drag"), ("wait", 700), ("still", "bar-order"),
+             ("do", lambda: call("editHome", True, "Looks")), ("wait", 800), ("still", "looks-share"),
+             ("do", lambda: call("exportLook", "file://" + look)), ("wait", 500),
+             ("do", lambda: call("setSetting", "barOrder", "")), ("wait", 300),
+             ("do", lambda: call("importLook", "file://" + look)), ("wait", 1200), ("still", "looks-imported"),
+             ("do", lambda: call("editHome", False, "")),
+             ("do", lambda: [call("setSetting", k, v) for k, v in (("dockSide", "bottom"), ("barOrder", ""), ("myLooks", "[]"))]),
+             ("do", lambda: call("resetHome")), ("wait", 200), ("do", lambda: stop(0))]
+    at(400, lambda: run(steps))
 elif scene == "live":
     # the live ISO: Install Firelamp OS in the dock and the Firelamp menu
     steps = [("wait", 1200), ("find", "Install Firelamp OS"), ("wait", 900), ("still", "live-dock"),

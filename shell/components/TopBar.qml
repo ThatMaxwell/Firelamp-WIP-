@@ -96,10 +96,21 @@ Rectangle {
         }
     }
 
+    // the right side, in the order set in Edit home › Dock & bar
     Row {
         anchors.right: parent.right; anchors.rightMargin: 8
         height: parent.height
         spacing: 2
+        Repeater {
+            model: Os.barItems
+            Loader {
+                required property string modelData
+                anchors.verticalCenter: parent.verticalCenter
+                sourceComponent: ({ assistant: cAssistant, battery: cBattery, wifi: cWifi, search: cSearch, control: cControl, clock: cClock })[modelData]
+            }
+        }
+    }
+    Component { id: cAssistant
         // the assistant's status pill
         Rectangle {
             id: ai
@@ -107,7 +118,6 @@ Rectangle {
             property string aiRole: "button"
             function aiActivate() { Os.timelineToggle(undefined); }
             readonly property string st: Os.agent ? Os.agent.mode : "idle"
-            anchors.verticalCenter: parent.verticalCenter
             height: 22; radius: 5
             width: aiRow.width + 18
             color: aim.containsMouse ? Theme.hover : "transparent"
@@ -122,30 +132,43 @@ Rectangle {
             }
             MouseArea { id: aim; anchors.fill: parent; hoverEnabled: true; onClicked: ai.aiActivate() }
         }
-        BarItem { key: "battery"; label: "Battery"; alignRight: true
+    }
+    Component { id: cBattery
+        BarItem { key: "battery"; label: "Battery"; alignRight: true; height: 22
             Row { spacing: 5; height: parent.height
                 BarText { text: "87%"; color: Theme.text; font.features: { "tnum": 1 } }
                 Glyph { name: "battery"; width: 25; height: 12; anchors.verticalCenter: parent.verticalCenter } } }
+    }
+    Component { id: cWifi
         BarItem { key: "wifi"; label: "Wi-Fi"; alignRight: true; Glyph { name: "wifi"; width: 15; height: 15; anchors.verticalCenter: parent.verticalCenter } }
+    }
+    Component { id: cSearch
         Rectangle {
             property string aiName: "Ask"
             property string aiRole: "button"
             function aiActivate() { Os.askOpen(); }
-            width: 33; height: 22; radius: 5; anchors.verticalCenter: parent.verticalCenter
+            width: 33; height: 22; radius: 5
             color: sma.containsMouse ? Theme.hover : "transparent"
             Glyph { name: "search"; width: 15; height: 15; anchors.centerIn: parent }
             MouseArea { id: sma; anchors.fill: parent; hoverEnabled: true; onClicked: Os.askOpen() }
         }
+    }
+    Component { id: cControl
         BarItem { key: "control"; label: "Control Center"; alignRight: true; Glyph { name: "control"; width: 15; height: 15; anchors.verticalCenter: parent.verticalCenter } }
-        BarText {
-            id: clock
-            font.weight: Font.Medium
-            leftPadding: 8; rightPadding: 8
-            font.features: { "tnum": 1 }
-            function tick() { var d = new Date(); text = (Os.settings.barDate ? Os.days[d.getDay()] + " " + Os.months[d.getMonth()].slice(0, 3) + " " + d.getDate() + "  " : "") + Os.clock(d, Os.settings.barSeconds); }
-            Component.onCompleted: tick()
-            Timer { interval: Os.settings.barSeconds ? 1000 : 5000; running: true; repeat: true; onTriggered: clock.tick() }
-            Connections { target: Os.settings; function onBarDateChanged() { clock.tick(); } function onBarSecondsChanged() { clock.tick(); } }
+    }
+    Component { id: cClock
+        Item {
+            width: clock.implicitWidth; height: 22
+            BarText {
+                id: clock
+                font.weight: Font.Medium
+                leftPadding: 8; rightPadding: 8
+                font.features: { "tnum": 1 }
+                function tick() { var d = new Date(); text = (Os.settings.barDate ? Os.days[d.getDay()] + " " + Os.months[d.getMonth()].slice(0, 3) + " " + d.getDate() + "  " : "") + Os.clock(d, Os.settings.barSeconds); }
+                Component.onCompleted: tick()
+                Timer { interval: Os.settings.barSeconds ? 1000 : 5000; running: true; repeat: true; onTriggered: clock.tick() }
+                Connections { target: Os.settings; function onBarDateChanged() { clock.tick(); } function onBarSecondsChanged() { clock.tick(); } }
+            }
         }
     }
 }

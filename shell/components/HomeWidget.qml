@@ -9,11 +9,17 @@ Item {
     property string kind: "clock"
     property string size: "M"
     property bool preview: false            // drawn in the gallery: no live data, no input
+    property bool bare: false               // inside a stack: the stack draws the surface
+    property var items: []                  // kind "stack": the widgets, top to bottom
+    property int page: 0
+    property int uid: -1
+    signal paged(int i)
     readonly property bool small: size === "S"
     readonly property bool large: size === "L"
     width: Os.widgetSizes[size][0]; height: Os.widgetSizes[size][1]
 
     Rectangle {
+        visible: !hw.bare
         anchors.fill: parent; radius: 18
         color: Qt.rgba(Theme.surface1.r, Theme.surface1.g, Theme.surface1.b, 0.72)
         border.color: Theme.hairline2; border.width: 1
@@ -32,10 +38,61 @@ Item {
     Loader {
         id: body
         x: 14; y: 14; width: parent.width - 28; height: parent.height - 28
-        sourceComponent: ({ clock: clock, weather: weather, upnext: upnext, nowplaying: nowplaying, notes: notes, folder: folder,
+        visible: hw.kind !== "stack"
+        sourceComponent: hw.kind === "stack" ? null : ({ clock: clock, weather: weather, upnext: upnext, nowplaying: nowplaying, notes: notes, folder: folder,
                             photo: photo, system: system, assistant: assistant, quick: quick })[hw.kind] || clock
     }
 
+    // a stack: widgets of one size on top of each other; scroll (or swipe) to cycle, like iOS
+    Loader { anchors.fill: parent; active: hw.kind === "stack"; sourceComponent: stack }
+    Component { id: stack
+        Item {
+            ListView {
+                id: lv
+                anchors.fill: parent; clip: true
+                model: hw.items
+                orientation: ListView.Vertical
+                snapMode: ListView.SnapOneItem
+                highlightRangeMode: ListView.StrictlyEnforceRange
+                highlightMoveDuration: 380
+                boundsBehavior: Flickable.StopAtBounds
+                interactive: !hw.preview && !Os.editingHome
+                currentIndex: hw.page
+                Component.onCompleted: positionViewAtIndex(hw.page, ListView.Beginning)
+                onCurrentIndexChanged: hw.paged(currentIndex)
+                // loaded by URL: a widget type can't name itself
+                delegate: Loader {
+                    required property string modelData
+                    width: hw.width; height: hw.height
+                    Component.onCompleted: setSource(Qt.resolvedUrl("HomeWidget.qml"), { kind: modelData, size: hw.size, bare: true, preview: hw.preview })
+                }
+                // one wheel notch = one widget, with a short rest so a trackpad fling doesn't skip three
+                WheelHandler {
+                    enabled: !hw.preview && !Os.editingHome
+                    property real acc: 0
+                    onWheel: (e) => {
+                        acc += e.angleDelta.y;
+                        if (Math.abs(acc) < 90 || rest.running) return;
+                        var n = Math.max(0, Math.min(lv.count - 1, lv.currentIndex + (acc < 0 ? 1 : -1)));
+                        acc = 0; rest.start();
+                        lv.currentIndex = n;
+                    }
+                }
+                Timer { id: rest; interval: 320 }
+                Connections { target: Os; function onPageStack(u, i) { if (u === hw.uid) lv.currentIndex = i; } }
+            }
+            // where you are in the stack: small dots on the right edge
+            Column {
+                anchors.right: parent.right; anchors.rightMargin: 6; anchors.verticalCenter: parent.verticalCenter; spacing: 4
+                Repeater {
+                    model: hw.items.length
+                    Rectangle { required property int index; width: 4; height: 4; radius: 2
+                                color: index === lv.currentIndex ? Theme.text2 : Theme.text4
+                                Behavior on color { ColorAnimation { duration: 200 } } }
+                }
+            }
+        }
+    }
     Component { id: clock
         Item {
             Label { text: Qt.formatDate(hw.now, "dddd") }

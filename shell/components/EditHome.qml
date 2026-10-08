@@ -33,10 +33,51 @@ Item {
         { name: "Midnight", what: "True black, for OLED", look: "midnight", winRadius: 12, dockSize: 1, dockMag: 1, dockBacking: true },
         { name: "Moss", what: "Green-grey", look: "moss", winRadius: 12, dockSize: 1, dockMag: 2, dockBacking: true },
         { name: "Studio", what: "Dense and square", look: "studio", winRadius: 0, dockSize: 0, dockMag: 0, dockBacking: true } ]
-    readonly property var lookKeys: ["look", "winRadius", "dockSize", "dockMag", "dockBacking", "wallpaper", "accent"]
+    readonly property var lookKeys: ["look", "winRadius", "dockSize", "dockMag", "dockBacking", "dockSide", "barOrder", "wallpaper", "accent"]
     property var mine: { try { return JSON.parse(Os.settings.myLooks); } catch (e) { return []; } }
     readonly property var allLooks: presets.concat(mine)
-    function applyLook(l) { lookKeys.forEach(function (k) { if (l[k] !== undefined) Os.settings[k] = l[k]; }); }
+    function applyLook(l) {
+        lookKeys.forEach(function (k) { if (l[k] !== undefined) Os.settings[k] = l[k]; });
+        if (l.home) { Os.settings.homeLayout = l.home; Os.loadHome(); }
+    }
+    // .firelamp-look: one JSON file with the Look's settings and its home layout, to share.
+    // Your own photo wallpaper stays on your machine; the file falls back to Graphite.
+    function exportLook(url) {
+        var l = { format: "firelamp-look", version: 1, name: "My Look", home: Os.settings.homeLayout };
+        lookKeys.forEach(function (k) { l[k] = Os.settings[k]; });
+        if (String(l.wallpaper).indexOf("file:") === 0) l.wallpaper = "graphite";
+        var x = new XMLHttpRequest();
+        x.open("PUT", url); x.send(JSON.stringify(l, null, 2));
+        Os.toast("files", "Look exported", decodeURIComponent(String(url).split("/").pop()));
+    }
+    function importLook(url) {
+        var x = new XMLHttpRequest();
+        x.onreadystatechange = function () {
+            if (x.readyState !== XMLHttpRequest.DONE) return;
+            var l = null;
+            try { l = JSON.parse(x.responseText); } catch (e) {}
+            if (!l || l.format !== "firelamp-look") { Os.toast("files", "Not a Look file", "Pick a .firelamp-look file."); return; }
+            l.name = decodeURIComponent(String(url).split("/").pop().replace(/\.firelamp-look$/, ""));
+            l.what = "Imported";
+            Os.settings.myLooks = JSON.stringify(mine.concat([l]));
+            eh.applyLook(l);
+        };
+        x.open("GET", url); x.send();
+    }
+    FileDialog {
+        id: lookOut
+        title: "Export Look"; fileMode: FileDialog.SaveFile; defaultSuffix: "firelamp-look"
+        nameFilters: ["Firelamp Look (*.firelamp-look)"]
+        currentFolder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
+        selectedFile: currentFolder + "/My Look.firelamp-look"
+        onAccepted: eh.exportLook(selectedFile)
+    }
+    FileDialog {
+        id: lookIn
+        title: "Import Look"; nameFilters: ["Firelamp Look (*.firelamp-look)"]
+        currentFolder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
+        onAccepted: eh.importLook(selectedFile)
+    }
     function isCurrent(l) {
         for (var i = 0; i < lookKeys.length; i++) { var k = lookKeys[i]; if (l[k] !== undefined && Os.settings[k] !== l[k]) return false; }
         return true;
@@ -96,6 +137,21 @@ Item {
         // clicks on the sheet never reach the desktop under it
         MouseArea { anchors.fill: parent }
 
+        // Looks: share one as a .firelamp-look file
+        Row {
+            visible: eh.tab === "Looks"
+            anchors.right: parent.right; anchors.rightMargin: 20; y: 21; spacing: 18
+            Repeater {
+                model: [["Export…", "Export Look", function () { lookOut.open(); }], ["Import…", "Import Look", function () { lookIn.open(); }]]
+                Text {
+                    required property var modelData
+                    property string aiName: modelData[1]; property string aiRole: "button"
+                    function aiActivate() { modelData[2](); }
+                    text: modelData[0]; color: Theme.text2; font.family: Theme.font; font.pixelSize: 12
+                    MouseArea { anchors.fill: parent; anchors.margins: -6; onClicked: parent.aiActivate() }
+                }
+            }
+        }
         Segmented {
             id: tabs
             x: 18; y: 16
@@ -246,6 +302,7 @@ Item {
                 component Head: Text { color: Theme.text3; font.family: Theme.font; font.pixelSize: 10; font.weight: Font.DemiBold; font.letterSpacing: 0.8; font.capitalization: Font.AllUppercase; bottomPadding: 4 }
                 Column {
                     Head { text: "Dock" }
+                    Opt { title: "Position"; Segmented { options: ["Left", "Bottom", "Right"]; current: ["left", "bottom", "right"].indexOf(Os.settings.dockSide); onPicked: (i) => Os.settings.dockSide = ["left", "bottom", "right"][i] } }
                     Opt { title: "Size"; Segmented { options: ["Small", "Medium", "Large"]; current: Os.settings.dockSize; onPicked: (i) => Os.settings.dockSize = i } }
                     Opt { title: "Magnification"; Segmented { options: ["Off", "Subtle", "Full"]; current: Os.settings.dockMag; onPicked: (i) => Os.settings.dockMag = i } }
                     Opt { title: "Backing"; Segmented { options: ["Dark grey", "None"]; current: Os.settings.dockBacking ? 0 : 1; onPicked: (i) => Os.settings.dockBacking = i === 0 } }
@@ -253,6 +310,7 @@ Item {
                 }
                 Column {
                     Head { text: "Top bar and windows" }
+                    Opt { title: "Order"; BarOrder {} }
                     Opt { title: "Show the date"; Toggle { label: "Show the date"; checked: Os.settings.barDate; onToggled: (c) => Os.settings.barDate = c } }
                     Opt { title: "Show seconds"; Toggle { label: "Show seconds"; checked: Os.settings.barSeconds; onToggled: (c) => Os.settings.barSeconds = c } }
                     Opt { title: "Window corners"; Segmented { options: ["Square", "Soft", "Round"]; current: [0, 8, 12].indexOf(Os.settings.winRadius); onPicked: (i) => Os.settings.winRadius = [0, 8, 12][i] } }
@@ -264,8 +322,15 @@ Item {
             // desktop behind the sheet. Your color is separate, and is never the AI's ember.
             Column {
                 visible: eh.tab === "Looks"
-                spacing: 16
+                spacing: 14
+                // saved and imported Looks join the presets; past the sheet's width the row scrolls
+                Flickable {
+                    width: sheet.width - 36; height: 144; y: -2
+                    contentWidth: lookRow.width + 4; clip: true
+                    flickableDirection: Flickable.HorizontalFlick; boundsBehavior: Flickable.StopAtBounds
                 Row {
+                    id: lookRow
+                    x: 2; y: 2
                     spacing: 12
                     Repeater {
                         model: eh.allLooks
@@ -318,6 +383,7 @@ Item {
                             Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Save as Look"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.Medium } }
                         MouseArea { anchors.fill: parent; onClicked: parent.aiActivate() }
                     }
+                }
                 }
                 Row {
                     spacing: 14
