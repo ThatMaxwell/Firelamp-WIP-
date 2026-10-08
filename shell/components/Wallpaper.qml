@@ -7,9 +7,9 @@ Rectangle {
     id: wp
     property bool still: false
     gradient: Gradient {
-        GradientStop { position: 0; color: "#100b09" }
-        GradientStop { position: 0.65; color: "#140d0a" }
-        GradientStop { position: 1; color: "#22120c" }
+        GradientStop { position: 0; color: "#0d0d0d" }
+        GradientStop { position: 0.6; color: "#121211" }
+        GradientStop { position: 1; color: "#181614" }
     }
 
     Item {
@@ -19,10 +19,11 @@ Rectangle {
         Repeater {
             model: [
                 // x, y (0..1), size (of height), colour, rise time (s), sway (s)
-                [0.12, 0.85, 0.55, "#7a2414", 46, 23], [0.32, 0.25, 0.38, "#5c1d10", 38, 31],
-                [0.55, 0.95, 0.62, "#8a3418", 52, 27], [0.78, 0.40, 0.44, "#6b2212", 41, 19],
-                [0.92, 0.90, 0.50, "#94401c", 57, 34], [0.45, 0.55, 0.30, "#4e190e", 35, 22],
-                [0.68, 1.05, 0.36, "#a5501f", 44, 29]
+                // graphite smoke with one low, warm lamp glow; no reds
+                [0.12, 0.85, 0.55, "#2c2b2a", 46, 23], [0.32, 0.25, 0.38, "#232527", 38, 31],
+                [0.55, 0.98, 0.62, "#3b2f27", 52, 27], [0.78, 0.40, 0.44, "#2a2928", 41, 19],
+                [0.92, 0.90, 0.50, "#302d2a", 57, 34], [0.45, 0.55, 0.30, "#1f2023", 35, 22],
+                [0.68, 1.05, 0.36, "#4a3426", 44, 29]
             ]
             Rectangle {
                 id: blob
@@ -64,13 +65,21 @@ Rectangle {
         blur: 1.0
         blurMax: 64
         blurMultiplier: 2
-        opacity: 0.78
+        opacity: 0.95
     }
-    // a little grain so the gradients never band
+    // film grain, so the dark gradients never band and the screen feels like a material
+    Image {
+        anchors.fill: parent
+        source: "../assets/grain.png"
+        fillMode: Image.Tile
+        opacity: 0.035
+        smooth: false
+    }
+    // a little shade at the top, under the menu bar
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0; color: Qt.rgba(0.06, 0.04, 0.035, 0.55) }
+            GradientStop { position: 0; color: Qt.rgba(0.04, 0.04, 0.04, 0.5) }
             GradientStop { position: 0.4; color: "transparent" }
         }
     }

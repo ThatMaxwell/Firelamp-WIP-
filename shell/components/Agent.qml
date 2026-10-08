@@ -44,7 +44,7 @@ Item {
         app: function (id) { var w = Os.desktop.get(id); return w ? w.content : null; },
         trashFull: function () { Os.trashFull(); }
     })
-    function quoteTitle(t) { return t.replace(/“([^”]+)”/g, "<font color=\"#FFD08A\">“$1”</font>"); }
+    function quoteTitle(t) { return t.replace(/“([^”]+)”/g, "<font color=\"#ffffff\">“$1”</font>"); }
     function log(kind, title, why, app) {
         Os.log({ kind: kind, title: quoteTitle(title), why: why || "", app: app || "" });
         if (kind !== "done" && kind !== "denied") capsule.steps = ++done;
@@ -62,10 +62,11 @@ Item {
         after(80, function () { locate(target, k, tries + 1); });
     }
     function markItem(n) {
+        if (!mark) return;
         mark.x = n.bounds.x - 4; mark.y = n.bounds.y - 4; mark.width = n.bounds.w + 8; mark.height = n.bounds.h + 8;
         mark.opacity = 1;
     }
-    function unmark() { mark.opacity = 0; }
+    function unmark() { if (mark) mark.opacity = 0; }
     function point(target, verb, k) {
         locate(target, function (n) {
             cursor.verb = verb + " " + (target.say || n.name);
@@ -138,8 +139,8 @@ Item {
             capsule.what = s.title || "Moving “" + s.src.name + "” to “" + s.dst.name + "”";
             return point(s.src, "grabbing", function (sn) {
                 cursor.pressed = true;
-                sn.item.grabToImage(function (res) {
-                    ghost.source = res.url; ghost.width = sn.bounds.w; ghost.height = sn.bounds.h; ghost.visible = true;
+                var lift = function (src, w, h) {
+                    ghost.source = src; ghost.width = w; ghost.height = h; ghost.visible = true;
                     sn.item.opacity = 0.35;
                     unmark();
                     locate(s.dst, function (dn) {
@@ -158,7 +159,10 @@ Item {
                             });
                         });
                     });
-                });
+                };
+                // apps can hand over a clean icon for the dragged thing; otherwise snapshot it
+                if (sn.item.aiIcon) lift(sn.item.aiIcon, 52, 52);
+                else sn.item.grabToImage(function (res) { lift(res.url, sn.bounds.w, sn.bounds.h); });
             });
         case "confirm":
             if (!Os.settings.askBeforeRisky) return next();

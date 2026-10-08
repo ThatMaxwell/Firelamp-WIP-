@@ -76,6 +76,7 @@ Item {
                 required property int inside
                 required property bool editing
                 property bool aiDropTarget: false
+                readonly property string aiIcon: Art.fileIcon(kind)
                 property string aiName: editing ? "" : name
                 property string aiRole: kind === "folder" ? "folder" : "listitem"
                 function aiActivate() { app.selIndex = index; }
@@ -84,8 +85,8 @@ Item {
                 width: 104; height: 104
                 Rectangle {
                     x: 20; y: 4; width: 64; height: 64; radius: 10
-                    color: tile.aiDropTarget ? Qt.rgba(1, 0.55, 0.22, 0.22) : app.selIndex === tile.index ? Qt.rgba(1, 0.94, 0.9, 0.09) : "transparent"
-                    border.color: tile.aiDropTarget ? Theme.orange : "transparent"; border.width: 1.5
+                    color: tile.aiDropTarget ? Theme.selStrong : app.selIndex === tile.index ? Theme.sel : "transparent"
+                    border.color: tile.aiDropTarget ? Theme.line3 : "transparent"; border.width: 1.5
                     scale: tile.aiDropTarget ? 1.08 : 1
                     Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
                     Image { anchors.centerIn: parent; width: 52; height: 52; sourceSize: Qt.size(104, 104); source: Art.fileIcon(tile.kind); smooth: true }
@@ -94,7 +95,7 @@ Item {
                     visible: !tile.editing
                     anchors.horizontalCenter: parent.horizontalCenter; y: 72
                     width: Math.min(100, label.implicitWidth + 10); height: label.height + 2; radius: 4
-                    color: app.selIndex === tile.index ? Theme.accent : "transparent"
+                    color: app.selIndex === tile.index ? Theme.selStrong : "transparent"
                     Text { id: label; anchors.centerIn: parent; width: Math.min(96, implicitWidth); text: tile.name; elide: Text.ElideMiddle; horizontalAlignment: Text.AlignHCenter; color: Theme.text; font.family: Theme.font; font.pixelSize: 12 }
                 }
                 Text {
@@ -106,13 +107,13 @@ Item {
                     visible: tile.editing
                     anchors.horizontalCenter: parent.horizontalCenter; y: 70
                     width: 96; height: 22; radius: 4
-                    color: Theme.win3; border.color: Theme.orange; border.width: 1
+                    color: Theme.win3; border.color: Theme.line3; border.width: 1
                     Field { id: nameField; anchors.fill: parent; anchors.margins: 2; label: "Folder name"; pixelSize: 12; align: TextInput.AlignHCenter; onAccepted: app.commit(text) }
                 }
                 MouseArea { anchors.fill: parent; z: -1; onClicked: tile.aiActivate() }
             }
         }
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 30; color: Qt.rgba(1, 0.94, 0.9, 0.025)
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 30; color: Qt.rgba(1, 1, 1, 0.025)
             Rectangle { width: parent.width; height: 0.5; color: Theme.line2 }
             Text { anchors.centerIn: parent; text: files.count + " items, 214.6 GB available"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
         }

@@ -22,7 +22,7 @@ Item {
     transform: Translate { x: tl.open ? 0 : tl.width + 24; Behavior on x { NumberAnimation { duration: 480; easing.type: Easing.OutCubic } } }
 
     RectangularShadow { anchors.fill: bg; radius: 18; blur: 50; offset.y: 14; color: Qt.rgba(0, 0, 0, 0.6) }
-    Rectangle { id: bg; anchors.fill: parent; radius: 18; color: Qt.rgba(0.1, 0.078, 0.067, 0.95); border.color: Qt.rgba(1, 0.93, 0.87, 0.13); border.width: 0.5 }
+    Rectangle { id: bg; anchors.fill: parent; radius: 18; color: Qt.rgba(0.11, 0.11, 0.105, 0.96); border.color: Qt.rgba(1, 1, 1, 0.13); border.width: 0.5 }
 
     Row {
         x: 18; y: 18; spacing: 10
@@ -65,13 +65,13 @@ Item {
             required property string time
             width: list.width
             height: card.implicitHeight + 16
-            readonly property color tint: kind === "ask" ? Theme.amber : kind === "denied" ? "#ff8b72" : kind === "done" ? "#8fe0a0" : Theme.orange
+            readonly property color tint: kind === "ask" ? Theme.accent : kind === "denied" ? Theme.danger : kind === "done" ? Theme.success : Theme.text2
             // the spine: an inked line that boils between entries
             InkRect {
                 visible: row.index < entries.count - 1
                 x: 14; y: 28; width: 2; height: row.height - 26
                 radius: 1; lineWidth: 1.4; wobble: 0.8
-                color: Qt.rgba(1, 0.54, 0.24, 0.4)
+                color: Theme.line3
             }
             Rectangle {
                 x: 2; y: 2; width: 26; height: 26; radius: 13
@@ -92,7 +92,7 @@ Item {
                     Rectangle {
                         visible: row.app !== ""
                         height: 17; radius: 8.5; width: chip.implicitWidth + 14
-                        color: Qt.rgba(1, 0.94, 0.9, 0.07)
+                        color: Qt.rgba(1, 1, 1, 0.07)
                         Text { id: chip; anchors.centerIn: parent; text: row.app; color: Theme.text2; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.Medium }
                     }
                 }
@@ -102,7 +102,7 @@ Item {
     Rectangle { anchors.bottom: parent.bottom; anchors.bottomMargin: 44; width: parent.width; height: 0.5; color: Theme.line2 }
     Row {
         anchors.bottom: parent.bottom; anchors.bottomMargin: 15; x: 18; spacing: 8
-        Glyph { name: "shield"; width: 14; height: 14; color: Theme.orange }
+        Glyph { name: "shield"; width: 14; height: 14; color: Theme.text3 }
         Text { text: "Every action is logged. Risky ones always ask you first."; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
     }
 }

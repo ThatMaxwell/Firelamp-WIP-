@@ -18,8 +18,8 @@ Item {
         id: bg
         anchors.fill: parent
         radius: 10
-        color: Qt.rgba(0.14, 0.115, 0.1, 0.96)
-        border.color: Qt.rgba(1, 0.93, 0.87, 0.14); border.width: 0.5
+        color: Qt.rgba(0.14, 0.14, 0.135, 0.96)
+        border.color: Qt.rgba(1, 1, 1, 0.14); border.width: 0.5
     }
     Column {
         id: col
@@ -41,7 +41,7 @@ Item {
                 Rectangle {
                     visible: !row.sep
                     anchors.fill: parent; radius: 5
-                    color: ma.containsMouse && !row.modelData.disabled ? Theme.accent : "transparent"
+                    color: ma.containsMouse && !row.modelData.disabled ? Theme.selStrong : "transparent"
                 }
                 Text {
                     id: lbl

@@ -21,7 +21,7 @@ Item {
         width: parent.width
         wrapMode: TextEdit.Wrap
         color: Theme.text; font.family: Theme.font; font.pixelSize: 14
-        selectionColor: Qt.rgba(1, 0.55, 0.2, 0.38)
+        selectionColor: Qt.rgba(0.94, 0.44, 0.23, 0.32)
         Text { text: ta.placeholder; visible: !edit.text; color: Theme.text3; font: edit.font }
     }
 }

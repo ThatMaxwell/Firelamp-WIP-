@@ -76,15 +76,16 @@ Item {
                 id: mi
                 required property int index
                 readonly property var m: app.list[index]
+                readonly property bool unread: { app.rev; return !!(m && m.unread); }
                 property string aiName: m ? (m.to ? "To " + m.to : m.from) + ": " + m.sub : ""
                 property string aiRole: "listitem"
                 function aiActivate() { app.open(index); }
                 width: lv.width - 12; x: 6; height: 84; radius: 9
-                color: app.sel === index ? Qt.rgba(1, 0.55, 0.22, 0.2) : mma.containsMouse ? Theme.hover : "transparent"
+                color: app.sel === index ? Theme.selStrong : mma.containsMouse ? Theme.hover : "transparent"
                 opacity: 0
                 Component.onCompleted: opacity = 1
                 Behavior on opacity { NumberAnimation { duration: 400 } }
-                Rectangle { visible: !!(mi.m && mi.m.unread); x: 6; y: 16; width: 7; height: 7; radius: 4; color: Theme.orange }
+                Rectangle { visible: mi.unread; x: 6; y: 16; width: 7; height: 7; radius: 4; color: Theme.accent }
                 Avatar { x: 18; y: 12; who: mi.m ? (mi.m.to || mi.m.from) : ""; seed: mi.index }
                 Column {
                     x: 62; y: 10; width: parent.width - 72; spacing: 2

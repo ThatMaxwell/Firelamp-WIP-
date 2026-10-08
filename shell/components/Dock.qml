@@ -131,7 +131,7 @@ Item {
                     width: 4; height: 4; radius: 2
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.bottom; anchors.topMargin: 1.5
-                    color: dock.aiActiveId === di.appId ? Theme.orange : Qt.rgba(1, 0.94, 0.9, 0.78)
+                    color: dock.aiActiveId === di.appId ? Theme.orange : Qt.rgba(1, 1, 1, 0.78)
                     opacity: dock.running[di.appId] ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 250 } }
                 }
@@ -144,7 +144,7 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     y: parent.height - di.size - 14 - height
                     width: tipText.implicitWidth + 20; height: 26; radius: 7
-                    color: Qt.rgba(0.15, 0.135, 0.125, 0.94)
+                    color: Qt.rgba(0.15, 0.15, 0.145, 0.94)
                     border.color: Qt.rgba(1, 1, 1, 0.14); border.width: 0.5
                     Text { id: tipText; anchors.centerIn: parent; text: di.aiName; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium }
                 }

@@ -18,7 +18,7 @@ Item {
     function answer(ok) { if (!shown) return; shown = false; var cb = callback; callback = null; if (cb) cb(ok); }
 
     // dim + blur everything behind
-    Rectangle { anchors.fill: parent; color: Qt.rgba(0.03, 0.02, 0.015, 0.5) }
+    Rectangle { anchors.fill: parent; color: Qt.rgba(0.02, 0.02, 0.02, 0.5) }
     MouseArea { anchors.fill: parent; hoverEnabled: true }
 
     Item {
@@ -32,9 +32,8 @@ Item {
         Keys.onEscapePressed: ps.answer(false)
 
         RectangularShadow { anchors.fill: bg; radius: 18; blur: 80; offset.y: 30; color: Qt.rgba(0, 0, 0, 0.8) }
-        RectangularShadow { anchors.fill: bg; radius: 18; blur: 60; color: Qt.rgba(1, 0.4, 0.15, 0.28) }
-        Rectangle { id: bg; anchors.fill: parent; radius: 18; color: Qt.rgba(0.118, 0.09, 0.078, 0.97) }
-        InkRect { anchors.fill: parent; anchors.margins: -1; radius: 18; color: Theme.orange; running: ps.shown }
+        Rectangle { id: bg; anchors.fill: parent; radius: 18; color: Qt.rgba(0.125, 0.125, 0.12, 0.97) }
+        InkRect { anchors.fill: parent; anchors.margins: -1; radius: 18; color: Theme.ink; lineWidth: 1.5; running: ps.shown }
 
         Column {
             id: col
@@ -43,7 +42,7 @@ Item {
             Row {
                 spacing: 14
                 Rectangle {
-                    width: 46; height: 46; radius: 13; color: Qt.rgba(1, 0.54, 0.24, 0.14)
+                    width: 46; height: 46; radius: 13; color: Theme.win4
                     Logo { anchors.centerIn: parent; width: 30; height: 35; animated: ps.shown }
                 }
                 Column {
@@ -72,7 +71,7 @@ Item {
             Item { width: 1; height: 12 }
             Row {
                 spacing: 7; visible: !!ps.request.why
-                Glyph { name: "sparkle"; width: 13; height: 13; color: Theme.orange; anchors.verticalCenter: parent.verticalCenter }
+                Glyph { name: "sparkle"; width: 13; height: 13; color: Theme.text3; anchors.verticalCenter: parent.verticalCenter }
                 Text { text: ps.request.why || ""; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
             }
             Item { width: 1; height: 18 }

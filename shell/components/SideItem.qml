@@ -14,8 +14,9 @@ Rectangle {
     Accessible.role: Accessible.Button
     Accessible.name: text
     width: parent ? parent.width : 190; height: 28; radius: 7
-    color: selected ? Qt.rgba(1, 0.94, 0.9, 0.1) : ma.containsMouse ? Qt.rgba(1, 0.94, 0.9, 0.05) : "transparent"
-    Glyph { x: 10; anchors.verticalCenter: parent.verticalCenter; name: s.glyph; color: Theme.orange }
+    color: selected ? Theme.selStrong : ma.containsMouse ? Theme.hover : "transparent"
+    Behavior on color { ColorAnimation { duration: 120 } }
+    Glyph { x: 10; anchors.verticalCenter: parent.verticalCenter; name: s.glyph; color: s.selected ? Theme.text : Theme.text3 }
     Text { x: 35; anchors.verticalCenter: parent.verticalCenter; text: s.text; color: Theme.text; font.family: Theme.font; font.pixelSize: 13 }
     Text { anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; text: s.count; color: Theme.text3; font.family: Theme.font; font.pixelSize: 12 }
     MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true; onClicked: s.clicked() }

@@ -22,7 +22,7 @@ Item {
         default property alias rows: groupCol.data
         property string title
         width: parent ? parent.width : 0; height: groupCol.height
-        radius: 10; color: Qt.rgba(1, 0.94, 0.9, 0.04); border.color: Theme.line; border.width: 0.5
+        radius: 10; color: Qt.rgba(1, 1, 1, 0.04); border.color: Theme.line; border.width: 0.5
         Column { id: groupCol; width: parent.width }
         Text { y: -22; x: 4; text: parent.title; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.DemiBold }
     }
@@ -54,7 +54,7 @@ Item {
                     Column {
                         spacing: 6; anchors.verticalCenter: parent.verticalCenter
                         Rectangle {
-                            width: 260; height: 32; radius: 7; color: Theme.win3; border.color: nameF.input.activeFocus ? Theme.orange : Theme.line2; border.width: 1
+                            width: 260; height: 32; radius: 7; color: Theme.win3; border.color: nameF.input.activeFocus ? Theme.line3 : Theme.line2; border.width: 1
                             Field { id: nameF; x: 10; width: parent.width - 20; height: parent.height; label: "Assistant name"; placeholder: "Name your assistant"; pixelSize: 15
                                     Component.onCompleted: text = Os.settings.assistantName
                                     onAccepted: if (text.trim()) Os.settings.assistantName = text.trim() }

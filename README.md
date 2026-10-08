@@ -29,8 +29,7 @@ hidden from the AI's UI tree, so only a human can answer it. **Esc** stops the A
 **Ctrl Space** pauses it, from anywhere, including mid-move.
 
 **Moving static.** A few components redraw their outline three times a loop, like hand-inked
-animation: the fire cursor's flame, the AI capsule, permission sheets, target marks and the
-timeline spine. Everything else stays still and crisp. See `shell/components/InkRect.qml`
+animation: the fire cursor's flame, the AI capsule, permission sheets and the timeline spine. Everything else stays still and crisp. See `shell/components/InkRect.qml`
 and `shell/js/logo.js`.
 
 **First boot** asks you to name your assistant. There is no default name.
@@ -77,9 +76,10 @@ To preview locally: `npx http-server docs` and open http://localhost:8080.
 ## Brand
 
 `brand/` has the logos as SVG, traced from the originals (under 1% pixel difference):
-`firelamp-cursor.svg`, an animated version with the boiling flame and floating spark, and
+`firelamp-cursor.svg`, an animated version with the boiling flame, and
 `thatmaxwell.svg`, built from one petal rotated eight times so it is easy to play with.
-Palette: ember `#E2402A`, orange `#FF8A3D`, amber `#FFB547`, cream `#FFD08A` on warm darks.
+Palette: the OS is graphite (`#1c1c1b` windows, `#0f0f0f` desktop) with ember `#F0703A` as a rare accent;
+the logo keeps ember `#E2402A`, orange `#FF8A3D` and cream `#FFD08A`.
 
 ## Checking the UI without a VM
 

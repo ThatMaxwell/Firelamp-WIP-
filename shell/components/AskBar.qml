@@ -25,7 +25,7 @@ Item {
         scale: ask.shown ? 1 : 0.97
         Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
         RectangularShadow { anchors.fill: bg; radius: 16; blur: 80; offset.y: 30; color: Qt.rgba(0, 0, 0, 0.7) }
-        Rectangle { id: bg; anchors.fill: parent; radius: 16; color: Qt.rgba(0.118, 0.098, 0.086, 0.97); border.color: Qt.rgba(1, 0.93, 0.87, 0.16); border.width: 0.5 }
+        Rectangle { id: bg; anchors.fill: parent; radius: 16; color: Qt.rgba(0.125, 0.125, 0.12, 0.97); border.color: Qt.rgba(1, 1, 1, 0.14); border.width: 0.5 }
         MouseArea { anchors.fill: parent }
         Row {
             x: 16; height: 58; spacing: 12
@@ -58,8 +58,8 @@ Item {
                     required property var modelData
                     required property int index
                     width: sugs.width; height: 38; radius: 8
-                    color: ask.sel === index ? Theme.accentSoft : "transparent"
-                    Glyph { x: 10; anchors.verticalCenter: parent.verticalCenter; name: modelData.icon; color: Theme.orange }
+                    color: ask.sel === index ? Theme.selStrong : "transparent"
+                    Glyph { x: 10; anchors.verticalCenter: parent.verticalCenter; name: modelData.icon; color: Theme.text2 }
                     Text { x: 36; anchors.verticalCenter: parent.verticalCenter; text: modelData.text; color: ask.sel === index ? Theme.text : Theme.text2; font.family: Theme.font; font.pixelSize: 13 }
                     MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: ask.sel = index; onClicked: ask.submit(modelData.text) }
                 }

@@ -7,7 +7,7 @@ Item {
     id: logo
     property bool animated: false
     property int frame: 0
-    implicitWidth: 42
+    implicitWidth: 34
     implicitHeight: 49
 
     Image {
@@ -15,7 +15,7 @@ Item {
         visible: !logo.animated
         source: L.uri(-1)
         sourceSize: Qt.size(logo.width * 2, logo.height * 2)
-        smooth: true; mipmap: true
+        smooth: true; mipmap: true; fillMode: Image.PreserveAspectFit
     }
     Repeater {
         model: logo.animated ? 3 : 0
@@ -24,7 +24,7 @@ Item {
             visible: logo.frame === index
             source: L.uri(index)
             sourceSize: Qt.size(logo.width * 2, logo.height * 2)
-            smooth: true; mipmap: true
+            smooth: true; mipmap: true; fillMode: Image.PreserveAspectFit
         }
     }
     Timer {

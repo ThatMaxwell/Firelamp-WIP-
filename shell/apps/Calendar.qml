@@ -41,7 +41,7 @@ Item {
                 border.color: Theme.line; border.width: 0.5
                 Rectangle {
                     anchors.right: parent.right; anchors.rightMargin: 6; y: 5
-                    width: 24; height: 22; radius: 11; color: cell.today ? Theme.ember : "transparent"
+                    width: 24; height: 22; radius: 11; color: cell.today ? Theme.accent : "transparent"
                     Text { anchors.centerIn: parent; text: cell.inMonth ? cell.d : cell.d < 1 ? app.prev + cell.d : cell.d - app.days
                            color: cell.today ? "white" : cell.inMonth ? Theme.text : Theme.text4; font.family: Theme.font; font.pixelSize: 12; font.weight: cell.today ? Font.Bold : Font.Normal }
                 }
@@ -50,8 +50,8 @@ Item {
                     Repeater {
                         model: cell.inMonth ? (app.events[cell.d] || []) : []
                         Rectangle { required property var modelData; width: parent.width; height: 18; radius: 4
-                            color: modelData[1] ? Qt.rgba(1, 0.71, 0.28, 0.2) : Qt.rgba(1, 0.48, 0.2, 0.22)
-                            Rectangle { width: 3; height: parent.height; radius: 1.5; color: modelData[1] ? Theme.amber : Theme.orange }
+                            color: Theme.sel
+                            Rectangle { width: 3; height: parent.height; radius: 1.5; color: modelData[1] ? "#8aa4c8" : Theme.accent }
                             Text { x: 7; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 10; elide: Text.ElideRight; text: modelData[0]; color: Theme.text; font.family: Theme.font; font.pixelSize: 11 } }
                     }
                 }

@@ -7,5 +7,5 @@ Logo {
     property real glow: 0.5
     animated: true
     layer.enabled: true
-    layer.effect: MultiEffect { shadowEnabled: true; shadowBlur: 1; shadowColor: "#ff6e32"; shadowOpacity: gl.glow; shadowHorizontalOffset: 0; shadowVerticalOffset: 0; autoPaddingEnabled: true }
+    layer.effect: MultiEffect { shadowEnabled: true; shadowBlur: 1; shadowColor: "#ff6a30"; shadowOpacity: gl.glow; shadowHorizontalOffset: 0; shadowVerticalOffset: 0; autoPaddingEnabled: true }
 }

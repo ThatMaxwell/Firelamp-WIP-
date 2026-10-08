@@ -28,7 +28,7 @@ Column {
             Timer { id: life; interval: 4200; onTriggered: { t.slide = 400; gone.start(); } }
             Timer { id: gone; interval: 400; onTriggered: model.remove(t.index) }
             RectangularShadow { anchors.fill: tb; radius: 16; blur: 40; offset.y: 10; color: Qt.rgba(0, 0, 0, 0.55) }
-            Rectangle { id: tb; anchors.fill: parent; radius: 16; color: Qt.rgba(0.14, 0.118, 0.106, 0.96); border.color: Qt.rgba(1, 0.93, 0.87, 0.12); border.width: 0.5 }
+            Rectangle { id: tb; anchors.fill: parent; radius: 16; color: Qt.rgba(0.15, 0.15, 0.145, 0.96); border.color: Qt.rgba(1, 1, 1, 0.12); border.width: 0.5 }
             Image { x: 14; anchors.verticalCenter: parent.verticalCenter; width: 34; height: 34; sourceSize: Qt.size(68, 68); source: Art.icon(t.icon) }
             Column {
                 x: 59; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 110

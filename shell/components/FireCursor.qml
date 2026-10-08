@@ -9,7 +9,7 @@ Item {
     anchors.fill: parent
 
     readonly property real h: 35
-    readonly property real s: h / 976
+    readonly property real s: h / 980
     readonly property real hotX: (118 - 20) * s
     readonly property real hotY: (202 - 20) * s
     property real px: parent ? parent.width / 2 : 0     // hotspot position
@@ -52,13 +52,13 @@ Item {
     function show(from) {
         if (from) { px = from.x; py = from.y; }
         shown = true;
-        burst.burst(16, px, py);
+        burst.burst(10, px, py);
     }
     function hide() { shown = false; }
     function click(done) {
         pressed = true;
         ring.restart();
-        burst.burst(8, px, py);
+        burst.burst(5, px, py);
         clickTimer.done = done;
         clickTimer.restart();
     }
@@ -71,7 +71,7 @@ Item {
         source: "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><radialGradient id="g"><stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="#ffffff" stop-opacity=".7"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient></defs><circle cx="16" cy="16" r="16" fill="url(#g)"/></svg>')
         color: "#ff9a45"
         colorVariation: 0.18
-        alpha: 0.9
+        alpha: 0.75
         entryEffect: ImageParticle.Scale
     }
     Emitter {
@@ -80,9 +80,9 @@ Item {
         x: fc.px + 3; y: fc.py + 9
         width: 2; height: 2
         enabled: Os.settings.showTrail && fc.shown && mover.running && !fc.paused
-        emitRate: 45
-        lifeSpan: 800; lifeSpanVariation: 300
-        size: 7; sizeVariation: 4; endSize: 1
+        emitRate: 16
+        lifeSpan: 650; lifeSpanVariation: 250
+        size: 5; sizeVariation: 3; endSize: 1
         velocity: AngleDirection { angle: 270; angleVariation: 70; magnitude: 26; magnitudeVariation: 18 }
         acceleration: PointDirection { y: -30 }
     }
@@ -97,18 +97,18 @@ Item {
     }
     Wander { system: sys; xVariance: 30; pace: 60 }
 
-    // click ring: a boiling ink circle that expands and fades
-    InkRect {
+    // click ring: a thin ripple, like a trackpad tap
+    Rectangle {
         id: ringInk
-        width: 44; height: 44; radius: 22
-        x: fc.px - 22; y: fc.py - 22
-        color: Theme.amber
-        opacity: 0; scale: 0.25
-        running: opacity > 0
+        width: 40; height: 40; radius: 20
+        x: fc.px - 20; y: fc.py - 20
+        color: Qt.rgba(1, 1, 1, 0.06)
+        border.color: Qt.rgba(1, 1, 1, 0.7); border.width: 1.2
+        opacity: 0; scale: 0.3
         ParallelAnimation {
             id: ring
-            NumberAnimation { target: ringInk; property: "scale"; from: 0.25; to: 1.25; duration: 550; easing.type: Easing.OutCubic }
-            NumberAnimation { target: ringInk; property: "opacity"; from: 1; to: 0; duration: 550 }
+            NumberAnimation { target: ringInk; property: "scale"; from: 0.3; to: 1.15; duration: 480; easing.type: Easing.OutQuint }
+            NumberAnimation { target: ringInk; property: "opacity"; from: 0.9; to: 0; duration: 480; easing.type: Easing.InQuad }
         }
     }
 
@@ -116,7 +116,7 @@ Item {
     Item {
         id: pointer
         x: fc.px - fc.hotX; y: fc.py - fc.hotY
-        width: fc.h * 840 / 976; height: fc.h
+        width: fc.h * 660 / 980; height: fc.h
         opacity: fc.shown ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 350 } }
         transform: Rotation { origin.x: fc.hotX; origin.y: fc.hotY; angle: fc.tilt }
@@ -137,19 +137,25 @@ Item {
             }
         }
 
-        // name tag
-        Rectangle {
-            x: 24; y: 29
-            height: 22; radius: 11
-            width: tagRow.implicitWidth + 17
-            gradient: Gradient {
-                GradientStop { position: 0; color: fc.paused ? "#8a7a70" : "#ff7f3e" }
-                GradientStop { position: 1; color: fc.paused ? "#6a5c54" : "#e8492d" }
-            }
-            Row {
-                id: tagRow; x: 8; anchors.verticalCenter: parent.verticalCenter; spacing: 6
-                Text { text: Os.name; color: "white"; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.DemiBold }
-                Text { text: fc.verb; visible: fc.verb !== ""; color: Qt.rgba(1, 1, 1, 0.88); font.family: Theme.font; font.pixelSize: 11; elide: Text.ElideRight; width: Math.min(implicitWidth, 220) }
+        // name tag: a small dark glass pill that follows the flame
+        Item {
+            x: 22; y: 30
+            width: tag.width; height: tag.height
+            RectangularShadow { anchors.fill: tag; radius: 11; blur: 14; offset.y: 4; color: Qt.rgba(0, 0, 0, 0.5) }
+            Rectangle {
+                id: tag
+                height: 22; radius: 11
+                width: tagRow.implicitWidth + 18
+                color: Qt.rgba(0.13, 0.13, 0.125, 0.94)
+                border.color: Qt.rgba(1, 1, 1, 0.12); border.width: 0.5
+                Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                clip: true
+                Row {
+                    id: tagRow; x: 9; anchors.verticalCenter: parent.verticalCenter; spacing: 6
+                    Rectangle { width: 6; height: 6; radius: 3; anchors.verticalCenter: parent.verticalCenter; color: fc.paused ? Theme.text3 : Theme.accent }
+                    Text { text: Os.name; color: Theme.text; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.DemiBold }
+                    Text { text: fc.verb; visible: fc.verb !== ""; color: Theme.text2; font.family: Theme.font; font.pixelSize: 11; elide: Text.ElideRight; width: Math.min(implicitWidth, 220) }
+                }
             }
         }
     }

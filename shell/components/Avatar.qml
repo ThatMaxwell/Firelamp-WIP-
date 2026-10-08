@@ -3,7 +3,7 @@ import QtQuick
 Rectangle {
     property string who: ""
     property int seed: 0
-    readonly property var grads: [["#ff8a3d", "#e2402a"], ["#ffb547", "#ff7a33"], ["#c8402f", "#7a1f12"], ["#ffd08a", "#ff9f3d"], ["#8a7a70", "#4e4440"]]
+    readonly property var grads: [["#8d8a87", "#5d5a57"], ["#a39a8f", "#6e665d"], ["#7c8590", "#4e5660"], ["#9a8a86", "#62544f"], ["#88908a", "#565e58"]]
     width: 34; height: 34; radius: width / 2
     gradient: Gradient {
         GradientStop { position: 0; color: grads[seed % 5][0] }

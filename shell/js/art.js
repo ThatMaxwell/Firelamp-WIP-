@@ -45,7 +45,7 @@ var lin = (id, a, b, x2 = 0, y2 = 1) =>
 
 function logoInner() {
   var p = Logo.PATHS, c = Logo.COLORS;
-  return `<path fill="${c.outer}" d="${p.outer}"/><path fill="${c.arrow}" d="${p.arrow}"/><path fill="${c.light}" d="${p.light}"/><path fill="${c.drop}" d="${p.drop}"/><path fill="${c.dot}" d="${p.dot}"/>`;
+  return `<path fill="${c.outer}" d="${p.outer}"/><path fill="${c.arrow}" d="${p.arrow}"/><path fill="${c.light}" d="${p.light}"/>`;
 }
 
 var PETAL = 'M-105 -252C-110 -285 -118 -325 -118 -365C-118 -450 -80 -498 0 -498C80 -498 118 -450 118 -365C118 -325 110 -285 105 -252Z';
@@ -63,51 +63,51 @@ function calendarIcon() {
 
 var APP_ICONS = {
   assistant: () => tile({ fill: 'url(#aBg)', defs: `
-      <radialGradient id="aBg" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="#3a2219"/><stop offset="1" stop-color="#120b08"/></radialGradient>
-      <radialGradient id="aGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ff7a33" stop-opacity=".55"/><stop offset="1" stop-color="#ff7a33" stop-opacity="0"/></radialGradient>` },
+      <radialGradient id="aBg" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="#2f2e2d"/><stop offset="1" stop-color="#121212"/></radialGradient>
+      <radialGradient id="aGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ff7a33" stop-opacity=".35"/><stop offset="1" stop-color="#ff7a33" stop-opacity="0"/></radialGradient>` },
     `<circle cx="50" cy="56" r="34" fill="url(#aGlow)"/>
-     <g transform="translate(24.5 17) scale(.0585)">${logoInner()}</g>`),
+     <g transform="translate(29.5 17) scale(.0585)">${logoInner()}</g>`),
 
-  files: () => tile({ fill: 'url(#fBg)', defs: lin('fBg', '#ffcb6b', '#ff8a3d') + lin('fFr', '#ffffff', '#fff1df') }, `
+  files: () => tile({ fill: 'url(#fBg)', defs: lin('fBg', '#7cc4ff', '#2f7be0') + lin('fFr', '#ffffff', '#eaf3ff') }, `
     <path d="M22 34a5 5 0 0 1 5-5h14l6 6h26a5 5 0 0 1 5 5v4H22z" fill="#fff" opacity=".72"/>
     <rect x="22" y="40" width="56" height="34" rx="5" fill="url(#fFr)"/>
-    <path d="M38 55q12 8 24 0" fill="none" stroke="#ff9a48" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="40" cy="49" r="2" fill="#ff9a48"/><circle cx="60" cy="49" r="2" fill="#ff9a48"/>`),
+    <path d="M38 55q12 8 24 0" fill="none" stroke="#2f7be0" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="40" cy="49" r="2" fill="#2f7be0"/><circle cx="60" cy="49" r="2" fill="#2f7be0"/>`),
 
-  web: () => tile({ fill: 'url(#wBg)', defs: lin('wBg', '#fefaf6', '#efe4da') + lin('wRing', '#ffb547', '#e2402a') }, `
+  web: () => tile({ fill: 'url(#wBg)', defs: lin('wBg', '#fdfdfd', '#e8eaed') + lin('wRing', '#62b6ff', '#1f66d6') }, `
     <circle cx="50" cy="50" r="31" fill="none" stroke="url(#wRing)" stroke-width="5"/>
-    ${Array.from({ length: 24 }, (_, i) => { var a = i * 15 * Math.PI / 180, r1 = i % 6 ? 24 : 21; return `<line x1="${50 + Math.cos(a) * r1}" y1="${50 + Math.sin(a) * r1}" x2="${50 + Math.cos(a) * 26}" y2="${50 + Math.sin(a) * 26}" stroke="#c9b9ab" stroke-width="1.2"/>`; }).join('')}
-    <path d="M50 50 L66 33 L54 54 Z" fill="#e2402a"/><path d="M50 50 L34 67 L46 46 Z" fill="#d9cdc3"/>
-    <circle cx="50" cy="50" r="2.6" fill="#fff" stroke="#c9b9ab"/>`, { sheen: .3 }),
+    ${Array.from({ length: 24 }, (_, i) => { var a = i * 15 * Math.PI / 180, r1 = i % 6 ? 24 : 21; return `<line x1="${50 + Math.cos(a) * r1}" y1="${50 + Math.sin(a) * r1}" x2="${50 + Math.cos(a) * 26}" y2="${50 + Math.sin(a) * 26}" stroke="#b9bdc3" stroke-width="1.2"/>`; }).join('')}
+    <path d="M50 50 L66 33 L54 54 Z" fill="#ff4d3d"/><path d="M50 50 L34 67 L46 46 Z" fill="#d4d7dc"/>
+    <circle cx="50" cy="50" r="2.6" fill="#fff" stroke="#b9bdc3"/>`, { sheen: .3 }),
 
-  terminal: () => tile({ fill: 'url(#tBg)', defs: lin('tBg', '#2a2421', '#0e0b0a') }, `
+  terminal: () => tile({ fill: 'url(#tBg)', defs: lin('tBg', '#2e2e2e', '#0d0d0d') }, `
     <rect x="8" y="8" width="84" height="84" rx="16" fill="none" stroke="#ffffff" stroke-opacity=".08"/>
-    <path d="M27 36l11 9-11 9" fill="none" stroke="#ffb547" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="43" y="52" width="18" height="5" rx="2.5" fill="#ffd08a"/>`),
+    <path d="M27 36l11 9-11 9" fill="none" stroke="#f2f2f2" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="43" y="52" width="18" height="5" rx="2.5" fill="#9a9a9a"/>`),
 
-  notes: () => tile({ fill: 'url(#nBg)', defs: '<linearGradient id="nBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc15a"/><stop offset=".29" stop-color="#ff9f3d"/><stop offset=".29" stop-color="#e9dccb"/><stop offset=".305" stop-color="#fffaf1"/><stop offset="1" stop-color="#fffaf1"/></linearGradient>' }, `
-    ${[44, 56, 68, 80].map(y => `<line x1="20" y1="${y}" x2="80" y2="${y}" stroke="#e8dccd" stroke-width="1.6"/>`).join('')}
-    <path d="M22 44h40M22 56h48M22 68h30" stroke="#b9a79a" stroke-width="2.4" stroke-linecap="round" stroke-opacity=".6"/>`, { sheen: .25 }),
+  notes: () => tile({ fill: 'url(#nBg)', defs: '<linearGradient id="nBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffdd5c"/><stop offset=".29" stop-color="#f7c331"/><stop offset=".29" stop-color="#e3e1dc"/><stop offset=".305" stop-color="#fdfcf9"/><stop offset="1" stop-color="#fdfcf9"/></linearGradient>' }, `
+    ${[44, 56, 68, 80].map(y => `<line x1="20" y1="${y}" x2="80" y2="${y}" stroke="#e6e4df" stroke-width="1.6"/>`).join('')}
+    <path d="M22 44h40M22 56h48M22 68h30" stroke="#a9a7a2" stroke-width="2.4" stroke-linecap="round" stroke-opacity=".6"/>`, { sheen: .25 }),
 
-  mail: () => tile({ fill: 'url(#mBg)', defs: lin('mBg', '#ffa45c', '#e8452c') + lin('mEnv', '#ffffff', '#fff0e3') }, `
+  mail: () => tile({ fill: 'url(#mBg)', defs: lin('mBg', '#64b2ff', '#1e6be0') + lin('mEnv', '#ffffff', '#eef4fc') }, `
     <rect x="20" y="31" width="60" height="40" rx="6" fill="url(#mEnv)"/>
-    <path d="M22 34l28 21 28-21" fill="none" stroke="#f08a5a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`),
+    <path d="M22 34l28 21 28-21" fill="none" stroke="#7aa8e6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`),
 
-  music: () => tile({ fill: 'url(#muBg)', defs: lin('muBg', '#ff8a52', '#d8322a') }, `
+  music: () => tile({ fill: 'url(#muBg)', defs: lin('muBg', '#ff6681', '#e2304e') }, `
     <path d="M41 30v32a8 8 0 1 1-4-7V36l28-6v26a8 8 0 1 1-4-7V30z" fill="#fff" transform="translate(-1 2)"/>
     <path d="M40 36l26-6" stroke="#fff" stroke-width="5" stroke-linecap="round"/>`),
 
   photos: () => tile({ fill: '#fdfaf6' }, `
     <g transform="translate(50 50) scale(.064)">
-      ${['#ffd08a', '#ffb547', '#ff8a3d', '#ff6a3a', '#e2402a', '#c8402f', '#ff8f6b', '#ffc27a'].map((c, i) => `<path d="${PETAL}" transform="rotate(${i * 45})" fill="${c}" opacity=".88"/>`).join('')}
+      ${['#ffcf4a', '#ff9b3d', '#ff5a5f', '#d65db1', '#8a6ff0', '#3fa7f5', '#3ccf9a', '#a3d94a'].map((c, i) => `<path d="${PETAL}" transform="rotate(${i * 45})" fill="${c}" opacity=".88"/>`).join('')}
     </g>`, { sheen: .2 }),
 
   calendar: calendarIcon,
 
-  settings: () => tile({ fill: 'url(#sBg)', defs: lin('sBg', '#9a918b', '#5a524d') + lin('sG', '#4a4440', '#2c2826') }, `
+  settings: () => tile({ fill: 'url(#sBg)', defs: lin('sBg', '#a2a2a5', '#5c5c60') + lin('sG', '#48484b', '#2a2a2c') }, `
     <g transform="translate(50 50)">
       ${Array.from({ length: 12 }, (_, i) => `<rect x="-4.5" y="-33" width="9" height="12" rx="2" fill="url(#sG)" transform="rotate(${i * 30})"/>`).join('')}
-      <circle r="24" fill="url(#sG)"/><circle r="15" fill="#8d847e"/><circle r="9" fill="#3a3532"/>
+      <circle r="24" fill="url(#sG)"/><circle r="15" fill="#8e8e92"/><circle r="9" fill="#38383a"/>
     </g>`, { sheen: .3 }),
 
   timeline: () => tile({ fill: 'url(#tlBg)', defs: lin('tlBg', '#2f221d', '#140e0b') }, `
@@ -116,10 +116,10 @@ var APP_ICONS = {
     <rect x="46" y="27" width="30" height="6" rx="3" fill="#6e5649"/><rect x="46" y="47" width="22" height="6" rx="3" fill="#6e5649"/><rect x="46" y="67" width="26" height="6" rx="3" fill="#6e5649"/>`),
 
   downloads: () => svg(`
-    <defs>${lin('dlB', '#ffd27a', '#ffa03d')}${lin('dlF', '#ffe3a8', '#ffb547')}</defs>
+    <defs>${lin('dlB', '#79bdfd', '#4b98f0')}${lin('dlF', '#9fd2ff', '#5aa6f6')}</defs>
     <path d="M10 26a6 6 0 0 1 6-6h22l7 7h39a6 6 0 0 1 6 6v6H10z" fill="url(#dlB)"/>
     <rect x="10" y="32" width="80" height="54" rx="7" fill="url(#dlF)"/>
-    <path d="M50 44v26m-10-10l10 10 10-10" fill="none" stroke="#e8822e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`),
+    <path d="M50 44v26m-10-10l10 10 10-10" fill="none" stroke="#2a6fd0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`),
 
   trash: (full = false) => svg(`
     <defs><linearGradient id="trB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".62"/><stop offset="1" stop-color="#ffffff" stop-opacity=".28"/></linearGradient></defs>
@@ -198,9 +198,9 @@ function photo(a, b) {
   return svg(`<defs>${lin('ph', a, b)}</defs><rect x="6" y="11" width="48" height="38" rx="3" fill="#fff"/><rect x="9" y="14" width="42" height="32" rx="1.5" fill="url(#ph)"/><circle cx="40" cy="22" r="4" fill="#fff4d6" fill-opacity=".9"/><path d="M9 46l12-12 9 8 7-6 14 10z" fill="#280e08" fill-opacity=".55"/>`, '0 0 60 60');
 }
 var FILE_ICONS = {
-  jpg: () => photo('#ffb547', '#e2402a'), png: () => photo('#ff9f6b', '#6a1f10'),
-  pdf: () => page('#e2402a', 'PDF'), docx: () => page('#ff8a3d', 'DOC'), txt: () => page('#8a7a70', 'TXT'),
-  gz: () => page('#6a5c54', 'TAR', false), mp3: () => page('#ff6a4a', 'MP3', false),
+  jpg: () => photo('#7fc4ff', '#2f6fb8'), png: () => photo('#ff9f6b', '#6a1f10'),
+  pdf: () => page('#e2402a', 'PDF'), docx: () => page('#3a7bd5', 'DOC'), txt: () => page('#8a7a70', 'TXT'),
+  gz: () => page('#6a5c54', 'TAR', false), mp3: () => page('#e2304e', 'MP3', false),
   iso: () => svg(`<defs><radialGradient id="dsc"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#ffd9b0"/><stop offset=".75" stop-color="#ffb3a0"/><stop offset="1" stop-color="#e9e2ff"/></radialGradient></defs><circle cx="30" cy="30" r="24" fill="url(#dsc)"/><circle cx="30" cy="30" r="6" fill="#1b1614" stroke="#ccc"/>`, '0 0 60 60'),
   folder: () => APP_ICONS.downloads().replace(/<path d="M50 44v26[^>]*>/, ''),
 };

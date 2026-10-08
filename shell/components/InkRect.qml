@@ -6,7 +6,7 @@ import QtQuick.Shapes
 Shape {
     id: ink
     property real radius: 12
-    property color color: Theme.orange
+    property color color: Theme.ink
     property real lineWidth: 2
     property real wobble: 1.6
     property bool running: visible

@@ -12,7 +12,7 @@ import os, subprocess, sys
 from pathlib import Path
 
 os.environ.setdefault("QSG_RENDER_LOOP", "basic")
-from PySide6.QtCore import QTimer, QUrl, QPoint, Qt, QMetaObject, Q_ARG, QEvent, QPointF
+from PySide6.QtCore import QObject, QTimer, QUrl, QPoint, Qt, QMetaObject, Q_ARG, QEvent, QPointF
 from PySide6.QtGui import QGuiApplication, QMouseEvent
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickWindow
@@ -54,6 +54,21 @@ def still(name, at):
 
 
 ffmpeg = None
+
+
+def when(name, prop, shot, delay):
+    """Take a still `delay` ms after the item `name` first has `prop` true."""
+    state = {"done": False}
+    t = QTimer(app)
+
+    def poll():
+        o = win.findChild(QObject, name)
+        if o is not None and o.property(prop) and not state["done"]:
+            state["done"] = True
+            t.stop()
+            still(shot, delay)
+    t.timeout.connect(poll)
+    t.start(60)
 
 
 def start(at):
@@ -105,9 +120,9 @@ elif scene in ("email", "tidy", "vision"):
     start(900)
     at(1400, lambda: call("demo", prompt))
     if scene == "email":
-        still("permission", 1400 + 21500)
+        when("permission", "shown", "permission", 700)
     if scene == "tidy":
-        still("drag", 1400 + 9800)
+        when("ghost", "visible", "drag", 450)
     if scene == "vision":
         still("vision", 1400 + 5200)
     stop(1400 + int(sys.argv[3] if len(sys.argv) > 3 and sys.argv[3].isdigit() else 40000))

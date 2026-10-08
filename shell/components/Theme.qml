@@ -3,33 +3,42 @@ pragma Singleton
 import QtQuick
 
 QtObject {
-    // ember palette
+    // Ember lives in the logo and the fire cursor. Everywhere else it is a rare accent:
+    // primary buttons, switches that are on, today's date, an unread dot. Nothing more.
     readonly property color ember: "#E2402A"
     readonly property color orange: "#FF8A3D"
     readonly property color amber: "#FFB547"
     readonly property color cream: "#FFD08A"
-    readonly property color accent: "#FF7A33"
-    readonly property color accentSoft: Qt.rgba(1, 0.48, 0.2, 0.16)
+    readonly property color accent: "#F0703A"
+    readonly property color accentSoft: Qt.rgba(0.94, 0.44, 0.23, 0.16)
 
-    // warm darks
-    readonly property color bg: "#120d0b"
-    readonly property color win: "#1b1614"
-    readonly property color win2: "#211b18"
-    readonly property color win3: "#2a231f"
-    readonly property color win4: "#352c27"
-    readonly property color line: Qt.rgba(1, 0.93, 0.87, 0.07)
-    readonly property color line2: Qt.rgba(1, 0.93, 0.87, 0.12)
-    readonly property color line3: Qt.rgba(1, 0.93, 0.87, 0.2)
-    readonly property color hover: Qt.rgba(1, 0.94, 0.9, 0.07)
+    // selection and ink are neutral
+    readonly property color sel: Qt.rgba(1, 1, 1, 0.085)
+    readonly property color selStrong: Qt.rgba(1, 1, 1, 0.14)
+    readonly property color ink: Qt.rgba(0.96, 0.94, 0.92, 0.5)
+    readonly property color success: "#7fcf95"
+    readonly property color danger: "#ff7b68"
 
-    readonly property color text: "#f7efe9"
-    readonly property color text2: "#cdbfb5"
-    readonly property color text3: "#93857b"
-    readonly property color text4: "#665a52"
+    // graphite with the faintest warmth, never brown
+    readonly property color bg: "#0f0f0f"
+    readonly property color win: "#1c1c1b"
+    readonly property color win2: "#222221"
+    readonly property color win3: "#2a2a29"
+    readonly property color win4: "#353534"
+    readonly property color side: "#191918"
+    readonly property color line: Qt.rgba(1, 1, 1, 0.06)
+    readonly property color line2: Qt.rgba(1, 1, 1, 0.1)
+    readonly property color line3: Qt.rgba(1, 1, 1, 0.18)
+    readonly property color hover: Qt.rgba(1, 1, 1, 0.055)
+
+    readonly property color text: "#f3f1ef"
+    readonly property color text2: "#bdb9b5"
+    readonly property color text3: "#87837f"
+    readonly property color text4: "#5c5956"
 
     // the dock is plain dark grey, on purpose
     readonly property color dock: Qt.rgba(0.165, 0.157, 0.153, 0.86)
-    readonly property color glass: Qt.rgba(0.12, 0.1, 0.09, 0.9)
+    readonly property color glass: Qt.rgba(0.11, 0.11, 0.105, 0.92)
 
     readonly property string font: "Inter"
     readonly property string mono: "JetBrains Mono"

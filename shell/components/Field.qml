@@ -28,7 +28,7 @@ Item {
         color: f.textColor
         font.family: Theme.font
         font.pixelSize: f.pixelSize
-        selectionColor: Qt.rgba(1, 0.48, 0.2, 0.35)
+        selectionColor: Qt.rgba(0.94, 0.44, 0.23, 0.32)
         clip: true
         onAccepted: f.accepted()
         Text {

@@ -31,7 +31,7 @@ Item {
     }
     Rectangle {
         anchors { top: bar.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
-        gradient: Gradient { GradientStop { position: 0; color: "#24150f" } GradientStop { position: 1; color: Theme.win } }
+        gradient: Gradient { GradientStop { position: 0; color: "#232322" } GradientStop { position: 1; color: Theme.win } }
         Column {
             anchors.horizontalCenter: parent.horizontalCenter; y: 60; spacing: 22
             Item {
@@ -48,7 +48,7 @@ Item {
             Grid {
                 anchors.horizontalCenter: parent.horizontalCenter; columns: 4; columnSpacing: 26; rowSpacing: 16; topPadding: 8
                 Repeater {
-                    model: [["GitHub", "#2a2320"], ["Jev", "#e2402a"], ["Hearth", "#ff8a3d"], ["Arch Wiki", "#3a7bd5"], ["Maps", "#5aa85a"], ["News", "#8a7a70"], ["Music", "#ff6a4a"], ["Docs", "#ffb547"]]
+                    model: [["GitHub", "#2a2320"], ["Jev", "#3b3b3a"], ["Hearth", "#5b5550"], ["Arch Wiki", "#3a7bd5"], ["Maps", "#5aa85a"], ["News", "#8a7a70"], ["Music", "#ff6a4a"], ["Docs", "#ffb547"]]
                     Column {
                         required property var modelData
                         property string aiName: modelData[0]; property string aiRole: "link"

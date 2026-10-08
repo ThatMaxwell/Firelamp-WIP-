@@ -6,18 +6,18 @@ import "../js/uitree.js" as Tree
 Rectangle {
     id: app
     property var win
-    color: "#100b09"
-    readonly property string prompt: "<font color=\"#FF8A3D\">carrot@firelamp</font> <font color=\"#FFB547\">~</font> <font color=\"#665a52\">%</font> "
+    color: "#121212"
+    readonly property string prompt: "<font color=\"#f08a5d\">carrot@firelamp</font> <font color=\"#9aa6b2\">~</font> <font color=\"#5f5c59\">%</font> "
     function start(opts) {
-        echo("<font color=\"#665a52\">Last login: " + new Date().toDateString() + " on ttys001</font>");
+        echo("<font color=\"#5f5c59\">Last login: " + new Date().toDateString() + " on ttys001</font>");
         run("fetch", true);
-        echo("<font color=\"#665a52\">Type</font> <font color=\"#FFD08A\">help</font> <font color=\"#665a52\">to see commands.</font>");
+        echo("<font color=\"#5f5c59\">Type</font> <font color=\"#e8e4e0\">help</font> <font color=\"#5f5c59\">to see commands.</font>");
     }
     function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
     function echo(html) { out.append({ kind: "text", html: html.replace(/\n/g, "<br>") }); Qt.callLater(lv.positionViewAtEnd); }
-    function c(t) { return "<font color=\"#FFD08A\">" + t + "</font>"; }
-    function d(t) { return "<font color=\"#665a52\">" + t + "</font>"; }
-    function a(t) { return "<font color=\"#FFB547\">" + t + "</font>"; }
+    function c(t) { return "<font color=\"#e8e4e0\">" + t + "</font>"; }
+    function d(t) { return "<font color=\"#5f5c59\">" + t + "</font>"; }
+    function a(t) { return "<font color=\"#9aa6b2\">" + t + "</font>"; }
 
     function run(line, quiet) {
         if (!quiet) echo(prompt + esc(line));
@@ -42,7 +42,7 @@ Rectangle {
             echo(lines.join("\n"));
         }
         else if (cmd === "ask") { if (!rest) return echo("usage: ask &lt;something to do&gt;"); Os.submit(rest); echo("<font color=\"#8fe0a0\">→</font> handed to " + esc(Os.name) + ". Watch the fire cursor."); }
-        else echo("<font color=\"#ff8b72\">hearth:</font> command not found: " + esc(cmd));
+        else echo("<font color=\"#ff7b68\">hearth:</font> command not found: " + esc(cmd));
     }
 
     ListModel { id: out }
@@ -73,20 +73,20 @@ Rectangle {
                 spacing: 1
                 Repeater {
                     model: [
-                        "<font color=\"#FF8A3D\">carrot</font>@<font color=\"#FF8A3D\">firelamp</font>",
-                        "<font color=\"#665a52\">──────────────────</font>",
-                        "<font color=\"#FFB547\">OS</font>        Firelamp OS 0.1 “Kindling” x86_64",
-                        "<font color=\"#FFB547\">Base</font>      Arch Linux",
-                        "<font color=\"#FFB547\">Shell</font>     Hearth (Qt Quick on Wayland)",
-                        "<font color=\"#FFB547\">Assistant</font> " + app.esc(Os.name) + " · LLM brain + Jev reflexes",
-                        "<font color=\"#FFB547\">UI tree</font>   AT-SPI2, live",
-                        "<font color=\"#FFB547\">Cursors</font>   2 (yours + the fire one)"
+                        "<font color=\"#f08a5d\">carrot</font>@<font color=\"#f08a5d\">firelamp</font>",
+                        "<font color=\"#5f5c59\">──────────────────</font>",
+                        "<font color=\"#9aa6b2\">OS</font>        Firelamp OS 0.1 “Kindling” x86_64",
+                        "<font color=\"#9aa6b2\">Base</font>      Arch Linux",
+                        "<font color=\"#9aa6b2\">Shell</font>     Hearth (Qt Quick on Wayland)",
+                        "<font color=\"#9aa6b2\">Assistant</font> " + app.esc(Os.name) + " · LLM brain + Jev reflexes",
+                        "<font color=\"#9aa6b2\">UI tree</font>   AT-SPI2, live",
+                        "<font color=\"#9aa6b2\">Cursors</font>   2 (yours + the fire one)"
                     ]
                     Text { required property string modelData; text: modelData.replace(/ /g, "&nbsp;"); textFormat: Text.StyledText; color: Theme.text; font.family: Theme.mono; font.pixelSize: 12 }
                 }
                 Row {
                     topPadding: 6; spacing: 0
-                    Repeater { model: ["#120d0b", "#E2402A", "#FF8A3D", "#FFB547", "#FFD08A", "#f7efe9"]; Rectangle { required property string modelData; width: 20; height: 12; color: modelData } }
+                    Repeater { model: ["#0f0f0f", "#1c1c1b", "#353534", "#87837f", "#f3f1ef", "#F0703A"]; Rectangle { required property string modelData; width: 20; height: 12; color: modelData } }
                 }
             }
         }

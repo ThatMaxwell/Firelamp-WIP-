@@ -20,9 +20,8 @@ Item {
     Behavior on width { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
 
     RectangularShadow { anchors.fill: bg; radius: 20; blur: 40; offset.y: 12; color: Qt.rgba(0, 0, 0, 0.6) }
-    RectangularShadow { anchors.fill: bg; radius: 20; blur: 30; color: Qt.rgba(1, 0.4, 0.15, 0.25) }
-    Rectangle { id: bg; anchors.fill: parent; radius: 20; color: Qt.rgba(0.086, 0.063, 0.05, 0.94) }
-    InkRect { anchors.fill: parent; anchors.margins: -1; radius: 20; color: Qt.rgba(1, 0.54, 0.24, 0.9); running: cap.shown }
+    Rectangle { id: bg; anchors.fill: parent; radius: 20; color: Qt.rgba(0.11, 0.11, 0.105, 0.94) }
+    InkRect { anchors.fill: parent; anchors.margins: -1; radius: 20; color: Theme.ink; lineWidth: 1.4; running: cap.shown }
 
     Row {
         id: row
@@ -35,7 +34,7 @@ Item {
             width: Math.min(implicitWidth, 340)
             text: cap.paused ? "Paused" : cap.what
             elide: Text.ElideRight
-            color: cap.paused ? Theme.amber : Theme.text2
+            color: cap.paused ? Theme.text3 : Theme.text2
             font.family: Theme.font; font.pixelSize: 12
             anchors.verticalCenter: parent.verticalCenter
             Behavior on text { SequentialAnimation { NumberAnimation { target: whatText; property: "opacity"; to: 0; duration: 100 } PropertyAction {} NumberAnimation { target: whatText; property: "opacity"; to: 1; duration: 140 } } }
@@ -43,14 +42,14 @@ Item {
         Text { text: cap.steps + (cap.steps === 1 ? " step" : " steps"); color: Theme.text3; font.family: Theme.mono; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
         Rectangle {
             width: 28; height: 28; radius: 14; anchors.verticalCenter: parent.verticalCenter
-            color: pma.containsMouse ? Qt.rgba(1, 0.94, 0.9, 0.16) : Qt.rgba(1, 0.94, 0.9, 0.08)
+            color: pma.containsMouse ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.08)
             Glyph { anchors.centerIn: parent; width: 13; height: 13; name: cap.paused ? "play" : "pause" }
             MouseArea { id: pma; anchors.fill: parent; hoverEnabled: true; onClicked: Os.agent.togglePause() }
         }
         Rectangle {
             width: 28; height: 28; radius: 14; anchors.verticalCenter: parent.verticalCenter
-            color: sma.containsMouse ? Qt.rgba(1, 0.37, 0.27, 0.3) : Qt.rgba(1, 0.37, 0.27, 0.18)
-            Glyph { anchors.centerIn: parent; width: 13; height: 13; name: "stop"; color: "#ff8b72" }
+            color: sma.containsMouse ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.09)
+            Glyph { anchors.centerIn: parent; width: 13; height: 13; name: "stop"; color: Theme.text }
             MouseArea { id: sma; anchors.fill: parent; hoverEnabled: true; onClicked: Os.agent.stop() }
         }
     }

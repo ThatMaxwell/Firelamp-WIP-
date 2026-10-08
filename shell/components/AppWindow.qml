@@ -45,14 +45,14 @@ Item {
         else { restoreRect = Qt.rect(x, y, width, height); frameA.to = area; }
         frameA.start();
     }
-    NumberAnimation { id: openA; target: w; property: "k"; from: 0; to: 1; duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.9 }
+    NumberAnimation { id: openA; target: w; property: "k"; from: 0; to: 1; duration: 520; easing.type: Easing.OutQuint }
     ParallelAnimation {
         id: closeA
         NumberAnimation { target: w; property: "opacity"; to: 0; duration: 180 }
         NumberAnimation { target: w; property: "scale"; to: 0.94; duration: 180; easing.type: Easing.InQuad }
         onFinished: w.closed()
     }
-    NumberAnimation { id: minA; target: w; property: "k"; to: 0; duration: 480; easing.type: Easing.InCubic; onFinished: { w.visible = false; w.minimized = true; } }
+    NumberAnimation { id: minA; target: w; property: "k"; to: 0; duration: 420; easing.type: Easing.InQuart; onFinished: { w.visible = false; w.minimized = true; } }
     ParallelAnimation {
         id: frameA
         property rect to
@@ -107,7 +107,7 @@ Item {
         visible: false
         Rectangle { anchors.fill: parent; radius: Theme.rWin; color: "black" }
     }
-    Rectangle { anchors.fill: parent; radius: Theme.rWin; color: "transparent"; border.color: Qt.rgba(1, 0.93, 0.87, 0.13); border.width: 0.5 }
+    Rectangle { anchors.fill: parent; radius: Theme.rWin; color: "transparent"; border.color: Qt.rgba(1, 1, 1, 0.13); border.width: 0.5 }
 
     // title bar: drag + double-click zoom
     MouseArea {

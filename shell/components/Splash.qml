@@ -20,7 +20,7 @@ Rectangle {
             width: 150; height: 4; radius: 2; color: Qt.rgba(1, 1, 1, 0.1)
             Rectangle {
                 id: fill; height: parent.height; radius: 2; width: 0
-                gradient: Gradient { orientation: Gradient.Horizontal; GradientStop { position: 0; color: Theme.ember } GradientStop { position: 1; color: Theme.amber } }
+                gradient: Gradient { orientation: Gradient.Horizontal; GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.55) } GradientStop { position: 1; color: Theme.text } }
                 NumberAnimation on width { to: 150; duration: 1600; easing.type: Easing.OutCubic; onFinished: { sp.opacity = 0; sp.finished(); } }
             }
         }

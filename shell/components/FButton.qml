@@ -21,7 +21,7 @@ Rectangle {
     opacity: enabledState ? 1 : 0.4
     color: primary ? "transparent" : Theme.win4
     gradient: primary ? grad : null
-    Gradient { id: grad; GradientStop { position: 0; color: "#ff8a45" } GradientStop { position: 1; color: "#f0602e" } }
+    Gradient { id: grad; GradientStop { position: 0; color: "#f47c46" } GradientStop { position: 1; color: "#e8642f" } }
     border.color: Qt.rgba(1, 1, 1, primary ? 0.18 : 0.08)
     border.width: 0.5
     scale: ma.pressed ? 0.97 : 1

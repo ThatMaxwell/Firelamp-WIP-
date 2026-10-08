@@ -7,7 +7,7 @@ Rectangle {
     anchors.right: flick ? flick.right : undefined
     anchors.rightMargin: 3
     width: 4; radius: 2
-    color: Qt.rgba(1, 0.94, 0.9, 0.22)
+    color: Qt.rgba(1, 1, 1, 0.22)
     opacity: flick && flick.moving ? 1 : 0.35
     Behavior on opacity { NumberAnimation { duration: 300 } }
     y: flick ? flick.y + flick.visibleArea.yPosition * flick.height : 0

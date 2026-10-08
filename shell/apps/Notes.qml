@@ -33,7 +33,7 @@ Item {
                 Accessible.role: Accessible.ListItem
                 Accessible.name: note.title
                 width: parent.width; height: 62; radius: 8
-                color: app.sel === index ? Qt.rgba(1, 0.6, 0.25, 0.2) : nma.containsMouse ? Theme.hover : "transparent"
+                color: app.sel === index ? Theme.selStrong : nma.containsMouse ? Theme.hover : "transparent"
                 Behavior on color { ColorAnimation { duration: 140 } }
                 Column {
                     x: 12; y: 11; width: parent.width - 24; spacing: 4
@@ -86,7 +86,7 @@ Item {
                         width: parent.width
                         wrapMode: TextEdit.Wrap
                         color: Theme.text; font.family: Theme.font; font.pixelSize: 15
-                        selectionColor: Qt.rgba(1, 0.55, 0.2, 0.38); selectedTextColor: Theme.text
+                        selectionColor: Qt.rgba(0.94, 0.44, 0.23, 0.32); selectedTextColor: Theme.text
                         onTextChanged: if (activeFocus) app.save()
                     }
                 }

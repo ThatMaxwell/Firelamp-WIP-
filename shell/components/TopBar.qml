@@ -8,8 +8,8 @@ Rectangle {
     property Item menuLayer
     property string aiApp: "menubar"
     height: Theme.menubarH
-    color: Qt.rgba(0.063, 0.047, 0.04, 0.55)
-    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 0.5; color: Qt.rgba(1, 0.93, 0.87, 0.06) }
+    color: Qt.rgba(0.06, 0.06, 0.058, 0.5)
+    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 0.5; color: Qt.rgba(1, 1, 1, 0.06) }
 
     property var menu: null
     function closeMenu() { if (menu) menu.destroy(); menu = null; openFor = null; }
@@ -58,7 +58,7 @@ Rectangle {
         height: 22; radius: 5
         width: inner.childrenRect.width + 18
         anchors.verticalCenter: parent ? parent.verticalCenter : undefined
-        color: bar.openFor === bi || ma.containsMouse ? Qt.rgba(1, 0.94, 0.9, 0.12) : "transparent"
+        color: bar.openFor === bi || ma.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
         Item { id: inner; x: 9; height: parent.height; width: childrenRect.width }
         MouseArea {
             id: ma; anchors.fill: parent; hoverEnabled: true
@@ -95,14 +95,14 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             height: 22; radius: 11
             width: aiRow.width + 16
-            color: st === "running" ? Qt.rgba(1, 0.48, 0.2, 0.16) : Qt.rgba(1, 0.94, 0.9, 0.06)
+            color: st === "running" ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.06)
             Row {
                 id: aiRow; x: 7; spacing: 6; anchors.verticalCenter: parent.verticalCenter
                 Logo { width: 12; height: 14; animated: ai.st !== "idle" }
                 BarText { text: Os.name; font.pixelSize: 12; font.weight: Font.DemiBold }
                 Rectangle {
                     width: 6; height: 6; radius: 3; anchors.verticalCenter: parent.verticalCenter
-                    color: ai.st === "running" ? Theme.orange : ai.st === "paused" ? Theme.amber : Theme.text4
+                    color: ai.st === "running" ? Theme.accent : ai.st === "paused" ? Theme.text2 : Theme.text4
                     SequentialAnimation on opacity { running: ai.st === "running"; loops: Animation.Infinite; NumberAnimation { to: 0.35; duration: 600 } NumberAnimation { to: 1; duration: 600 } }
                 }
             }
@@ -118,7 +118,7 @@ Rectangle {
             property string aiRole: "button"
             function aiActivate() { Os.askOpen(); }
             width: 33; height: 22; radius: 5; anchors.verticalCenter: parent.verticalCenter
-            color: sma.containsMouse ? Qt.rgba(1, 0.94, 0.9, 0.12) : "transparent"
+            color: sma.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
             Glyph { name: "search"; width: 15; height: 15; anchors.centerIn: parent }
             MouseArea { id: sma; anchors.fill: parent; hoverEnabled: true; onClicked: Os.askOpen() }
         }

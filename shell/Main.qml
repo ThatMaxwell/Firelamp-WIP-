@@ -52,6 +52,12 @@ Window {
         id: screen
         anchors.fill: parent
         focus: true
+        // boot: the desktop settles in from slightly closer, then the dock rises
+        property bool booted: false
+        opacity: booted ? 1 : 0
+        scale: booted ? 1 : 1.05
+        Behavior on opacity { NumberAnimation { duration: 700; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: 1100; easing.type: Easing.OutQuint } }
 
         Wallpaper { anchors.fill: parent; still: win.flag("still") }
 
@@ -71,14 +77,19 @@ Window {
             id: dock
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 7
+            anchors.bottomMargin: screen.booted ? 7 : -110
+            Behavior on anchors.bottomMargin { SequentialAnimation { PauseAnimation { duration: 250 } NumberAnimation { duration: 900; easing.type: Easing.OutQuint } } }
             items: win.apps.filter(function (a) { return !a.noDock; }).map(function (a) { return { id: a.id, icon: a.icon, title: a.title }; })
                    .concat(["-", { id: "downloads", icon: "downloads", title: "Downloads" }, { id: "trash", icon: "trash", title: "Trash" }])
             aiActiveId: agent.mode !== "idle" ? "assistant" : ""
             onLaunch: (id) => win.launch(id)
         }
 
-        TopBar { id: bar; width: parent.width; menuLayer: menuLayer }
+        TopBar {
+            id: bar; width: parent.width; menuLayer: menuLayer
+            y: screen.booted ? 0 : -height
+            Behavior on y { SequentialAnimation { PauseAnimation { duration: 150 } NumberAnimation { duration: 700; easing.type: Easing.OutQuint } } }
+        }
     }
 
     // ---- everything above the desktop: the AI's own layer ----
@@ -97,19 +108,10 @@ Window {
     }
     Toasts { x: parent.width - width - 14; y: Theme.menubarH + 12; z: 21 }
 
-    InkRect {
-        id: mark
-        z: 30
-        radius: 9; color: Theme.orange; lineWidth: 2
-        opacity: 0
-        running: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 180 } }
-        Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        property bool aiHidden: true
-    }
     Image {
         id: ghost
+        objectName: "ghost"
+        sourceSize: Qt.size(104, 104)
         z: 39
         visible: false
         opacity: 0.85
@@ -119,7 +121,7 @@ Window {
     }
     VisionOverlay { target: screen; z: 35 }
     FireCursor { id: cursor; z: 40 }
-    PermissionSheet { id: permission; z: 50; onShownChanged: if (shown && win.autoAllow) allowLater.start() }
+    PermissionSheet { id: permission; objectName: "permission"; z: 50; onShownChanged: if (shown && win.autoAllow) allowLater.start() }
     Timer { id: allowLater; interval: 1700; onTriggered: permission.answer(true) }
     AskBar { id: askBar; z: 55; onGo: (t) => win.ask(t) }
     Item { id: menuLayer; anchors.fill: parent; z: 60
@@ -128,10 +130,10 @@ Window {
     Splash {
         anchors.fill: parent; z: 80
         visible: !win.flag("nosplash")
-        onFinished: if (!Os.settings.assistantName) nameCard.shown = true
+        onFinished: { screen.booted = true; if (!Os.settings.assistantName) nameCard.shown = true; }
     }
 
-    Agent { id: agent; cursor: cursor; capsule: capsule; permission: permission; mark: mark; ghost: ghost }
+    Agent { id: agent; cursor: cursor; capsule: capsule; permission: permission; ghost: ghost }
 
     Connections {
         target: Os
@@ -153,6 +155,6 @@ Window {
         if (flag("reset")) Os.settings.assistantName = "";
         if (opt("name")) Os.settings.assistantName = opt("name");
         Os.root = screen; Os.desktop = desktop; Os.dock = dock; Os.agent = agent; Os.cursor = cursor;
-        if (flag("nosplash") && !Os.settings.assistantName) nameCard.shown = true;
+        if (flag("nosplash")) { screen.booted = true; if (!Os.settings.assistantName) nameCard.shown = true; }
     }
 }

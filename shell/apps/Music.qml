@@ -8,13 +8,13 @@ Rectangle {
     property var win
     property bool playing: true
     function start(opts) {}
-    gradient: Gradient { GradientStop { position: 0; color: "#3a1a10" } GradientStop { position: 0.6; color: "#1b1210" } GradientStop { position: 1; color: "#140e0c" } }
+    gradient: Gradient { GradientStop { position: 0; color: "#262524" } GradientStop { position: 0.6; color: "#1a1a19" } GradientStop { position: 1; color: "#151514" } }
     Column {
         anchors.horizontalCenter: parent.horizontalCenter
         y: 60; width: parent.width - 60; spacing: 18
         Rectangle {
             width: parent.width; height: width; radius: 14
-            gradient: Gradient { GradientStop { position: 0; color: "#ff8a3d" } GradientStop { position: 1; color: "#7a1f12" } }
+            gradient: Gradient { GradientStop { position: 0; color: "#3a3836" } GradientStop { position: 1; color: "#1e1d1c" } }
             scale: app.playing ? 1 : 0.88
             Behavior on scale { NumberAnimation { duration: 500; easing.type: Easing.OutBack } }
             Logo { anchors.centerIn: parent; width: parent.width * 0.42; height: width * 1.16; animated: app.playing }
