@@ -1,4 +1,4 @@
-// Calendar: this month, with the launch on it.
+// Calendar: this month. Events come from Os.events (empty on a fresh install).
 import QtQuick
 import "../components"
 
@@ -10,7 +10,7 @@ Item {
     readonly property int first: new Date(now.getFullYear(), now.getMonth(), 1).getDay()
     readonly property int days: new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
     readonly property int prev: new Date(now.getFullYear(), now.getMonth(), 0).getDate()
-    readonly property var events: ({ 7: [["Launch sync", 0], ["Dock review", 1]], 9: [["Jev onboarding", 0]], 14: [["Site goes live", 0]], 21: [["Firelamp 0.1", 1]] })
+    readonly property var events: Os.events
     Row {
         x: 92; y: 12; spacing: 8
         Text { text: Os.months[app.now.getMonth()]; color: Theme.text; font.family: Theme.font; font.pixelSize: 20; font.weight: Font.Bold }

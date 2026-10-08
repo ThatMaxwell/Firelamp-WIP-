@@ -35,7 +35,7 @@ Rectangle {
                 Rectangle { visible: it.modelData === "assistant"; width: 5; height: 5; radius: 2.5; color: Theme.text4; anchors.verticalCenter: parent.verticalCenter }
                 Text {
                     visible: ["assistant", "battery", "clock"].indexOf(it.modelData) >= 0
-                    text: it.modelData === "assistant" ? Os.name : it.modelData === "battery" ? "87%" : Os.clock(new Date(), false)
+                    text: it.modelData === "assistant" ? Os.name : it.modelData === "battery" ? (Os.demo ? "87%" : Os.battery >= 0 ? Os.battery + "%" : "Battery") : Os.clock(new Date(), false)
                     width: Math.min(implicitWidth, it.width - 16); elide: Text.ElideRight
                     color: it.modelData === "assistant" ? Theme.text2 : Theme.text; font.family: Theme.font; font.pixelSize: 10; font.weight: Font.Medium
                 }

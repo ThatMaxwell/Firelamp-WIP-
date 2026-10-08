@@ -1,5 +1,8 @@
-// Files: the Downloads folder as an icon grid. Exposes move/remove for the agent's drops.
+// Files: your folders as an icon grid (real ones; --demo shows a sample Downloads the agent
+// tidies). Exposes move/remove for the agent's drops.
 import QtQuick
+import QtCore
+import Qt.labs.folderlistmodel
 import "../components"
 import "../js/art.js" as Art
 
@@ -12,12 +15,38 @@ Item {
     function indexOf(name) { for (var i = 0; i < files.count; i++) if (files.get(i).name === name) return i; return -1; }
 
     ListModel { id: files }
+    // the real folder behind the grid
+    property string place: "Downloads"
+    readonly property var places: ({ Home: StandardPaths.HomeLocation, Desktop: StandardPaths.DesktopLocation, Documents: StandardPaths.DocumentsLocation,
+                                     Downloads: StandardPaths.DownloadLocation, Pictures: StandardPaths.PicturesLocation, Music: StandardPaths.MusicLocation })
+    property url here: StandardPaths.writableLocation(places[place])
+    FolderListModel {
+        id: real
+        folder: Os.demo ? "" : app.here
+        showDirsFirst: true; sortField: FolderListModel.Name
+        onStatusChanged: if (status === FolderListModel.Ready) app.fill()
+        onCountChanged: if (status === FolderListModel.Ready) app.fill()
+    }
+    function fill() {
+        files.clear(); selIndex = -1;
+        for (var i = 0; i < real.count; i++) {
+            var n = real.get(i, "fileName");
+            files.append({ name: n, kind: real.get(i, "fileIsDir") ? "folder" : app.kindOf(n), inside: 0, editing: false, url: String(real.get(i, "fileUrl")) });
+        }
+    }
+    function openItem(i) {
+        var f = files.get(i);
+        if (!f || !f.url) return;
+        if (f.kind === "folder") app.here = f.url; else Qt.openUrlExternally(f.url);
+    }
+    readonly property string hereName: { var p = String(here).replace(/\/$/, "").split("/"); return Os.demo ? "Downloads" : decodeURIComponent(p[p.length - 1]); }
     Component.onCompleted: {
+        if (!Os.demo) return;
         ["IMG_2041.jpg", "invoice.pdf", "sunset.png", "Launch plan.docx", "firelamp-0.1.iso", "IMG_2042.jpg", "invoice (1).pdf", "ember-hours.mp3", "notes.txt", "jev-sdk.tar.gz"]
-            .forEach(function (n) { files.append({ name: n, kind: app.kindOf(n), inside: 0, editing: false }); });
+            .forEach(function (n) { files.append({ name: n, kind: app.kindOf(n), inside: 0, editing: false, url: "" }); });
     }
 
-    function newFolder() { files.insert(0, { name: "untitled folder", kind: "folder", inside: 0, editing: true }); }
+    function newFolder() { files.insert(0, { name: "untitled folder", kind: "folder", inside: 0, editing: true, url: "" }); }
     function commit(name) {
         for (var i = 0; i < files.count; i++) if (files.get(i).editing) { files.setProperty(i, "name", name.trim() || "untitled folder"); files.setProperty(i, "editing", false); }
     }
@@ -33,7 +62,7 @@ Item {
         if (indexOf(name) >= 0) return;
         var f = folder ? indexOf(folder) : -1;
         if (f >= 0) files.setProperty(f, "inside", Math.max(0, files.get(f).inside - 1));
-        files.insert(Math.min(files.count, f + 1), { name: name, kind: app.kindOf(name), inside: 0, editing: false });
+        files.insert(Math.min(files.count, f + 1), { name: name, kind: app.kindOf(name), inside: 0, editing: false, url: "" });
     }
 
     Sidebar {
@@ -42,10 +71,17 @@ Item {
         SideHeader { text: "Favorites" }
         Repeater {
             model: [["Recents", "clock"], ["Desktop", "grid"], ["Documents", "doc"], ["Downloads", "folder"], ["Pictures", "image"], ["Music", "music"]]
-            SideItem { required property var modelData; text: modelData[0]; glyph: modelData[1]; selected: modelData[0] === "Downloads" }
+            SideItem {
+                required property var modelData
+                visible: Os.demo || modelData[0] !== "Recents"
+                text: modelData[0]; glyph: modelData[1]; selected: modelData[0] === app.place
+                onClicked: if (!Os.demo) { app.place = modelData[0]; app.here = StandardPaths.writableLocation(app.places[modelData[0]]); }
+            }
         }
         SideHeader { text: "Locations" }
-        SideItem { text: "Firelamp Cloud"; glyph: "globe" }
+        SideItem { visible: Os.demo; text: "Firelamp Cloud"; glyph: "globe" }
+        SideItem { visible: !Os.demo; text: "Home"; glyph: "folder"; selected: app.place === "Home"
+                   onClicked: { app.place = "Home"; app.here = StandardPaths.writableLocation(StandardPaths.HomeLocation); } }
     }
 
     Item {
@@ -54,11 +90,11 @@ Item {
             x: 10; y: 12; spacing: 2
             TbButton { glyph: "chevronL"; label: "Back" }
             TbButton { glyph: "chevron"; label: "Forward" }
-            Text { leftPadding: 8; text: "Downloads"; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
+            Text { leftPadding: 8; text: app.hereName; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
         }
         Row {
             anchors.right: parent.right; anchors.rightMargin: 12; y: 12; spacing: 2
-            TbButton { glyph: "plus"; label: "New Folder"; onClicked: app.newFolder() }
+            TbButton { visible: Os.demo; glyph: "plus"; label: "New Folder"; onClicked: app.newFolder() }
             TbButton { glyph: "grid"; label: "Icon view" }
             TbButton { glyph: "list"; label: "List view" }
             Item { width: 6; height: 1 }
@@ -117,12 +153,13 @@ Item {
                     color: Theme.win3; border.color: Theme.line3; border.width: 1
                     Field { id: nameField; anchors.fill: parent; anchors.margins: 2; label: "Folder name"; pixelSize: 12; align: TextInput.AlignHCenter; onAccepted: app.commit(text) }
                 }
-                MouseArea { anchors.fill: parent; z: -1; onClicked: tile.aiActivate() }
+                MouseArea { anchors.fill: parent; z: -1; onClicked: tile.aiActivate(); onDoubleClicked: app.openItem(tile.index) }
             }
         }
+        EmptyState { visible: !Os.demo && real.status === FolderListModel.Ready && files.count === 0; glyph: "folder"; title: app.hereName + " is empty" }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 30; color: Qt.rgba(1, 1, 1, 0.025)
             Rectangle { width: parent.width; height: 0.5; color: Theme.line2 }
-            Text { anchors.centerIn: parent; text: files.count + " items, 214.6 GB available"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
+            Text { anchors.centerIn: parent; text: files.count + (files.count === 1 ? " item" : " items") + (Os.demo ? ", 214.6 GB available" : ""); color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
         }
     }
 }

@@ -31,7 +31,10 @@ for f in [*out.glob("*.png"), *out.glob("*.jpg")]:
     f.unlink()
 
 # first boot runs from scratch: splash, no name, then naming
-base = ["firelamp", "--windowed", "--reset"] if scene == "firstboot" else ["firelamp", "--nosplash", "--windowed", "--name=Juniper"]
+base = ["firelamp", "--windowed", "--reset", "--demo"] if scene == "firstboot" else ["firelamp", "--nosplash", "--windowed", "--name=Juniper", "--demo"]
+# a real install starts empty; FIRELAMP_CLEAN=1 captures it that way (no sample content)
+if os.environ.get("FIRELAMP_CLEAN"):
+    base.remove("--demo")
 if scene in ("stuck", "autopause", "desktops", "edithome", "packs", "live", "browsers", "round2"):
     base.append("--pointer")
 if scene in ("desktops", "packs", "browsers"):
@@ -422,6 +425,24 @@ elif scene == "round2":
              ("do", lambda: [call("setSetting", k, v) for k, v in (("dockSide", "bottom"), ("barOrder", ""), ("myLooks", "[]"))]),
              ("do", lambda: call("resetHome")), ("wait", 200), ("do", lambda: stop(0))]
     at(400, lambda: run(steps))
+elif scene == "clean":
+    # a real install (run with FIRELAMP_CLEAN=1 and an empty HOME): nothing preset anywhere
+    def type_note(t):
+        for ch in t:
+            key(ch, Qt.Key_Return if ch == "\n" else 0)
+    run([("wait", 900), ("still", "clean-home"),
+         ("do", lambda: call("launch", "notes")), ("wait", 1300), ("still", "clean-notes"),
+         ("tap", "New note"), ("wait", 300), ("do", lambda: type_note("Things to try\nPut the dock on the left")), ("wait", 600), ("still", "clean-note-typed"),
+         ("do", lambda: call("closeTop")), ("wait", 500),
+         ("do", lambda: call("launch", "files")), ("wait", 1300), ("still", "clean-files"), ("do", lambda: call("closeTop")), ("wait", 500),
+         ("do", lambda: call("launch", "photos")), ("wait", 1300), ("still", "clean-photos"), ("do", lambda: call("closeTop")), ("wait", 500),
+         ("do", lambda: call("launch", "mail")), ("wait", 1300), ("still", "clean-mail"), ("do", lambda: call("closeTop")), ("wait", 500),
+         ("do", lambda: call("launch", "terminal")), ("wait", 1300), ("still", "clean-terminal"), ("do", lambda: call("closeTop")), ("wait", 500),
+         ("do", lambda: call("openAsk")), ("wait", 700), ("still", "clean-ask"),
+         ("do", lambda: stop(200))])
+elif scene == "clean2":
+    # the same HOME again: the note typed in "clean" is still there after a restart
+    run([("wait", 700), ("do", lambda: call("launch", "notes")), ("wait", 1300), ("still", "clean-note-kept"), ("do", lambda: stop(200))])
 elif scene == "superkey":
     # Super, as KWin sends it: the helper's D-Bus call becomes an event the shell long-polls.
     # Needs `firelamp-desktops serve` running; this stands in for the key with the CLI.

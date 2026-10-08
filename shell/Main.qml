@@ -1,5 +1,5 @@
 // Firelamp OS desktop shell. Run with Qt's `qml` tool:  qml shell/Main.qml
-// Flags (after `--`): --nosplash  --name=…  --reset  --still  --windowed
+// Flags (after `--`): --nosplash  --name=…  --reset  --still  --windowed  --demo (sample content)
 import QtQuick
 import QtQuick.Window
 import "components"
@@ -267,6 +267,7 @@ Window {
     Component.onCompleted: {
         if (flag("reset")) Os.settings.assistantName = "";
         if (opt("name")) Os.settings.assistantName = opt("name");
+        if (flag("demo")) Os.demo = true;
         if (flag("demo-installs")) Os.demoInstalls = true;
         if (flag("live")) Os.live = true; else Os.checkLive();
         Os.listen();

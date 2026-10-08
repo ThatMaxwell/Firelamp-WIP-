@@ -64,9 +64,9 @@ Item {
     Column {
         id: col
         x: 8; y: 8; width: parent.width - 16
-        CcRow { glyph: "wifi"; title: "Wi‑Fi"; sub: cc.wifi ? "Hearth" : "Off"
+        CcRow { glyph: "wifi"; title: "Wi‑Fi"; sub: cc.wifi ? (Os.demo ? "Hearth" : "On") : "Off"
             Toggle { label: "Wi-Fi"; checked: cc.wifi; anchors.verticalCenter: parent.verticalCenter; onToggled: (c) => cc.wifi = c } }
-        CcRow { glyph: "bluetooth"; title: "Bluetooth"; sub: cc.bluetooth ? "AirPods" : "Off"
+        CcRow { glyph: "bluetooth"; title: "Bluetooth"; sub: cc.bluetooth ? (Os.demo ? "AirPods" : "On") : "Off"
             Toggle { label: "Bluetooth"; checked: cc.bluetooth; anchors.verticalCenter: parent.verticalCenter; onToggled: (c) => cc.bluetooth = c } }
         CcRow { glyph: "moon"; title: "Focus"; sub: cc.focusMode ? "On until tomorrow" : "Off"
             Toggle { label: "Focus"; checked: cc.focusMode; anchors.verticalCenter: parent.verticalCenter; onToggled: (c) => cc.focusMode = c } }
