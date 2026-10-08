@@ -69,6 +69,8 @@ def main():
         "-device", "virtio-tablet-pci",
         "-nic", "user,model=virtio-net-pci",
         "-no-reboot",
+        # Tells the live session to skip the shell's first-boot naming screen.
+        "-fw_cfg", "name=opt/firelamp/skip-onboarding,string=1",
     ]
     cmd += ["-enable-kvm", "-cpu", "host"] if kvm else ["-accel", "tcg", "-cpu", "max"]
     if args.uefi:
