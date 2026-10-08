@@ -10,6 +10,8 @@
 """
 import argparse
 import os
+import re
+import shutil
 import subprocess
 import sys
 import time
@@ -85,6 +87,24 @@ def shell_env():
     return " ".join(e for e in env if e.startswith(("QT_", "DBUS_", "XDG_RUNTIME", "WAYLAND")))
 
 
+def greeter_check(theme="/usr/share/sddm/themes/firelamp"):
+    """Load the SDDM login theme in test mode; the live ISO autologins, so it is never shown otherwise."""
+    if not os.path.isdir(theme):
+        return "not present"
+    greeter = shutil.which("sddm-greeter-qt6") or shutil.which("sddm-greeter")
+    if not greeter:
+        return "ERROR no sddm-greeter"
+    try:
+        res = subprocess.run([greeter, "--test-mode", "--theme", theme], capture_output=True, text=True, timeout=8)
+        log = res.stdout + res.stderr
+    except subprocess.TimeoutExpired as exc:
+        # Still running after 8 s means the theme loaded and the greeter is waiting for a login.
+        log = (exc.stdout or b"").decode(errors="replace") + (exc.stderr or b"").decode(errors="replace")
+    fatal = re.compile(r"is not a type|is not installed|Type \w+ unavailable|Syntax error|Expected token|failed to load|Cannot load", re.I)
+    errors = [l.strip() for l in log.splitlines() if fatal.search(l)]
+    return ("ERROR " + " | ".join(errors[:5])) if errors else "OK"
+
+
 def boot_report():
     time.sleep(20)
     out = []
@@ -116,6 +136,7 @@ def boot_report():
         out.extend(lines[:40])
     except Exception as exc:
         out.append(f"FIRELAMP_ATSPI_FAIL {exc}")
+    out.append("login theme: " + greeter_check())
     path = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-boot-report.txt")
     tmp = path + ".tmp"
     with open(tmp, "w") as fh:

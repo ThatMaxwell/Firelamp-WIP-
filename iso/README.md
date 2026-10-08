@@ -46,6 +46,8 @@ branding live in `profile/airootfs/usr/share/firelamp/calamares/`, and `firelamp
 
 Pushing a `v*` tag runs the same build and boot test, then publishes the ISO as a GitHub
 Release with its SHA-256 (split into parts when it is over the 2 GiB asset limit).
+Without pushing a tag, run the "Firelamp ISO" workflow by hand (Actions > Run workflow)
+with `release_tag` set, e.g. `v0.1.0`; the release and its tag are created on that commit.
 
 ## The shell contract
 
