@@ -223,6 +223,15 @@ elif scene == "firstboot":
     still("firstboot-signed", 10300)
     still("firstboot-after", 14200)
     stop(14600)
+elif scene == "trust":
+    # Settings › Assistant, scrolled to the per-app "when to ask" list
+    at(300, lambda: call("launch", "settings"))
+    at(1200, lambda: call("setTrust", "terminal", "all"))
+    at(1300, lambda: call("setTrust", "web", "never"))
+    at(1500, lambda: call("settingsScroll", 230))
+    still("settings-trust", 2400)
+    at(2500, lambda: (call("setTrust", "terminal", "risky"), call("setTrust", "web", "risky")))
+    stop(2800)
 elif scene == "panels":
     at(300, lambda: call("launch", "notes"))
     at(1200, lambda: call("openAsk"))

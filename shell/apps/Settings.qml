@@ -1,11 +1,13 @@
 // System Settings, open on the Assistant pane: its name, safety, and the fire cursor.
 import QtQuick
 import "../components"
+import "../js/art.js" as Art
 
 Item {
     id: app
     property var win
     function start(opts) {}
+    function scrollTo(y) { fl.contentY = Math.max(0, Math.min(y, fl.contentHeight - fl.height)); }
 
     component Row2: Item {
         id: r
@@ -25,6 +27,32 @@ Item {
         radius: 10; color: Qt.rgba(1, 1, 1, 0.04); border.color: Theme.line; border.width: 0.5
         Column { id: groupCol; width: parent.width }
         Text { y: -26; x: 4; text: parent.title; color: Theme.text2; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold }
+    }
+    // three plain choices, side by side; the selected one is a raised surface
+    component Segmented: Rectangle {
+        id: sg
+        property var options: []
+        property int current: 0
+        signal picked(int i)
+        width: segRow.implicitWidth + 4; height: 26; radius: 7; color: Theme.surface0; border.color: Theme.hairline; border.width: 1
+        Row {
+            id: segRow; x: 2; y: 2
+            Repeater {
+                model: sg.options
+                Rectangle {
+                    id: seg
+                    required property string modelData
+                    required property int index
+                    property string aiName: modelData; property string aiRole: "radio"
+                    function aiActivate() { sg.picked(index); }
+                    width: st.implicitWidth + 16; height: 22; radius: 5
+                    color: sg.current === index ? Theme.surface3 : sm.containsMouse ? Theme.hover : "transparent"
+                    Behavior on color { ColorAnimation { duration: 140 } }
+                    Text { id: st; anchors.centerIn: parent; text: seg.modelData; color: sg.current === seg.index ? Theme.text : Theme.text2; font.family: Theme.font; font.pixelSize: 11; font.weight: sg.current === seg.index ? Font.Medium : Font.Normal }
+                    MouseArea { id: sm; anchors.fill: parent; hoverEnabled: true; onClicked: seg.aiActivate() }
+                }
+            }
+        }
     }
     component Kbd: Rectangle {
         property string k
@@ -68,6 +96,34 @@ Item {
                            Toggle { label: "Ask before risky actions"; checked: Os.settings.askBeforeRisky; onToggled: (c) => Os.settings.askBeforeRisky = c } }
                     Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
                     Row2 { title: "Pause or stop instantly"; hint: "Works from anywhere, even mid-click"; Kbd { k: "⌃ Space" } Kbd { k: "Esc" } }
+                }
+                Group {
+                    id: perApp
+                    title: "When to ask, per app"
+                    readonly property var levels: ["all", "risky", "never"]
+                    Repeater {
+                        model: [["mail", "Mail"], ["files", "Files"], ["notes", "Notes"], ["web", "Web"], ["calendar", "Calendar"], ["terminal", "Terminal"]]
+                        Item {
+                            id: ar
+                            required property var modelData
+                            required property int index
+                            width: parent ? parent.width : 0; height: 44
+                            Rectangle { visible: ar.index > 0; width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
+                            Image { x: 16; width: 20; height: 20; anchors.verticalCenter: parent.verticalCenter; sourceSize: Qt.size(40, 40); source: Art.icon(ar.modelData[0]) }
+                            Text { x: 46; anchors.verticalCenter: parent.verticalCenter; text: ar.modelData[1]; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium }
+                            Segmented {
+                                anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter
+                                options: ["Ask before anything", "Ask before risky things", "Don’t ask"]
+                                current: { Os.settings.appTrust; return perApp.levels.indexOf(Os.trust(ar.modelData[0])); }
+                                onPicked: (i) => Os.setTrust(ar.modelData[0], perApp.levels[i])
+                            }
+                        }
+                    }
+                }
+                // the note hangs right under the group, not a full gap below it
+                Item {
+                    width: parent.width; height: Math.max(1, trustNote.height - 40)
+                    Text { id: trustNote; x: 4; y: -40; width: parent.width - 8; wrapMode: Text.WordWrap; text: "Deleting, sending, paying and sharing always ask, whatever you pick here."; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
                 }
                 Group {
                     title: "Fire cursor"

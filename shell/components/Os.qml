@@ -20,7 +20,11 @@ QtObject {
         property bool askBeforeRisky: true
         property real cursorSpeed: 1.0
         property bool idleFade: true
+        property string appTrust: "{}"         // per app: "all" | "risky" (default) | "never"
     }
+    // Risky means deleting, sending, paying or sharing; those always ask, whatever this says.
+    function trust(app) { try { return JSON.parse(settings.appTrust)[app] || "risky"; } catch (e) { return "risky"; } }
+    function setTrust(app, v) { var t = {}; try { t = JSON.parse(settings.appTrust); } catch (e) {} t[app] = v; settings.appTrust = JSON.stringify(t); }
     readonly property string name: settings.assistantName || "Assistant"
     property bool vision: false
     property bool demo: false

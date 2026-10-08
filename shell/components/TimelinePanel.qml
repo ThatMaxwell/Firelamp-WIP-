@@ -8,7 +8,7 @@ Item {
     property bool open: false
     readonly property ListModel entries: Os.activity
     property real now: Date.now()
-    Timer { interval: 1000; repeat: true; running: tl.open; onTriggered: tl.now = Date.now() }
+    Timer { interval: 250; repeat: true; running: tl.open; onTriggered: tl.now = Date.now() }
     function expand(i) { var n = 0; for (var j = 0; j < entries.count; j++) if (entries.get(j).kind === "milestone" && n++ === i) return entries.setProperty(j, "expanded", true); }
 
     Text {
@@ -85,13 +85,25 @@ Item {
                             font.family: Theme.font; font.pixelSize: 13; font.weight: row.group || row.loud ? Font.Medium : Font.Normal
                         }
                     }
+                    // Undo for 30 s; after that the change is simply kept
                     Text {
                         id: undoLink
-                        visible: row.canUndo
+                        visible: row.undo
                         anchors.right: parent.right
-                        text: "Undo"; color: uma.containsMouse ? Theme.text : Theme.text2
-                        font.family: Theme.font; font.pixelSize: 12; font.weight: Font.Medium; font.underline: uma.containsMouse
-                        MouseArea { id: uma; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Os.agent.undo(row.gid) }
+                        text: row.canUndo ? "Undo" : "Kept"
+                        color: !row.canUndo ? Theme.text3 : uma.containsMouse ? Theme.text : Theme.text2
+                        font.family: Theme.font; font.pixelSize: 12; font.weight: row.canUndo ? Font.Medium : Font.Normal; font.underline: row.canUndo && uma.containsMouse
+                        MouseArea { id: uma; anchors.fill: parent; anchors.margins: -4; enabled: row.canUndo; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Os.agent.undo(row.gid) }
+                    }
+                }
+                // how long Undo lasts: a hairline that runs down, no number, no colour
+                Item {
+                    visible: row.canUndo
+                    width: parent.width; height: 3
+                    Rectangle {
+                        y: 1; height: 1; color: Theme.text3; opacity: 0.6
+                        width: parent.width * Math.max(0, Math.min(1, (row.until - tl.now) / 30000))
+                        Behavior on width { NumberAnimation { duration: 250 } }
                     }
                 }
                 Text { visible: row.why !== "" && !row.group; width: parent.width; text: row.why; wrapMode: Text.WordWrap; color: Theme.text3; font.family: Theme.font; font.pixelSize: 12 }
@@ -101,19 +113,21 @@ Item {
                     visible: row.group
                     spacing: 6
                     MouseArea { parent: row; x: body.x + sumRow.x - 4; y: body.y + sumRow.y - 4; width: sumRow.width + 12; height: sumRow.height + 8; visible: row.group
-                                enabled: row.n > 0; cursorShape: Qt.PointingHandCursor; onClicked: entries.setProperty(row.index, "expanded", !row.expanded) }
+                                enabled: row.n > 0 || row.why !== ""; cursorShape: Qt.PointingHandCursor; onClicked: entries.setProperty(row.index, "expanded", !row.expanded) }
                     Rectangle { visible: row.live; width: 5; height: 5; radius: 2.5; color: Theme.ember; anchors.verticalCenter: parent.verticalCenter }
                     Text {
                         text: (row.live ? "Working" : row.undone ? "Undone" : row.n + (row.n === 1 ? " step" : " steps")) + (row.app ? " · " + row.app : "")
                         color: Theme.text3; font.family: Theme.font; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter
                     }
-                    Glyph { visible: row.n > 0; name: "chevron"; width: 10; height: 10; color: Theme.text3; anchors.verticalCenter: parent.verticalCenter
+                    Glyph { visible: row.n > 0 || row.why !== ""; name: "chevron"; width: 10; height: 10; color: Theme.text3; anchors.verticalCenter: parent.verticalCenter
                             rotation: row.expanded ? 90 : 0; Behavior on rotation { NumberAnimation { duration: 180; easing.type: Easing.OutQuint } } }
                     Item { width: 1; height: 1 }
                 }
                 Column {
                     visible: row.group && row.expanded
                     width: parent.width; spacing: 3; topPadding: 3
+                    // one plain sentence on why, then the routine steps
+                    Text { visible: row.why !== ""; width: body.width; text: row.why; wrapMode: Text.WordWrap; color: Theme.text2; font.family: Theme.font; font.pixelSize: 12; bottomPadding: 2 }
                     Repeater {
                         model: row.expanded ? JSON.parse(row.steps) : []
                         Text { required property var modelData; width: body.width; text: modelData.title.replace(/<[^>]+>/g, ""); wrapMode: Text.WordWrap

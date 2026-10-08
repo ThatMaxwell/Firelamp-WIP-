@@ -20,10 +20,10 @@ var emailNotes = {
     intro: "Here’s my plan. I’ll check with you before anything is sent.",
     lines: function () {
         return [
-            { plan: "Copy today’s launch notes from Notes", done: "Copied the launch notes" },
-            { plan: "Write an email to Ana with the notes", done: "Wrote the email to Ana" },
+            { plan: "Copy today’s launch notes from Notes", done: "Copied the launch notes", why: "“Launch sync — Oct 7” is the only note from today’s meeting." },
+            { plan: "Write an email to Ana with the notes", done: "Wrote the email to Ana", why: "Used Ana’s work address, it’s the one you emailed last." },
             { plan: "Ask you before sending", done: "You said yes" },
-            { plan: "Send it", done: "Sent the email to Ana" }
+            { plan: "Send it", done: "Sent the email to Ana", why: "You said yes, so I pressed Send." }
         ];
     },
     steps: function () {
@@ -76,11 +76,11 @@ var tidy = {
     prefs: { q: "There’s an exact copy of “invoice.pdf”. What should I do with it?", options: ["Move it to the Trash", "Leave it"] },
     lines: function (pick) {
         var l = [
-            { plan: "Open Downloads in Files", done: "Opened Downloads" },
-            { plan: "Put the 3 pictures in a new Images folder", done: "Sorted 3 pictures into Images" },
-            { plan: "Put the 3 documents in a new Documents folder", done: "Sorted 3 documents into Documents" }
+            { plan: "Open Downloads in Files", done: "Opened Downloads", why: "That’s where the loose files are." },
+            { plan: "Put the 3 pictures in a new Images folder", done: "Sorted 3 pictures into Images", why: "Three of the files are photos (.jpg and .png)." },
+            { plan: "Put the 3 documents in a new Documents folder", done: "Sorted 3 documents into Documents", why: "These three are documents. The .iso, .mp3 and .tar.gz stay where they are." }
         ];
-        if (!pick) l.push({ plan: "Move the duplicate invoice to the Trash", done: "Moved the duplicate to the Trash" });
+        if (!pick) l.push({ plan: "Move the duplicate invoice to the Trash", done: "Moved the duplicate to the Trash", why: "It’s an exact copy of “invoice.pdf”, and you chose to trash it." });
         return l;
     },
     steps: function (pick) {

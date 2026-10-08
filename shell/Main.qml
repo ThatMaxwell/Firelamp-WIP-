@@ -67,6 +67,8 @@ Window {
     function probeUnlabeled() { var l = Tree.unlabeled(screen); probeX = l.length ? l[0].bounds.x + l[0].bounds.w / 2 : -1; probeY = l.length ? l[0].bounds.y + l[0].bounds.h / 2 : -1; }
     function showMe() { agent.showMe(); }
     function togglePause() { agent.togglePause(); }
+    function setTrust(app, v) { Os.setTrust(app, v); }
+    function settingsScroll(y) { var s = desktop.get("settings"); if (s && s.content) s.content.scrollTo(y); }
     function timelineOpen(on) { Os.timelineToggle(on); }
     function expandActivity(i) { var n = 0; for (var j = 0; j < Os.activity.count; j++) if (Os.activity.get(j).kind === "milestone" && n++ === i) return Os.activity.setProperty(j, "expanded", true); }
     property real probeX: -1

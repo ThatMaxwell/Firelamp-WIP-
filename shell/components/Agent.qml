@@ -82,7 +82,7 @@ Item {
         if (gid === "") return;
         var g = groups[gid];
         g.until = Date.now() + 30000;
-        Os.logUpdate(gid, { title: lines[mi].done, live: false, undo: g.undos.length > 0, until: g.until });
+        Os.logUpdate(gid, { title: lines[mi].done, why: lines[mi].why || "", live: false, undo: g.undos.length > 0, until: g.until });
         gid = "";
     }
     // undo a finished milestone, for 30 seconds after it finished
@@ -174,6 +174,18 @@ Item {
         case "vision": Os.vision = s.on; return after(200, next);
         case "open": {
             var title = Os.desktop.registry[s.app].title;
+            // "Ask before anything" for this app: one OK before it starts working there
+            if (Os.trust(s.app) === "all" && !s.allowed) {
+                capsule.what = "Waiting for your OK"; cursor.busy = true;
+                log("ask", "Asked before using " + title, "You set " + title + " to ask before anything.", "Firelamp");
+                return permission.ask({ app: s.app, title: "Let " + Os.name + " work in " + title + "?", body: "You set " + title + " to ask before anything. Change this in Settings › Assistant.",
+                                        deny: "Not Now", allow: "Allow" }, function (ok) {
+                    cursor.busy = false;
+                    if (stopped) return;
+                    if (!ok) { log("denied", "You said no, so I stopped there", "", "Firelamp"); Os.say("Okay, I won’t touch " + title + "."); return finish("denied"); }
+                    s.allowed = true; exec(s, next);
+                });
+            }
             capsule.what = "Opening " + title; cursor.verb = "opening " + title;
             var r = Os.dock.iconRect(s.app);
             return cursor.moveTo(r.x + r.width / 2, r.y + r.height / 2, function () {
