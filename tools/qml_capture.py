@@ -31,9 +31,9 @@ for f in [*out.glob("*.png"), *out.glob("*.jpg")]:
 
 # first boot runs from scratch: splash, no name, then naming
 base = ["firelamp", "--windowed", "--reset"] if scene == "firstboot" else ["firelamp", "--nosplash", "--windowed", "--name=Juniper"]
-if scene in ("stuck", "autopause", "desktops", "edithome", "packs", "live"):
+if scene in ("stuck", "autopause", "desktops", "edithome", "packs", "live", "browsers"):
     base.append("--pointer")
-if scene in ("desktops", "packs"):
+if scene in ("desktops", "packs", "browsers"):
     base.append("--demo-installs")
 if scene == "live":
     base.append("--live")
@@ -363,6 +363,23 @@ elif scene == "packs":
              ("click", "Install Play pack"), ("point", 1240, 800, 600), ("wait", 800), ("still", "settings-packs"),
              ("do", lambda: call("setSetting", "packsAsked", False)), ("wait", 100), ("do", lambda: stop(0))]
     at(400, lambda: run(steps))
+elif scene == "browsers":
+    # First boot's "Pick your browser": filter, search, pick Brave; then Settings › Browser
+    def typed(text):
+        return [("do", lambda ch=ch: key(ch)) for ch in text]
+    at(200, lambda: call("showBrowsers"))
+    start(300)
+    steps = [("wait", 1000), ("still", "browser-firstboot"),
+             ("click", "Private"), ("wait", 700), ("still", "browser-private"),
+             ("click", "Firefox family"), ("wait", 700), ("click", "Zen"), ("wait", 500), ("still", "browser-firefox-family"),
+             ("click", "All"), ("wait", 300), ("click", "Search browsers"), ("wait", 200), *typed("bra"), ("wait", 700), ("still", "browser-search"),
+             ("click", "Brave"), ("wait", 600), ("still", "browser-brave"),
+             *[("do", lambda: key(code=Qt.Key_Backspace)) for _ in range(3)], ("wait", 600),
+             ("click", "Use browser"), ("wait", 1200), ("still", "browser-toast"),
+             ("do", lambda: call("openSettings", "Browser")), ("wait", 700), ("point", 1240, 800, 400), ("still", "settings-browser-installing"),
+             ("wait", 4200), ("still", "settings-browser"),
+             ("do", lambda: call("setSetting", "browserAsked", False)), ("wait", 100), ("do", lambda: stop(0))]
+    at(400, lambda: (mouse(900, 760), pos.update(x=900, y=760), run(steps)))
 elif scene == "live":
     # the live ISO: Install Firelamp OS in the dock and the Firelamp menu
     steps = [("wait", 1200), ("find", "Install Firelamp OS"), ("wait", 900), ("still", "live-dock"),

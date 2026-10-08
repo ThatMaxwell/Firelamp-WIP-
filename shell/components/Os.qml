@@ -43,6 +43,7 @@ QtObject {
         property string accent: ""             // the user's color; empty = neutral. Never ember.
         property string myLooks: "[]"           // saved Looks, JSON
         property bool packsAsked: false        // first boot showed "What do you do?"
+        property bool browserAsked: false      // first boot showed "Pick your browser"
     }
     // Risky means deleting, sending, paying or sharing; those always ask, whatever this says.
     function trust(app) { try { return JSON.parse(settings.appTrust)[app] || "risky"; } catch (e) { return "risky"; } }
@@ -76,6 +77,54 @@ QtObject {
         property var queue: []
         interval: 4500; repeat: true
         onTriggered: { var j = queue.shift(); if (j) os.setPack(j[0], { state: "", installed: !j[1] }); if (!queue.length) stop(); }
+    }
+
+    // ---- browsers: first boot and Settings › Browser share one status ----
+    property var browserStatus: ({})              // id -> { installed, state, log }
+    property string defaultBrowser: "firefox"
+    property bool browserHelper: false
+    function setBrowser(id, f) { var st = Object.assign({}, browserStatus); st[id] = Object.assign({}, st[id] || {}, f); browserStatus = st; }
+    function fetchBrowsers() {
+        var x = new XMLHttpRequest();
+        x.onreadystatechange = function () {
+            if (x.readyState !== XMLHttpRequest.DONE) return;
+            os.browserHelper = x.status === 200;
+            if (x.status !== 200) return;
+            var r = JSON.parse(x.responseText), st = {};
+            r.browsers.forEach(function (b) { st[b.id] = b; });
+            os.browserStatus = st;
+            // the default only moves once the new browser is actually in
+            if (r["default"]) os.defaultBrowser = r["default"];
+        };
+        x.open("GET", "http://127.0.0.1:7341/browsers"); x.send();
+    }
+    // install if needed, then make it the default
+    function pickBrowser(id) {
+        var st = browserStatus[id] || {};
+        if (st.installed || id === "firefox") { setBrowser(id, { installed: true }); }
+        else setBrowser(id, { state: "installing", log: "" });
+        if (!browserHelper && demoInstalls) {
+            if (st.installed || id === "firefox") defaultBrowser = id;
+            else { browserDemo.id = id; browserDemo.restart(); }
+            return;
+        }
+        if (!browserHelper) { defaultBrowser = id; return; }
+        var x = new XMLHttpRequest(); x.open("POST", "http://127.0.0.1:7341/browser/" + id); x.send();
+        if (!browserPoll.running) browserPoll.start();
+    }
+    property Timer browserDemo: Timer {
+        property string id
+        interval: 6000
+        onTriggered: { os.setBrowser(id, { state: "", installed: true }); os.defaultBrowser = id; }
+    }
+    property Timer browserPoll: Timer {
+        interval: 1500; repeat: true
+        onTriggered: {
+            os.fetchBrowsers();
+            var busy = false;
+            for (var k in os.browserStatus) if (os.browserStatus[k].state === "installing") busy = true;
+            if (!busy) stop();
+        }
     }
 
     // ---- home widgets: sizes are S 2×2, M 4×2, L 4×4 on a 76px unit with 24px gutters ----

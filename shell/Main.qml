@@ -80,6 +80,7 @@ Window {
     function resetHome() { Os.resetHome(); }
     function setSetting(k, v) { Os.settings[k] = v; }
     function showPacks() { packsCard.picked = {}; packsCard.shown = true; }
+    function showBrowsers() { browserCard.shown = true; }
     // recorder: activate a control by name, the way the AI would
     function probeTap(name) { var n = Tree.find(win.contentItem, { name: name }); if (n && n.item.aiActivate) n.item.aiActivate(); }
     property real probeX: -1
@@ -175,8 +176,9 @@ Window {
     Item { id: menuLayer; anchors.fill: parent; z: 60
         MouseArea { anchors.fill: parent; enabled: bar.menu !== null; onPressed: bar.closeMenu() } }
     // after naming, the desktop isn't empty: the Assistant is open with what it noticed
-    NameCard { id: nameCard; z: 70; onDone: { if (!Os.settings.packsAsked) packsCard.shown = true; else { screen.booted = true; openAssistant.start(); } } }
-    PacksCard { id: packsCard; z: 71; onDone: { screen.booted = true; openAssistant.start(); } }
+    NameCard { id: nameCard; z: 70; onDone: { if (!Os.settings.packsAsked) packsCard.shown = true; else if (!Os.settings.browserAsked) browserCard.shown = true; else { screen.booted = true; openAssistant.start(); } } }
+    PacksCard { id: packsCard; z: 71; onDone: { if (!Os.settings.browserAsked) browserCard.shown = true; else { screen.booted = true; openAssistant.start(); } } }
+    BrowserCard { id: browserCard; z: 72; onDone: { screen.booted = true; openAssistant.start(); } }
     Timer { id: openAssistant; interval: 900; onTriggered: win.launch("assistant") }
     Splash {
         anchors.fill: parent; z: 80

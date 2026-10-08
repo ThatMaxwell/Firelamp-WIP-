@@ -8,7 +8,7 @@ Item {
     property var win
     property string pane: "Assistant"
     function start(opts) { if (opts && opts.pane) pane = opts.pane; }
-    function scrollTo(y) { if (pane === "Desktops") return desks.scrollTo(y); fl.contentY = Math.max(0, Math.min(y, fl.contentHeight - fl.height)); }
+    function scrollTo(y) { if (pane === "Desktops") return desks.scrollTo(y); if (pane === "Browser") return browserPane.scrollTo(y); fl.contentY = Math.max(0, Math.min(y, fl.contentHeight - fl.height)); }
 
     component Row2: Item {
         id: r
@@ -38,13 +38,19 @@ Item {
     Sidebar {
         id: side
         Repeater {
-            model: [["Assistant", "sparkle"], ["Desktops", "grid"], ["Packs", "list"], ["Permissions", "shield"], ["Fire Cursor", "cursor"], ["Activity", "clock"], ["Appearance", "moon"], ["Wi-Fi", "wifi"], ["Sound", "volume"], ["Bluetooth", "bluetooth"]]
+            model: [["Assistant", "sparkle"], ["Desktops", "grid"], ["Packs", "list"], ["Browser", "globe"], ["Permissions", "shield"], ["Fire Cursor", "cursor"], ["Activity", "clock"], ["Appearance", "moon"], ["Wi-Fi", "wifi"], ["Sound", "volume"], ["Bluetooth", "bluetooth"]]
             SideItem { required property var modelData; text: modelData[0]; glyph: modelData[1]; selected: modelData[0] === app.pane
-                       onClicked: if (["Assistant", "Desktops", "Packs"].indexOf(modelData[0]) >= 0) app.pane = modelData[0] }
+                       onClicked: if (["Assistant", "Desktops", "Packs", "Browser"].indexOf(modelData[0]) >= 0) app.pane = modelData[0] }
         }
     }
     PacksPane {
         visible: app.pane === "Packs"
+        active: visible
+        anchors { left: side.right; right: parent.right; top: parent.top; bottom: parent.bottom }
+    }
+    BrowserPane {
+        id: browserPane
+        visible: app.pane === "Browser"
         active: visible
         anchors { left: side.right; right: parent.right; top: parent.top; bottom: parent.bottom }
     }
