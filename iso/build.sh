@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the Firelamp OS live ISO.
+# Build the Firelamp OS live ISO (Arch + CachyOS repos and kernel).
 #
 #   iso/build.sh            build on an Arch Linux host (run as root, needs archiso)
 #   iso/build.sh --docker   build inside an archlinux Docker container (any Linux host)
@@ -23,7 +23,7 @@ if [[ "${1:-}" == "--docker" ]]; then
         -e SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-}" \
         -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
         "$image" \
-        bash -c 'pacman -Syu --noconfirm --needed archiso git >/dev/null && /src/iso/build.sh'
+        bash -c 'pacman -Syu --noconfirm --needed archiso git >/dev/null && /src/iso/cachyos-setup.sh && /src/iso/build.sh'
 fi
 
 if [[ $EUID -ne 0 ]]; then
@@ -31,6 +31,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 command -v mkarchiso >/dev/null || { echo "build.sh: install archiso first (pacman -S archiso)" >&2; exit 1; }
+[[ -s /etc/pacman.d/cachyos-mirrorlist ]] || "$iso_dir/cachyos-setup.sh"
 
 # Stage a copy of the profile so the shell can be layered in without touching
 # the checked-in profile.
@@ -38,6 +39,12 @@ staged="$work_dir/profile"
 rm -rf "$work_dir"
 mkdir -p "$work_dir" "$out_dir"
 cp -a "$iso_dir/profile" "$staged"
+
+# Package sets (desktop, tools) live in iso/packages/, one file per set.
+for set in "$iso_dir"/packages/*.x86_64; do
+    printf '\n# From packages/%s\n' "$(basename "$set")" >>"$staged/packages.x86_64"
+    cat "$set" >>"$staged/packages.x86_64"
+done
 
 if [[ -d "$repo_dir/shell" ]]; then
     echo "build.sh: including desktop shell from shell/"

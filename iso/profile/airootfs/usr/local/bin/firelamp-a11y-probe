@@ -76,7 +76,7 @@ def run(cmd):
 
 
 def shell_env():
-    pid = run(["pgrep", "-n", "-f", "qml|firelamp-shell"]).split("\n")[0]
+    pid = run(["pgrep", "-n", "-f", "qt6/bin/qml|firelamp/shell/firelamp-shell"]).split("\n")[0]
     try:
         with open(f"/proc/{pid}/environ", "rb") as fh:
             env = fh.read().decode(errors="replace").split("\0")
@@ -89,8 +89,16 @@ def boot_report():
     time.sleep(20)
     out = []
     out.append(f"FIRELAMP_SESSION wayland={os.environ.get('WAYLAND_DISPLAY', '-')}")
-    out.append("compositor: " + (run(["pgrep", "-a", "-x", "labwc"]) or run(["pgrep", "-a", "-x", "cage"]) or "NOT RUNNING"))
-    out.append("shell: " + (run(["pgrep", "-a", "-f", "qml|firelamp-shell"]) or "NOT RUNNING"))
+    compositor = ""
+    for name in ("kwin_wayland", "labwc", "niri", "Hyprland", "sway", "gnome-shell", "cosmic-comp"):
+        compositor = run(["pgrep", "-a", "-x", name])
+        if compositor:
+            break
+    out.append("compositor: " + (compositor or "NOT RUNNING"))
+    out.append("desktop: " + os.environ.get("XDG_CURRENT_DESKTOP", "-") + " " + (run(["pgrep", "-a", "-x", "plasmashell"]) or "(no plasmashell)"))
+    out.append("kernel: " + run(["uname", "-r"]))
+    out.append("installer: " + (run(["pacman", "-Q", "cachyos-calamares-next"]) or "NOT INSTALLED"))
+    out.append("shell: " + (run(["pgrep", "-a", "-f", "qt6/bin/qml|firelamp/shell/firelamp-shell"]) or "NOT RUNNING"))
     out.append("qt: " + run(["/usr/lib/qt6/bin/qtpaths6", "--qt-version"]))
     out.append("renderer: " + os.environ.get("WLR_RENDERER", "auto"))
     out.append("a11y bus enabled: " + run(["busctl", "--user", "get-property", "org.a11y.Bus", "/org/a11y/bus", "org.a11y.Status", "IsEnabled"]))

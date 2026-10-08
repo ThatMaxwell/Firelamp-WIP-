@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Start the Firelamp OS installer (Calamares) as root on the current display.
+# Firelamp's installer settings live in /usr/share/firelamp/calamares and are
+# copied over the calamares package's defaults in /etc/calamares first.
+set -e
+sudo cp -rfT /usr/share/firelamp/calamares /etc/calamares
+exec sudo --preserve-env=WAYLAND_DISPLAY,XDG_RUNTIME_DIR,XDG_SESSION_TYPE,QT_QPA_PLATFORM,DISPLAY,XAUTHORITY \
+    calamares -D6 "$@"

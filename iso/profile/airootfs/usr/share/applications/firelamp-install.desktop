@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Install Firelamp OS
+GenericName=System installer
+Comment=Install Firelamp OS on this computer
+Exec=/usr/local/bin/firelamp-install
+Icon=/usr/share/firelamp/firelamp-logo.svg
+Terminal=false
+Categories=System;

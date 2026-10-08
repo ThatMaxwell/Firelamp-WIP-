@@ -1,0 +1,24 @@
+# KDE Plasma 6 on Wayland: the default Firelamp OS desktop.
+plasma-desktop
+plasma-workspace
+kwin
+sddm
+sddm-kcm
+plasma-nm
+plasma-pa
+powerdevil
+bluedevil
+bluez
+bluez-utils
+kscreen
+kde-gtk-config
+breeze
+breeze-gtk
+kdeplasma-addons
+plasma-systemmonitor
+systemsettings
+kinfocenter
+kwallet-pam
+xdg-desktop-portal-kde
+ffmpegthumbs
+kdegraphics-thumbnailers

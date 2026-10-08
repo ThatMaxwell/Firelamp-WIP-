@@ -1,6 +1,6 @@
 
-  [38;2;255;106;43mFirelamp OS[0m live
+  [38;2;255;106;43mFirelamp OS[0m live  (KDE Plasma + CachyOS kernel)
 
-  The desktop starts automatically on tty1.
-  Touch ~/.no-firelamp-session to stay on the console instead.
+  The desktop starts on its own. From this console, run
+  `sudo systemctl start sddm` to bring it up.
 

@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
-# Launches the Firelamp desktop shell (top bar, dock, AI cursor overlay).
+# Launches the Firelamp shell on top of the desktop.
 #
 # Lookup order:
-#   1. $FIRELAMP_SHELL_CMD                  any command, for development
-#   2. /usr/lib/firelamp/shell/firelamp-shell   compiled shell binary
-#   3. /usr/share/firelamp/shell/Main.qml       QML shell, run with Qt's qml tool
-#   4. /usr/share/firelamp/placeholder/Main.qml the built-in placeholder
+#   1. $FIRELAMP_SHELL_CMD                       any command, for development
+#   2. /usr/lib/firelamp/shell/firelamp-shell    compiled shell binary
+#   3. /usr/share/firelamp/shell/Main.qml        QML shell, run with Qt's qml tool
+# With none of these installed it exits and leaves the desktop as it is.
 set -u
-qml=/usr/lib/qt6/bin/qml
+
+# VMs without a GPU render node: render Qt Quick in software.
+if ! compgen -G '/dev/dri/renderD*' >/dev/null; then
+    export QT_QUICK_BACKEND=software
+fi
 
 if [[ -n "${FIRELAMP_SHELL_CMD:-}" ]]; then
     exec bash -c "$FIRELAMP_SHELL_CMD"
 elif [[ -x /usr/lib/firelamp/shell/firelamp-shell ]]; then
     exec /usr/lib/firelamp/shell/firelamp-shell "$@"
 elif [[ -f /usr/share/firelamp/shell/Main.qml ]]; then
-    exec "$qml" -I /usr/share/firelamp/shell /usr/share/firelamp/shell/Main.qml "$@"
-else
-    exec "$qml" /usr/share/firelamp/placeholder/Main.qml "$@"
+    exec /usr/lib/qt6/bin/qml -I /usr/share/firelamp/shell /usr/share/firelamp/shell/Main.qml "$@"
 fi
+echo "firelamp-shell: no shell installed" >&2

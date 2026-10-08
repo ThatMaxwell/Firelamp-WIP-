@@ -1,0 +1,5 @@
+# For people who love AI: local models and the Python stack around them.
+ollama
+python-numpy
+python-requests
+python-httpx
