@@ -24,6 +24,7 @@ QtObject {
     readonly property string name: settings.assistantName || "Assistant"
     property bool vision: false
     property bool demo: false
+    property bool demoUnlabeledSend: false        // recorder: Mail's Send button loses its label
 
     // ---- events ----
     signal say(string text)                       // the assistant says something in chat
@@ -38,6 +39,33 @@ QtObject {
     signal propose(var plan)                      // a plan waiting for Go / Edit in the Assistant
     signal logUpdate(string gid, var fields)
     signal planEnded(string id, string how)      // a timeline group changed (milestone finished, undone)
+
+    // ---- the activity log (newest first); each milestone holds its routine steps ----
+    property ListModel activity: ListModel {}
+    function activityIndex(gid) { for (var i = 0; i < activity.count; i++) if (activity.get(i).gid === gid) return i; return -1; }
+    onLog: (e) => {
+        var d = new Date(), two = function (n) { return (n < 10 ? "0" : "") + n; };
+        var t = two(d.getHours()) + ":" + two(d.getMinutes());
+        if (e.gid && e.kind !== "milestone") {
+            var i = activityIndex(e.gid);
+            if (i >= 0) {
+                var st = JSON.parse(activity.get(i).steps);
+                st.push({ title: e.title, time: t });
+                activity.setProperty(i, "steps", JSON.stringify(st));
+                activity.setProperty(i, "n", st.length);
+                if (e.app) activity.setProperty(i, "app", e.app);
+                return;
+            }
+        }
+        activity.insert(0, { gid: e.gid || "", kind: e.kind, title: e.title, why: e.why || "", app: e.app || "", time: t,
+                             live: !!e.live, undo: false, until: 0, undone: false, steps: "[]", n: 0, expanded: false });
+    }
+    onLogUpdate: (gid, f) => {
+        var i = activityIndex(gid); if (i < 0) return;
+        for (var k in f) activity.setProperty(i, k, f[k]);
+        // a milestone lands in time order when it finishes, after any asks inside it
+        if (f.live === false && i > 0) activity.move(i, 0, 1);
+    }
 
     readonly property var months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     readonly property var days: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]

@@ -64,6 +64,36 @@ function find(root, q) {
     return best;
 }
 
+/** Controls an app ships without an accessible label: the AI sees something is there, not what. */
+function unlabeled(root) {
+    var out = [];
+    (function walk(it) {
+        var kids = it.children;
+        for (var i = 0; i < kids.length; i++) {
+            var c = kids[i];
+            if (!c.visible) continue;
+            if (c.aiUnlabeled === true && visibleIn(c, root)) {
+                var p = c.mapToItem(root, 0, 0);
+                out.push({ item: c, role: "button", name: "", app: appOf(c).app, bounds: { x: Math.round(p.x), y: Math.round(p.y), w: Math.round(c.width), h: Math.round(c.height) } });
+            }
+            walk(c);
+        }
+    })(root);
+    return out;
+}
+
+/** What is under a point, labeled or not (used when you show the AI something). */
+function hit(root, x, y, app) {
+    var best = null, area = 1e12, list = nodes(root).concat(unlabeled(root));
+    for (var i = 0; i < list.length; i++) {
+        var n = list[i], b = n.bounds;
+        if (app && n.app !== app) continue;
+        if (n.role === "window" || x < b.x || x > b.x + b.w || y < b.y || y > b.y + b.h) continue;
+        if (b.w * b.h < area) { area = b.w * b.h; best = n; }
+    }
+    return best;
+}
+
 /** Nested by app, for the terminal's `tree` command. */
 function snapshot(root) {
     var list = nodes(root), byApp = {}, order = [];

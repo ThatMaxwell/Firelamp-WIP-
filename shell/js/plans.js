@@ -48,7 +48,7 @@ var emailNotes = {
                          details: [["To", "ana.souza@hearth.mail"], ["Subject", "Notes from today’s launch sync"], ["App", "Mail"]], deny: "Don’t Send", allow: "Send" },
               denied: "No problem. I left the draft open so you can look it over." },
             M(3),
-            { op: "click", target: { name: "Send", app: "mail", role: "button" }, why: "You said yes, so I sent it.", title: "Sent the email to Ana" },
+            { op: "click", target: { name: "Send", app: "mail", role: "button", does: "sends this" }, why: "You said yes, so I sent it.", title: "Sent the email to Ana" },
             { op: "wait", ms: 400 },
             { op: "say", text: "Sent! Ana has the notes from today’s launch sync." }
         ];

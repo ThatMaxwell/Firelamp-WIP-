@@ -11,6 +11,9 @@ Rectangle {
     readonly property string st: Os.agent ? Os.agent.mode : "idle"
     property bool typing: false
     property var queue: []
+    // Activity is a second view of this window, not a panel on top of it
+    property bool activity: false
+    function showActivity(on) { activity = on === undefined ? !activity : on; }
 
     function start(opts) { if (opts && opts.prompt) Qt.callLater(function () { submit(opts.prompt); }); }
     function add(who, text, time, pid) { msgs.append({ who: who, text: text, time: time || "", pid: pid || "", phase: pid ? "proposed" : "" }); Qt.callLater(chat.positionViewAtEnd); }
@@ -58,18 +61,34 @@ Rectangle {
     Item {
         id: head
         width: parent.width; height: 52
+        // in Activity: a back arrow and the view's name
         Row {
+            visible: app.activity
+            x: 80; anchors.verticalCenter: parent.verticalCenter; spacing: 6
+            Item {
+                width: 22; height: 22; anchors.verticalCenter: parent.verticalCenter
+                property string aiName: "Back to conversation"
+                property string aiRole: "button"
+                function aiActivate() { app.activity = false; }
+                Rectangle { anchors.fill: parent; radius: 6; color: bk.containsMouse ? Theme.hover : "transparent" }
+                Glyph { anchors.centerIn: parent; width: 12; height: 12; name: "chevron"; rotation: 180; color: Theme.text2 }
+                MouseArea { id: bk; anchors.fill: parent; hoverEnabled: true; onClicked: parent.aiActivate() }
+            }
+            Text { text: "Activity"; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.DemiBold; anchors.verticalCenter: parent.verticalCenter }
+        }
+        Row {
+            visible: !app.activity
             x: 84; anchors.verticalCenter: parent.verticalCenter; spacing: 8
             Text { text: Os.name; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.DemiBold; anchors.baseline: stateText.baseline }
             Text { id: stateText; text: app.st === "running" ? "working" : app.st === "paused" ? "paused" : app.st === "stuck" || app.st === "teaching" ? "stuck" : "ready"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
         }
-        TbButton { anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; glyph: "clock"; label: "Activity timeline"; onClicked: Os.timelineToggle(undefined) }
+        TbButton { anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; glyph: "clock"; label: "Activity"; visible: !app.activity; onClicked: app.showActivity(true) }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairline }
     }
 
     // ---- hello: left-aligned, one line, no welcome screen ----
     Column {
-        visible: msgs.count === 0
+        visible: msgs.count === 0 && !app.activity
         x: 18; y: head.height + 22; width: parent.width - 36; spacing: 6
         Row {
             spacing: 10
@@ -82,8 +101,14 @@ Rectangle {
 
     // ---- conversation ----
     ListModel { id: msgs }
+    TimelinePanel {
+        visible: app.activity
+        open: app.activity
+        x: 14; y: head.height + 14; width: parent.width - 28; height: parent.height - y
+    }
     ListView {
         id: chat
+        visible: !app.activity
         y: head.height; width: parent.width; height: (chips.visible ? chips.y : composer.y) - y - 6
         clip: true; spacing: 10
         topMargin: 18; bottomMargin: 6
@@ -153,7 +178,7 @@ Rectangle {
     // ---- suggestions: plain rows, not chips ----
     Column {
         id: chips
-        visible: app.st === "idle" && app.proposed < 0
+        visible: app.st === "idle" && app.proposed < 0 && !app.activity
         x: 10; width: parent.width - 20
         y: composer.y - height - 8
         Rectangle { x: 8; width: parent.width - 16; height: 1; color: Theme.hairline }
@@ -310,6 +335,7 @@ Rectangle {
     // ---- composer ----
     Rectangle {
         id: composer
+        visible: !app.activity
         x: 14; width: parent.width - 28; height: 40; radius: 10
         anchors.bottom: parent.bottom; anchors.bottomMargin: 14
         color: Theme.surface2; border.color: input.input.activeFocus ? Theme.focusRing : Theme.hairline2; border.width: 1

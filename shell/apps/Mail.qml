@@ -150,7 +150,9 @@ Item {
                 Row {
                     anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; spacing: 6
                     TbButton { glyph: "trash"; label: "Discard draft"; onClicked: compose.leave() }
-                    FButton { text: "Send"; glyph: "sent"; primary: true; onClicked: app.send() }
+                    // in the "stuck" demo an app ships its Send as a bare icon with no accessible label
+                    FButton { text: Os.demoUnlabeledSend ? "" : "Send"; label: text; glyph: "sent"; primary: true; onClicked: app.send()
+                              property bool aiUnlabeled: Os.demoUnlabeledSend }
                 }
                 Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 0.5; color: Theme.line2 }
             }

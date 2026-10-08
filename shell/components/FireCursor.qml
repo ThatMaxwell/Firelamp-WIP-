@@ -153,7 +153,8 @@ Item {
     Rectangle {
         id: tag
         objectName: "targetTag"
-        x: fc.px + 14 + fc.poses[fc.boil][0]; y: fc.py + 24 + fc.poses[fc.boil][1]
+        // paused, the tag sits up and to the right, off whatever your own pointer is reaching for
+        x: fc.px + (fc.paused ? 18 : 14) + fc.poses[fc.boil][0]; y: fc.py + (fc.paused ? -30 : 24) + fc.poses[fc.boil][1]
         rotation: fc.poses[fc.boil][2]
         height: 20; radius: 6
         width: tagText.implicitWidth + 16

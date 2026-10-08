@@ -110,11 +110,16 @@ Item {
     function stuck(target, k) {
         var where = appTitle(target.app);
         var what = target.role === "button" ? "a " + target.name + " button" : "“" + (target.say || target.name) + "”";
+        // say what actually blocked it: an unlabeled control is different from nothing at all
+        var blank = Tree.unlabeled(Os.root).filter(function (n) { return n.app === target.app; }).length > 0;
+        var line = blank && target.does ? "Couldn’t tell which button " + target.does + ". There’s an unlabeled icon"
+                                        : "Couldn’t find " + what + " in " + where;
         mode = "stuck"; stuckOn = { target: target, k: k };
         cursor.busy = false; cursor.clearTarget(); cursor.note = "Stuck"; cursor.paused = true;
-        capsule.stuck = "Couldn’t find " + what + " in " + where;
-        log("stuck", "Couldn’t find " + what + " in " + where, "I tried twice, then stopped instead of guessing.", where);
-        Os.say("I couldn’t find " + what + " in " + where + ", so I stopped instead of guessing. Press Show me and click it for me, or stop.");
+        capsule.stuck = line;
+        log("stuck", line, "I tried twice, then stopped instead of guessing.", where);
+        Os.say(blank ? "I can’t tell which button " + target.does + ": one of them is an icon with no label, and I don’t click things I can’t name. Press Show me and click it for me, or stop."
+                     : "I couldn’t find " + what + " in " + where + ", so I stopped instead of guessing. Press Show me and click it for me, or stop.");
     }
     // "Show me": your next click in that window tells it where the thing is
     function showMe() {
@@ -130,7 +135,8 @@ Item {
         var s = stuckOn; stuckOn = null;
         mode = "running"; capsule.stuck = ""; cursor.paused = false; cursor.note = "";
         if (blind === s.target.name) blind = "";
-        log("look", "You showed me “" + n.name + "”", "I’ll use it from here.", appTitle(n.app));
+        if (!n.name) n.name = s.target.name;
+        log("look", "You showed me the " + n.name + " button", "I’ll use it from here.", appTitle(n.app));
         workApp = n.app;
         Os.say("Got it, thanks. Carrying on.");
         s.k(n);

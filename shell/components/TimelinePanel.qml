@@ -1,59 +1,15 @@
-// The activity timeline: a readable log of everything the AI did, and why.
+// Activity: a readable log of everything the AI did, and why. It lives inside the
+// Assistant window as a second view (clock button / back arrow), never as a panel on top.
 import QtQuick
-import QtQuick.Effects
 
 Item {
     id: tl
-    property bool open: false
     property bool aiHidden: true
-    width: 372
-    // newest first; each milestone holds its routine steps, collapsed until you open it
-    ListModel { id: entries }
+    property bool open: false
+    readonly property ListModel entries: Os.activity
     property real now: Date.now()
     Timer { interval: 1000; repeat: true; running: tl.open; onTriggered: tl.now = Date.now() }
     function expand(i) { var n = 0; for (var j = 0; j < entries.count; j++) if (entries.get(j).kind === "milestone" && n++ === i) return entries.setProperty(j, "expanded", true); }
-    function indexOf(gid) { for (var i = 0; i < entries.count; i++) if (entries.get(i).gid === gid) return i; return -1; }
-    Connections {
-        target: Os
-        function onLog(e) {
-            var d = new Date(), two = function (n) { return (n < 10 ? "0" : "") + n; };
-            var t = two(d.getHours()) + ":" + two(d.getMinutes());
-            if (e.gid && e.kind !== "milestone") {
-                var i = tl.indexOf(e.gid);
-                if (i >= 0) {
-                    var st = JSON.parse(entries.get(i).steps);
-                    st.push({ title: e.title, time: t });
-                    entries.setProperty(i, "steps", JSON.stringify(st));
-                    entries.setProperty(i, "n", st.length);
-                    if (e.app) entries.setProperty(i, "app", e.app);
-                    return;
-                }
-            }
-            entries.insert(0, { gid: e.gid || "", kind: e.kind, title: e.title, why: e.why || "", app: e.app || "", time: t,
-                                live: !!e.live, undo: false, until: 0, undone: false, steps: "[]", n: 0, expanded: false });
-        }
-        function onLogUpdate(gid, f) {
-            var i = tl.indexOf(gid); if (i < 0) return;
-            for (var k in f) entries.setProperty(i, k, f[k]);
-            // a milestone lands in time order when it finishes, after any asks inside it
-            if (f.live === false && i > 0) entries.move(i, 0, 1);
-        }
-        function onTimelineToggle(on) { tl.open = on === undefined ? !tl.open : on; }
-    }
-
-    transform: Translate { x: tl.open ? 0 : tl.width + 24; Behavior on x { NumberAnimation { duration: 320; easing.type: Easing.OutQuint } } }
-
-    RectangularShadow { anchors.fill: bg; radius: 12; blur: 40; offset.y: 14; color: Qt.rgba(0, 0, 0, 0.45) }
-    Rectangle { id: bg; anchors.fill: parent; radius: 12; color: Theme.surface0; border.color: Theme.hairline; border.width: 1 }
-
-    Row {
-        x: 18; y: 16; spacing: 10
-        Column {
-            Text { text: "Activity"; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.Bold }
-            Text { text: "What " + Os.name + " did, and why"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
-        }
-    }
-    TbButton { anchors.right: parent.right; anchors.rightMargin: 14; y: 20; glyph: "x"; label: "Close timeline"; onClicked: tl.open = false }
 
     Text {
         visible: entries.count === 0
@@ -64,13 +20,13 @@ Item {
         text: "Nothing yet. When " + Os.name + " does something, it shows up here with the reason why."
         color: Theme.text3; font.family: Theme.font; font.pixelSize: 12
     }
-    Text { visible: entries.count > 0; x: 18; y: 70; text: "TODAY"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 0.4 }
+    Text { visible: entries.count > 0; x: 4; y: 0; text: "Today"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 12; font.weight: Font.Medium }
 
     ListView {
         id: list
-        x: 14; y: 92
-        width: parent.width - 28
-        height: parent.height - y - 52
+        y: 22
+        width: parent.width
+        height: parent.height - y - 44
         clip: true
         model: entries
         spacing: 0
@@ -98,19 +54,22 @@ Item {
             // asks, refusals and stops always stand out from the routine
             readonly property bool loud: kind === "ask" || kind === "stuck" || kind === "denied"
             readonly property bool canUndo: undo && tl.now < until
+            // a time only when it changes; the rows under it share it
+            readonly property bool showTime: entries.count > 0 && (index === 0 || entries.get(index - 1).time !== time)
+            readonly property real lead: showTime ? 26 : 0
             width: list.width
-            height: body.implicitHeight + (loud ? 18 : 14)
+            height: lead + body.implicitHeight + (loud ? 18 : 14)
 
+            Text { visible: row.showTime; x: 4; y: 10; text: row.time; color: Theme.text3; font.family: Theme.mono; font.pixelSize: 10; font.weight: Font.Light }
             Rectangle {
                 visible: row.loud
-                x: 0; y: 2; width: parent.width; height: body.implicitHeight + 12; radius: 8
+                x: 0; y: row.lead + 2; width: parent.width; height: body.implicitHeight + 12; radius: 8
                 color: Theme.surface1; border.color: Theme.hairline2; border.width: 1
             }
-            Text { x: 6; y: row.loud ? 9 : 6; width: 40; text: row.time; color: Theme.text3; font.family: Theme.mono; font.pixelSize: 10; font.weight: Font.Light }
             Column {
                 id: body
-                x: 50; y: row.loud ? 8 : 4
-                width: parent.width - 58
+                x: row.loud ? 12 : 4; y: row.lead + (row.loud ? 8 : 4)
+                width: parent.width - (row.loud ? 24 : 8)
                 spacing: 3
                 Item {
                     width: parent.width; height: titleText.height

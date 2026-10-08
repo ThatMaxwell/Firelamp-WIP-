@@ -181,9 +181,9 @@ elif scene in ("email", "tidy", "vision"):
             still(f"{scene}-{k:02d}", 1400 + k * n)
     stop(1400 + int(sys.argv[3] if len(sys.argv) > 3 and sys.argv[3].isdigit() else 40000))
 elif scene == "stuck":
-    # the AI can't find Send: two tries, then it stops and asks you to show it
+    # Mail's Send is an icon with no accessible label: two tries, then it stops and asks you to show it
     at(300, lambda: call("launch", "assistant"))
-    at(600, lambda: call("blind", "Send"))
+    at(600, lambda: call("unlabelSend"))
     at(700, lambda: mouse(1300, 820))
     start(900)
     at(1400, lambda: call("demo", "Email Ana my meeting notes"))
@@ -191,7 +191,7 @@ elif scene == "stuck":
     on("agent", "mode", "stuck", lambda: still("stuck", 0), 1600)
 
     def teach():
-        call("probe", "Send")
+        call("probeUnlabeled")
         x, y = win.property("probeX"), win.property("probeY")
         call("showMe")
         glide(1100, 760, x, y, 1100, lambda: (mouse(x, y, "press"), mouse(x, y, "release")))

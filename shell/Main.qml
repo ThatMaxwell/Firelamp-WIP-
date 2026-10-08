@@ -63,10 +63,12 @@ Window {
     function pickPref(i) { var a = desktop.get("assistant"); if (a && a.content && a.content.pickPref) a.content.pickPref(i); }
     // test hook: make the agent unable to find a target, to show the stuck state
     function blind(name) { agent.blind = name; }
+    function unlabelSend() { Os.demoUnlabeledSend = true; }
+    function probeUnlabeled() { var l = Tree.unlabeled(screen); probeX = l.length ? l[0].bounds.x + l[0].bounds.w / 2 : -1; probeY = l.length ? l[0].bounds.y + l[0].bounds.h / 2 : -1; }
     function showMe() { agent.showMe(); }
     function togglePause() { agent.togglePause(); }
     function timelineOpen(on) { Os.timelineToggle(on); }
-    function expandActivity(i) { timeline.expand(i); }
+    function expandActivity(i) { var n = 0; for (var j = 0; j < Os.activity.count; j++) if (Os.activity.get(j).kind === "milestone" && n++ === i) return Os.activity.setProperty(j, "expanded", true); }
     property real probeX: -1
     property real probeY: -1
     function probe(name) { var n = Tree.find(screen, { name: name }); probeX = n ? n.bounds.x + n.bounds.w / 2 : -1; probeY = n ? n.bounds.y + n.bounds.h / 2 : -1; }
@@ -124,13 +126,6 @@ Window {
         id: capsule
         anchors.horizontalCenter: parent.horizontalCenter
         y: Theme.menubarH + 12
-        z: 20
-    }
-    TimelinePanel {
-        id: timeline
-        x: parent.width - width - 12
-        y: Theme.menubarH + 10
-        height: parent.height - Theme.menubarH - 110
         z: 20
     }
     Toasts { x: parent.width - width - 14; y: Theme.menubarH + 12; z: 21 }
@@ -195,14 +190,8 @@ Window {
         enabled: agent.mode === "teaching"
         cursorShape: Qt.PointingHandCursor
         onPressed: (m) => {
-            var t = agent.stuckOn ? agent.stuckOn.target : null, best = null, area = 1e12;
-            Tree.nodes(screen).forEach(function (n) {
-                var b = n.bounds;
-                if (t && t.app && n.app !== t.app) return;
-                if (n.role === "window" || m.x < b.x || m.x > b.x + b.w || m.y < b.y || m.y > b.y + b.h) return;
-                if (b.w * b.h < area) { area = b.w * b.h; best = n; }
-            });
-            agent.taught(best);
+            var t = agent.stuckOn ? agent.stuckOn.target : null;
+            agent.taught(Tree.hit(screen, m.x, m.y, t ? t.app : ""));
         }
     }
     // the system pointer, drawn by the shell only when recording (the X grab hides the real one)
@@ -215,10 +204,17 @@ Window {
         function onTrashEmpty() { dock.trashIcon = Art.icon("trash", false); }
         function onAskOpen() { askBar.open(); }
         function onControlToggle() { control.open = !control.open; }
+        // Activity opens as the Assistant's second view
+        function onTimelineToggle(on) {
+            var a = desktop.get("assistant");
+            if (!a) { a = desktop.open("assistant"); Qt.callLater(function () { if (a.content) a.content.showActivity(on === undefined ? true : on); }); return; }
+            desktop.focusWindow(a);
+            if (a.content) a.content.showActivity(on);
+        }
     }
 
     Shortcut { sequences: ["Esc"]; context: Qt.ApplicationShortcut
-        onActivated: { if (askBar.shown) askBar.close(); else if (control.open) control.open = false; else if (bar.menu) bar.closeMenu(); else if (agent.mode !== "idle") agent.stop(); else if (timeline.open) timeline.open = false; } }
+        onActivated: { if (askBar.shown) askBar.close(); else if (control.open) control.open = false; else if (bar.menu) bar.closeMenu(); else if (agent.mode !== "idle") agent.stop(); else { var a = desktop.get("assistant"); if (a && a.content && a.content.activity) a.content.activity = false; } } }
     Shortcut { sequences: ["Ctrl+Space"]; context: Qt.ApplicationShortcut; onActivated: agent.togglePause() }
     Shortcut { sequences: ["Alt+Space", "Ctrl+K"]; context: Qt.ApplicationShortcut; onActivated: askBar.open() }
     Shortcut { sequences: ["Ctrl+Alt+V"]; context: Qt.ApplicationShortcut; onActivated: Os.vision = !Os.vision }
