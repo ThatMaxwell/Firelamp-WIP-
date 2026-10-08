@@ -105,6 +105,18 @@ def greeter_check(theme="/usr/share/sddm/themes/firelamp"):
     return ("ERROR " + " | ".join(errors[:5])) if errors else "OK"
 
 
+def installer_check(wait=45):
+    """Start the installer the way the desktop button does and report whether its window stays up."""
+    log = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-install.log")
+    with open(log, "w") as fh:
+        subprocess.Popen(["firelamp-install"], start_new_session=True, stdout=fh, stderr=subprocess.STDOUT)
+    for _ in range(wait):
+        time.sleep(1)
+        if run(["pgrep", "-x", "calamares"]) and _ >= 15:
+            return "RUNNING " + run(["pgrep", "-a", "-x", "calamares"])
+    return "NOT RUNNING"
+
+
 def boot_report():
     time.sleep(20)
     out = []
@@ -137,6 +149,7 @@ def boot_report():
     except Exception as exc:
         out.append(f"FIRELAMP_ATSPI_FAIL {exc}")
     out.append("login theme: " + greeter_check())
+    out.append("installer window: " + installer_check())
     path = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-boot-report.txt")
     tmp = path + ".tmp"
     with open(tmp, "w") as fh:
