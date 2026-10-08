@@ -37,7 +37,8 @@ QtObject {
 
     // ---- your color: focus rings, selection, toggles, links. Never the AI's ember. ----
     readonly property string userAccent: Os.settings.accent
-    readonly property color toggleOn: userAccent || ok
+    // switches: your color, else neutral cream; green is for success only
+    readonly property color toggleOn: userAccent || text
 
     // ---- the AI's colours ----
     readonly property color ember: "#F26A2E"

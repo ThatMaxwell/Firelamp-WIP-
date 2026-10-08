@@ -1,4 +1,4 @@
-// Mac-style switch, green when on.
+// Mac-style switch: on is your color, or neutral cream with a dark knob when you have none.
 import QtQuick
 
 Rectangle {
@@ -18,7 +18,8 @@ Rectangle {
     Rectangle {
         width: 18; height: 18; radius: 9; y: 2
         x: t.checked ? 18 : 2
-        color: "white"
+        color: t.checked && !Theme.userAccent ? Theme.bg : "white"
+        Behavior on color { ColorAnimation { duration: 180 } }
         Behavior on x { NumberAnimation { duration: 260; easing.type: Easing.OutQuint } }
     }
     MouseArea { anchors.fill: parent; onClicked: t.aiActivate() }

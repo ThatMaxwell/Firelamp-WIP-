@@ -77,20 +77,26 @@ Item {
             property real k: modelData.fresh ? 0 : 1
             Component.onCompleted: if (modelData.fresh) arrive.start()
             NumberAnimation { id: arrive; target: host; property: "k"; to: 1; duration: 320; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
-            opacity: leaving ? 0 : Math.min(1, k * 1.5)
-            scale: leaving ? 0.92 : 0.9 + 0.1 * k
-            Behavior on opacity { enabled: host.leaving; NumberAnimation { duration: 160 } }
-            Behavior on scale { enabled: host.leaving; NumberAnimation { duration: 160; easing.type: Easing.InQuad } }
+            // held over a same-size widget to stack: the held card empties, shrinks a little, fades to
+            // 60% and steps 8px aside, so the target stays readable and both edges show
+            readonly property bool stacking: dragging && home.dropOn >= 0
+            opacity: leaving ? 0 : Math.min(1, k * 1.5) * (stacking ? 0.6 : 1)
+            scale: leaving ? 0.92 : (0.9 + 0.1 * k) * (stacking ? 0.94 : 1)
+            Behavior on opacity { enabled: host.leaving || host.dragging; NumberAnimation { duration: 160 } }
+            Behavior on scale { enabled: host.leaving || host.dragging; NumberAnimation { duration: 160; easing.type: Easing.OutQuad } }
             Timer { id: gone; interval: 170; onTriggered: Os.removeWidget(host.modelData.uid) }
 
             // in edit mode the widget lifts 2px onto a soft shadow
-            transform: Translate { y: -2 * home.edit - (host.dragging ? 2 : 0) }
+            property real nudge: stacking ? 8 : 0
+            Behavior on nudge { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+            transform: Translate { x: host.nudge; y: -2 * home.edit - (host.dragging ? 2 : 0) + host.nudge }
             RectangularShadow {
                 anchors.fill: hw; radius: 18; blur: host.dragging ? 34 : 22; offset.y: host.dragging ? 12 : 8
                 color: Qt.rgba(0, 0, 0, 0.45); opacity: home.edit
             }
             HomeWidget {
                 id: hw; kind: host.modelData.kind; size: host.size; uid: host.modelData.uid
+                contentOpacity: host.stacking ? 0 : 1
                 items: host.modelData.items || []; page: host.modelData.page || 0
                 onPaged: (i) => Os.notePage(host.modelData.uid, i)
             }

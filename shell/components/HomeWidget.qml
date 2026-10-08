@@ -13,6 +13,8 @@ Item {
     property var items: []                  // kind "stack": the widgets, top to bottom
     property int page: 0
     property int uid: -1
+    property real contentOpacity: 1         // dimmed while held over another widget to stack
+    Behavior on contentOpacity { NumberAnimation { duration: 140 } }
     signal paged(int i)
     readonly property bool small: size === "S"
     readonly property bool large: size === "L"
@@ -39,12 +41,13 @@ Item {
         id: body
         x: 14; y: 14; width: parent.width - 28; height: parent.height - 28
         visible: hw.kind !== "stack"
+        opacity: hw.contentOpacity
         sourceComponent: hw.kind === "stack" ? null : ({ clock: clock, weather: weather, upnext: upnext, nowplaying: nowplaying, notes: notes, folder: folder,
                             photo: photo, system: system, assistant: assistant, quick: quick })[hw.kind] || clock
     }
 
     // a stack: widgets of one size on top of each other; scroll (or swipe) to cycle, like iOS
-    Loader { anchors.fill: parent; active: hw.kind === "stack"; sourceComponent: stack }
+    Loader { anchors.fill: parent; active: hw.kind === "stack"; sourceComponent: stack; opacity: hw.contentOpacity }
     Component { id: stack
         Item {
             ListView {
