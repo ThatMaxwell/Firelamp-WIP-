@@ -14,25 +14,49 @@ Item {
     opacity: shown ? 1 : 0
     Behavior on opacity { NumberAnimation { duration: ps.shown ? 300 : 180; easing.type: Easing.OutQuint } }
 
-    function ask(req, cb) { request = req; callback = cb; shown = true; card.forceActiveFocus(); }
+    function ask(req, cb) { request = req; callback = cb; place(); shown = true; card.forceActiveFocus(); }
     function answer(ok) { if (!shown) return; shown = false; var cb = callback; callback = null; if (cb) cb(ok); }
 
-    // dim + blur everything behind
-    Rectangle { anchors.fill: parent; color: Qt.rgba(0.02, 0.02, 0.02, 0.5) }
+    // the window that asked; the sheet hangs from under its toolbar, like a Mac sheet
+    property var host: null
+    property rect hr: Qt.rect(0, 0, 0, 0)
+    function place() {
+        host = request.app && Os.desktop ? Os.desktop.get(request.app) : null;
+        if (host && !host.minimized) { var p = host.mapToItem(ps, 0, 0); hr = Qt.rect(p.x, p.y, host.width, host.height); }
+        else hr = Qt.rect(0, Theme.menubarH, ps.width, ps.height - Theme.menubarH);
+    }
+    readonly property bool attached: host !== null
+    readonly property int bar: attached ? 52 : 60
+
+    // swallow clicks everywhere while it waits; dim only the window that asked
     MouseArea { anchors.fill: parent; hoverEnabled: true }
+    Rectangle {
+        x: ps.hr.x; y: ps.hr.y; width: ps.hr.width; height: ps.hr.height
+        radius: ps.attached ? Theme.rWin : 0
+        color: Qt.rgba(0, 0, 0, ps.attached ? 0.38 : 0.45)
+    }
+
+    Item {
+        id: slot
+        x: ps.hr.x; y: ps.hr.y + ps.bar
+        width: ps.hr.width; height: card.height + 40
+        clip: true
 
     Item {
         id: card
-        width: 420; height: col.implicitHeight + 42
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: Theme.menubarH + 80 + (ps.shown ? 0 : -8)
-        scale: ps.shown ? 1 : 0.94
-        Behavior on y { NumberAnimation { duration: 300; easing.type: Easing.OutQuint } }
-        Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutQuint } }
+        width: Math.min(420, ps.hr.width - 40); height: col.implicitHeight + 42
+        x: (slot.width - width) / 2
+        property real slide: ps.shown ? 0 : 1
+        Behavior on slide { NumberAnimation { duration: ps.shown ? 260 : 180; easing.type: Easing.OutQuint } }
+        y: -slide * (height + 2)
         Keys.onEscapePressed: ps.answer(false)
 
-        RectangularShadow { anchors.fill: bg; radius: 14; blur: 60; offset.y: 24; color: Qt.rgba(0, 0, 0, 0.6) }
-        Rectangle { id: bg; anchors.fill: parent; radius: 14; color: Theme.surface1; border.color: Theme.hairline2; border.width: 1 }
+        RectangularShadow { anchors.fill: bg; radius: 12; blur: 30; offset.y: 12; color: Qt.rgba(0, 0, 0, 0.5) }
+        Rectangle { id: bg; anchors.fill: parent; radius: 12; color: Theme.surface1; border.color: Theme.hairline2; border.width: 1 }
+        // square top edge: the sheet is attached to the toolbar
+        Rectangle { visible: ps.attached; width: parent.width; height: 14; color: Theme.surface1
+            Rectangle { x: 0; width: 1; height: parent.height; color: Theme.hairline2 }
+            Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.hairline2 } }
 
         Column {
             id: col
@@ -83,5 +107,6 @@ Item {
             Item { width: 1; height: 12 }
             Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; text: "Only you can answer this."; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
         }
+    }
     }
 }

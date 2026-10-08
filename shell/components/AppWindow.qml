@@ -136,9 +136,10 @@ Item {
                 required property var modelData
                 property string aiName: modelData[2]
                 property string aiRole: "button"
+                property bool aiChrome: true      // window chrome: in the tree, but not drawn in vision mode
                 function aiActivate() { if (modelData[0] === "close") w.close(); else if (modelData[0] === "min") w.minimize(); else w.zoom(); }
                 width: 12; height: 12; radius: 6
-                color: w.focused || lights.hovered ? modelData[1] : "#4a403b"
+                color: w.focused || lights.hovered ? modelData[1] : Theme.surface3
                 border.color: Qt.rgba(0, 0, 0, 0.25); border.width: 0.5
                 Text {
                     anchors.centerIn: parent

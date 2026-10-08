@@ -50,10 +50,17 @@ QtObject {
     readonly property color glass: Qt.rgba(0x1F / 255, 0x1D / 255, 0x1B / 255, 0.96)
 
     // ---- type: Instrument Sans + Martian Mono, bundled (OFL) ----
-    readonly property FontLoader sansLoader: FontLoader { source: Qt.resolvedUrl("../fonts/InstrumentSans.ttf") }
-    readonly property FontLoader monoLoader: FontLoader { source: Qt.resolvedUrl("../fonts/MartianMono.ttf") }
-    readonly property string font: sansLoader.status === FontLoader.Ready ? sansLoader.name : "Instrument Sans"
-    readonly property string mono: monoLoader.status === FontLoader.Ready ? monoLoader.name : "Martian Mono"
+    // static instances cut from the variable fonts (Martian Mono at normal width), one file per weight,
+    // so Qt picks real weights instead of the variable default
+    readonly property FontLoader f0: FontLoader { source: Qt.resolvedUrl("../fonts/InstrumentSans-Regular.ttf") }
+    readonly property FontLoader f1: FontLoader { source: Qt.resolvedUrl("../fonts/InstrumentSans-Medium.ttf") }
+    readonly property FontLoader f2: FontLoader { source: Qt.resolvedUrl("../fonts/InstrumentSans-SemiBold.ttf") }
+    readonly property FontLoader f3: FontLoader { source: Qt.resolvedUrl("../fonts/InstrumentSans-Bold.ttf") }
+    readonly property FontLoader f4: FontLoader { source: Qt.resolvedUrl("../fonts/MartianMono-Light.ttf") }
+    readonly property FontLoader f5: FontLoader { source: Qt.resolvedUrl("../fonts/MartianMono-Regular.ttf") }
+    readonly property FontLoader f6: FontLoader { source: Qt.resolvedUrl("../fonts/MartianMono-Medium.ttf") }
+    readonly property string font: "Instrument Sans"
+    readonly property string mono: "Martian Mono"
 
     readonly property int menubarH: 28
     readonly property int rWin: 12

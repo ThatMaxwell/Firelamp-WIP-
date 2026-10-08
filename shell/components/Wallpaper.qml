@@ -40,7 +40,7 @@ Rectangle {
         anchors.fill: parent
         source: "../assets/grain.png"
         fillMode: Image.Tile
-        opacity: 0.03
+        opacity: 0.06          // the png's own alpha is sparse, so this lands at ~2–3% visible grain
         smooth: false
     }
 }

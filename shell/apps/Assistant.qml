@@ -36,7 +36,7 @@ Rectangle {
         function onLog(e) {
             var d = new Date(), two = function (n) { return (n < 10 ? "0" : "") + n; };
             if (e.kind === "done") app.queue.push({ who: "sys", text: "Done · every step is in Activity" });
-            else app.queue.push({ who: "step", text: e.title, time: two(d.getHours()) + ":" + two(d.getMinutes()) + ":" + two(d.getSeconds()) });
+            else app.queue.push({ who: "step", text: e.title, time: two(d.getHours()) + ":" + two(d.getMinutes()) });
             if (!app.typing) app.next();
         }
     }
@@ -54,18 +54,17 @@ Rectangle {
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairline }
     }
 
-    // ---- hello ----
+    // ---- hello: left-aligned, one line, no welcome screen ----
     Column {
         visible: msgs.count === 0
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: 130; width: parent.width - 70; spacing: 12
-        Logo { width: 36; height: 52; anchors.horizontalCenter: parent.horizontalCenter }
-        Item { width: 1; height: 4 }
-        // no greeting with a name until you have chosen one
-        Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; text: Os.settings.assistantName ? "Hi, I’m " + Os.name + "." : "What can I do for you?"; color: Theme.text; font.family: Theme.font; font.pixelSize: 20; font.weight: Font.DemiBold }
-        Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; lineHeight: 1.2
-               text: "I use this computer the way you do, just faster. Ask me for something and watch my cursor work. You can pause or stop me any time."
-               color: Theme.text2; font.family: Theme.font; font.pixelSize: 13 }
+        x: 18; y: head.height + 22; width: parent.width - 36; spacing: 6
+        Row {
+            spacing: 10
+            Logo { width: 17; height: 24; anchors.verticalCenter: parent.verticalCenter }
+            // no greeting with a name until you have chosen one
+            Text { text: Os.settings.assistantName ? "Hi, I’m " + Os.name + "." : "Hi."; color: Theme.text; font.family: Theme.font; font.pixelSize: 17; font.weight: Font.DemiBold; anchors.verticalCenter: parent.verticalCenter }
+        }
+        Text { width: parent.width; wrapMode: Text.WordWrap; text: "Ask for something and watch my cursor do it."; color: Theme.text2; font.family: Theme.font; font.pixelSize: 13 }
     }
 
     // ---- conversation ----
@@ -92,9 +91,9 @@ Rectangle {
                 id: stepRow
                 visible: m.who === "step"
                 x: 18; spacing: 10
-                Text { width: 62; text: m.time; color: Theme.text3; font.family: Theme.mono; font.pixelSize: 10; topPadding: 2 }
+                Text { width: 38; text: m.time; color: Theme.text3; font.family: Theme.mono; font.pixelSize: 10; font.weight: Font.Light; topPadding: 2 }
                 Text { visible: m.live; text: "●"; color: Theme.ember; font.pixelSize: 8; topPadding: 3 }
-                Text { width: chat.width - 18 - 62 - 10 - 18 - (m.live ? 18 : 0); text: m.text; textFormat: Text.StyledText; wrapMode: Text.WordWrap; color: m.live ? Theme.text : Theme.text2; font.family: Theme.font; font.pixelSize: 12 }
+                Text { width: chat.width - 18 - 38 - 10 - 18 - (m.live ? 18 : 0); text: m.text; textFormat: Text.StyledText; wrapMode: Text.WordWrap; color: m.live ? Theme.text : Theme.text2; font.family: Theme.font; font.pixelSize: 12 }
             }
             Rectangle {
                 id: bubble
@@ -164,7 +163,7 @@ Rectangle {
         x: 14; width: parent.width - 28; height: 40; radius: 10
         anchors.bottom: parent.bottom; anchors.bottomMargin: 14
         color: Theme.surface2; border.color: input.input.activeFocus ? Theme.focusRing : Theme.hairline2; border.width: 1
-        Field { id: input; x: 12; width: parent.width - 100; height: parent.height; label: "Message"; placeholder: "Ask " + Os.name + "…"; onAccepted: app.submit(text) }
+        Field { id: input; aiFrame: composer; x: 12; width: parent.width - 100; height: parent.height; label: "Message"; placeholder: "Ask " + Os.name + "…"; onAccepted: app.submit(text) }
         TbButton { anchors.right: send.left; anchors.verticalCenter: parent.verticalCenter; glyph: "mic"; label: "Dictate" }
         Rectangle {
             id: send

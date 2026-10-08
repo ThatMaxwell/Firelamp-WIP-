@@ -1,5 +1,6 @@
-// The dock. Mac-style magnification: icons swell with a cosine falloff around the
-// pointer and push their neighbours apart. Dark grey backing, running dots, bounce.
+// The dock. Mac-style magnification: a smoothed pointer drives a cosine falloff over about
+// three icons each side, every frame, so neighbours swell together and push apart.
+// The slab grows with the icons; one label names the icon under the pointer.
 import QtQuick
 import QtQuick.Effects
 import "../js/art.js" as Art
@@ -8,9 +9,11 @@ Item {
     id: dock
     property var items: []            // [{id, icon, title}] or "-" for the separator
     property real base: 54
-    property real maxScale: 1.62
-    property real reach: 2.9
-    property real mouseX: -1
+    property real maxScale: 1.6
+    property real reach: 3                // icons each side the falloff spans
+    property real mouseX: -1              // raw pointer, in the un-magnified layout
+    property real mx: -1                  // smoothed pointer
+    property real amount: 0               // 0 = resting, 1 = fully magnified
     property real pointerX: -1         // pointer x over the plate, for the label bubble
     property var running: ({})
     property var bouncing: ({})
@@ -18,6 +21,19 @@ Item {
     property string trashIcon: Art.icon("trash")
     property string aiApp: "dock"
     signal launch(string id)
+
+    // one per-frame step: ease the pointer and the amount toward their targets (critically damped)
+    FrameAnimation {
+        running: dock.mouseX >= 0 || dock.amount > 0.001
+        onTriggered: {
+            var k = 1 - Math.exp(-frameTime * 22);
+            if (dock.mouseX >= 0) dock.mx = dock.mx < 0 ? dock.mouseX : dock.mx + (dock.mouseX - dock.mx) * k;
+            var want = dock.mouseX >= 0 ? 1 : 0;
+            dock.amount += (want - dock.amount) * (1 - Math.exp(-frameTime * 14));
+            if (want === 0 && dock.amount < 0.002) { dock.amount = 0; dock.mx = -1; }
+        }
+    }
+    readonly property real tallest: base * (1 + (maxScale - 1) * amount)
 
     width: plate.width
     height: base + 14
@@ -41,12 +57,13 @@ Item {
         return x + 2 + base / 2;
     }
 
-    RectangularShadow { anchors.fill: plate; radius: 22; blur: 40; offset.y: 12; spread: -6; color: Qt.rgba(0, 0, 0, 0.55) }
+    RectangularShadow { anchors.fill: plate; radius: plate.radius; blur: 22; offset.y: 8; color: Qt.rgba(0, 0, 0, 0.35) }
     Rectangle {
         id: plate
         anchors.bottom: parent.bottom
         anchors.horizontalCenter: parent.horizontalCenter
-        height: dock.base + 14
+        // the slab rises a little with the icons, so they never float off it
+        height: dock.base + 14 + (dock.tallest - dock.base) * 0.35
         width: row.width + 12
         radius: 22
         color: Theme.dock
@@ -80,13 +97,11 @@ Item {
                 required property int index
                 readonly property bool sep: modelData === "-"
                 readonly property string appId: sep ? "" : modelData.id
-                readonly property real target: {
-                    if (sep || dock.mouseX < 0) return dock.base;
-                    var d = Math.abs(dock.mouseX - dock.baseCenter(index)) / (dock.base * dock.reach);
-                    return d >= 1 ? dock.base : dock.base * (1 + (dock.maxScale - 1) * (Math.cos(d * Math.PI) + 1) / 2);
+                readonly property real size: {
+                    if (sep || dock.mx < 0 || dock.amount <= 0) return dock.base;
+                    var d = Math.abs(dock.mx - dock.baseCenter(index)) / ((dock.base + 4) * dock.reach);
+                    return d >= 1 ? dock.base : dock.base * (1 + (dock.maxScale - 1) * dock.amount * (Math.cos(d * Math.PI) + 1) / 2);
                 }
-                property real size: target
-                Behavior on size { SmoothedAnimation { velocity: 900; duration: 110 } }
                 property string aiName: sep ? "" : modelData.title
                 property string aiRole: "button"
                 function aiActivate() { dock.launch(appId); }
@@ -135,28 +150,41 @@ Item {
                     opacity: dock.running[di.appId] ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 250 } }
                 }
-                // label bubble
-                Rectangle {
-                    id: tip
-                    visible: !di.sep
-                    opacity: dock.pointerX >= 0 && plate.x + dock.pointerX >= row.x + di.x && plate.x + dock.pointerX < row.x + di.x + di.width ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 120 } }
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: parent.height - di.size - 14 - height
-                    width: tipText.implicitWidth + 20; height: 26; radius: 7
-                    color: Theme.surface2
-                    border.color: Theme.hairline2; border.width: 1
-                    Text { id: tipText; anchors.centerIn: parent; text: di.aiName; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium }
-                }
                 MouseArea {
                     id: ima
                     enabled: !di.sep
                     x: 0; width: parent.width
                     y: parent.height - di.size; height: di.size
-                    hoverEnabled: true
                     onClicked: dock.launch(di.appId)
                 }
             }
         }
+    }
+
+    // the one label: the icon under the pointer, as a small pill
+    // the label follows the same smoothed pointer as the magnification, so it names the icon that is largest
+    readonly property var hovered: {
+        if (pointerX < 0 || mx < 0) return null;
+        var best = null, bd = 1e9;
+        for (var i = 0; i < rep.count; i++) {
+            var it = rep.itemAt(i);
+            if (!it || it.sep) continue;
+            var d = Math.abs(mx - baseCenter(i));
+            if (d < bd) { bd = d; best = it; }
+        }
+        return bd < (base + 4) / 2 + 2 ? best : null;
+    }
+    Rectangle {
+        id: tip
+        property var at: dock.hovered
+        opacity: at ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutQuint } }
+        onAtChanged: if (at) tipText.text = at.aiName
+        Binding on x { when: tip.at !== null; value: tip.at ? row.x + tip.at.x + tip.at.width / 2 - tip.width / 2 : 0 }
+        y: plate.y + plate.height - 7 - dock.tallest - height - 8
+        width: tipText.implicitWidth + 18; height: 22; radius: 11
+        color: Theme.surface1
+        border.color: Theme.hairline2; border.width: 1
+        Text { id: tipText; anchors.centerIn: parent; color: Theme.text; font.family: Theme.font; font.pixelSize: 12; font.weight: Font.Medium }
     }
 }

@@ -28,7 +28,7 @@ var emailNotes = {
             { op: "type", target: { name: "Message body", app: "mail", say: "the message" }, cps: 160, why: "Pasted the notes with a short hello.",
               text: function () { return "Hi Ana,\n\nHere are the notes from today’s sync:\n\n" + notes + "\n\nTalk soon!"; } },
             { op: "confirm", why: "You asked me to email Ana the notes.", logTitle: "Asked you before sending",
-              request: { title: "Send “Notes from today’s launch sync” to Ana Souza?", body: "Sending can’t be undone, so Firelamp checks with you first.",
+              request: { app: "mail", title: "Send “Notes from today’s launch sync” to Ana Souza?", body: "Sending can’t be undone, so Firelamp checks with you first.",
                          details: [["To", "ana.souza@hearth.mail"], ["Subject", "Notes from today’s launch sync"], ["App", "Mail"]], deny: "Don’t Send", allow: "Send" },
               denied: "No problem. I left the draft open so you can look it over." },
             { op: "click", target: { name: "Send", app: "mail", role: "button" }, why: "You said yes, so I sent it.", title: "Sent the email to Ana" },
@@ -62,7 +62,7 @@ var tidy = {
          .concat(folderSteps("Documents", ["invoice.pdf", "Launch plan.docx", "notes.txt"], "a document"))
          .concat([
             { op: "confirm", why: "Deleting is risky, so I always ask.", logTitle: "Asked you before deleting",
-              request: { title: "Move “invoice (1).pdf” to the Trash?", body: "It’s an exact copy of “invoice.pdf”. You can still restore it from the Trash.",
+              request: { app: "files", title: "Move “invoice (1).pdf” to the Trash?", body: "It’s an exact copy of “invoice.pdf”. You can still restore it from the Trash.",
                          details: [["File", "invoice (1).pdf"], ["Size", "48 KB"], ["Where", "Downloads"]], deny: "Keep It", allow: "Move to Trash" },
               denied: "Okay, I kept the duplicate. Everything else is sorted." },
             { op: "drag", src: { name: "invoice (1).pdf", app: "files" }, dst: { name: "Trash", app: "dock" }, why: "You said it was fine to delete.",

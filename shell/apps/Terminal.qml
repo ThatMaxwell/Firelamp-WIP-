@@ -6,8 +6,8 @@ import "../js/uitree.js" as Tree
 Rectangle {
     id: app
     property var win
-    color: "#121212"
-    readonly property string prompt: "<font color=\"#f08a5d\">carrot@firelamp</font> <font color=\"#9aa6b2\">~</font> <font color=\"#5f5c59\">%</font> "
+    color: Theme.bg
+    readonly property string prompt: "<font color=\"#7FB98A\">carrot@firelamp</font> <font color=\"#ABA49C\">~</font> <font color=\"#76706A\">%</font> "
     function start(opts) {
         echo("<font color=\"#5f5c59\">Last login: " + new Date().toDateString() + " on ttys001</font>");
         run("fetch", true);
@@ -62,18 +62,18 @@ Rectangle {
     }
     Component {
         id: textComp
-        Text { width: lv.width; text: parent ? parent.body : ""; textFormat: Text.StyledText; wrapMode: Text.WrapAnywhere; color: Theme.text; font.family: Theme.mono; font.pixelSize: 12; lineHeight: 1.15 }
+        Text { width: lv.width; text: parent ? parent.body : ""; textFormat: Text.StyledText; wrapMode: Text.WrapAnywhere; color: Theme.text; font.family: Theme.mono; font.pixelSize: 12; font.weight: Font.Light; lineHeight: 1.45 }
     }
     Component {
         id: fetchComp
         Row {
             spacing: 22; topPadding: 10; bottomPadding: 10; leftPadding: 4
-            Logo { width: 78; height: 90; animated: true; anchors.verticalCenter: parent.verticalCenter }
+            Logo { width: 62; height: 90; anchors.verticalCenter: parent.verticalCenter }
             Column {
                 spacing: 1
                 Repeater {
                     model: [
-                        "<font color=\"#f08a5d\">carrot</font>@<font color=\"#f08a5d\">firelamp</font>",
+                        "<font color=\"#7FB98A\">carrot</font>@<font color=\"#7FB98A\">firelamp</font>",
                         "<font color=\"#5f5c59\">──────────────────</font>",
                         "<font color=\"#9aa6b2\">OS</font>        Firelamp OS 0.1 “Kindling” x86_64",
                         "<font color=\"#9aa6b2\">Base</font>      Arch Linux",
@@ -82,7 +82,7 @@ Rectangle {
                         "<font color=\"#9aa6b2\">UI tree</font>   AT-SPI2, live",
                         "<font color=\"#9aa6b2\">Cursors</font>   2 (yours + the fire one)"
                     ]
-                    Text { required property string modelData; text: modelData.replace(/ /g, "&nbsp;"); textFormat: Text.StyledText; color: Theme.text; font.family: Theme.mono; font.pixelSize: 12 }
+                    Text { required property string modelData; text: modelData.replace(/ /g, "&nbsp;"); textFormat: Text.StyledText; color: Theme.text; font.family: Theme.mono; font.pixelSize: 12; font.weight: Font.Light; lineHeight: 1.45 }
                 }
                 Row {
                     topPadding: 6; spacing: 0
@@ -95,13 +95,14 @@ Rectangle {
     // input line
     Row {
         x: 14; anchors.bottom: parent.bottom; anchors.bottomMargin: 12; width: parent.width - 28
-        Text { id: pr; text: app.prompt; textFormat: Text.StyledText; font.family: Theme.mono; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+        Text { id: pr; text: app.prompt; textFormat: Text.StyledText; font.family: Theme.mono; font.pixelSize: 12; font.weight: Font.Light; anchors.verticalCenter: parent.verticalCenter }
         Field {
             id: cmd
             width: parent.width - pr.width; height: 20
             label: "Command"
             pixelSize: 12
             input.font.family: Theme.mono
+            input.font.weight: Font.Light
             onAccepted: { var t = text; text = ""; app.run(t); }
             Component.onCompleted: input.forceActiveFocus()
         }

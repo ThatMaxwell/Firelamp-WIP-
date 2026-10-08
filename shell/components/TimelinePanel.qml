@@ -13,7 +13,7 @@ Item {
         function onLog(e) {
             var d = new Date(), h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
             var two = function (n) { return (n < 10 ? "0" : "") + n; };
-            var t = two(h) + ":" + two(m) + ":" + two(s);
+            var t = two(h) + ":" + two(m);
             entries.insert(0, { kind: e.kind, title: e.title, why: e.why || "", app: e.app || "", time: t });
         }
         function onTimelineToggle(on) { tl.open = on === undefined ? !tl.open : on; }
@@ -64,11 +64,11 @@ Item {
             required property string time
             width: list.width
             height: card.implicitHeight + 14
-            Text { x: 4; y: 6; width: 62; text: row.time; color: Theme.text3; font.family: Theme.mono; font.pixelSize: 10 }
+            Text { x: 4; y: 6; width: 40; text: row.time; color: Theme.text3; font.family: Theme.mono; font.pixelSize: 10; font.weight: Font.Light }
             Column {
                 id: card
-                x: 74; y: 4
-                width: parent.width - 78
+                x: 50; y: 4
+                width: parent.width - 54
                 spacing: 2
                 Text { width: parent.width; text: row.title; textFormat: Text.StyledText; wrapMode: Text.WordWrap; color: row.kind === "denied" ? Theme.danger : Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium }
                 Text { visible: row.why !== ""; width: parent.width; text: row.why; wrapMode: Text.WordWrap; color: Theme.text3; font.family: Theme.font; font.pixelSize: 12 }

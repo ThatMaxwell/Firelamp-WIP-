@@ -12,6 +12,7 @@ Item {
     property int align: TextInput.AlignLeft
     property string aiName: label
     property string aiRole: "textbox"
+    property Item aiFrame: null           // the visible box this field sits in, for vision mode
     signal accepted()
     function aiActivate() { input.forceActiveFocus(); }
     function aiType(ch) { input.insert(input.length, ch); }

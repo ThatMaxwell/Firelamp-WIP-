@@ -78,7 +78,7 @@ Rectangle {
         BarItem { key: "logo"; label: "Firelamp menu"; width: 30
             Image { width: 12; height: 17; y: 2; x: 0; sourceSize: Qt.size(24, 34); smooth: true
                 source: "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="24 26 644 966"><path fill="#EFEAE4" d="' + L.PATHS.outer + '"/></svg>') } }
-        BarItem { key: "app"; label: "App menu"; BarText { text: bar.appName; font.weight: Font.DemiBold } }
+        BarItem { key: "app"; label: "App menu"; BarText { text: bar.appName; font.weight: Font.Bold } }
         Repeater {
             model: ["File", "Edit", "View", "Window", "Help"]
             BarItem { required property string modelData; key: modelData; label: modelData + " menu"; BarText { text: modelData } }

@@ -56,19 +56,19 @@ function maxwellSVG(fill = 'currentColor') {
 function calendarIcon() {
   var d = new Date();
   var mon = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][d.getMonth()];
-  return flat('#ECE7DF', `
-    <text x="50" y="40" text-anchor="middle" font-family="Instrument Sans" font-weight="700" font-size="13" letter-spacing=".5" fill="#B04A2A">${mon}</text>
-    <text x="50" y="74" text-anchor="middle" font-family="Instrument Sans" font-weight="600" font-size="34" fill="#2A2622">${d.getDate()}</text>`);
+  return tile({ fill: '#ECE7DF' }, `
+    <text x="50" y="34" text-anchor="middle" font-family="Instrument Sans" font-weight="700" font-size="12" letter-spacing=".6" fill="#B04A2A">${mon}</text>
+    <text x="50" y="76" text-anchor="middle" font-family="Instrument Sans" font-weight="600" font-size="42" fill="#2A2622">${d.getDate()}</text>`, { sheen: .07 });
 }
 
-// Our own icon family (design/DIRECTION.md §8): muted neutral tiles, one simple glyph each.
-// Graphite, paper, clay, sage, slate, ink-blue. Only the Assistant is ember.
+// Our own icon family (design/DIRECTION.md §8): muted neutral tiles, one simple glyph each,
+// filling about 55% of the tile. Graphite, paper, clay, sage, slate, ink-blue. Only the Assistant is ember.
 function flat(bg, art) {
-  return tile({ fill: bg }, `<g transform="translate(50 50) scale(.71) translate(-50 -50)">${art}</g>`, { sheen: .07 });
+  return tile({ fill: bg }, `<g transform="translate(50 50) scale(.86) translate(-50 -50)">${art}</g>`, { sheen: .07 });
 }
 
 var APP_ICONS = {
-  assistant: () => flat('#2A2622', `<g transform="translate(27.9 17.4) scale(.064)"><path fill="#F26A2E" d="${Logo.PATHS.outer}"/><path fill="#2A2622" d="${Logo.PATHS.arrow}"/></g>`),
+  assistant: () => flat('#2A2622', `<g transform="translate(30.4 21.4) scale(.056)"><path fill="#F26A2E" d="${Logo.PATHS.outer}"/><path fill="#2A2622" d="${Logo.PATHS.arrow}"/></g>`),
   files: () => flat('#3A4A57', '<path d="M20 34h22l6 6h32v38H20z" fill="#C9D4DC"/>'),
   web: () => flat('#E9E4DC', '<circle cx="50" cy="50" r="26" fill="none" stroke="#3A3631" stroke-width="5"/><path d="M24 50h52M50 24c10 10 10 42 0 52M50 24c-10 10-10 42 0 52" fill="none" stroke="#3A3631" stroke-width="4"/>'),
   mail: () => flat('#2F3B4A', '<rect x="22" y="30" width="56" height="40" rx="5" fill="none" stroke="#DCE3EA" stroke-width="5"/><path d="M24 34l26 20 26-20" fill="none" stroke="#DCE3EA" stroke-width="5" stroke-linejoin="round"/>'),
