@@ -229,34 +229,23 @@ Item {
                 }
             }
 
-            // Wallpaper: ours (drawn), Dynamic (follows the time of day), two photos, then yours
+            // Wallpaper: Graphite, Dynamic (follows the time of day), yours, then the rest of ours
             ListView {
                 id: walls
                 visible: eh.tab === "Wallpaper"
                 anchors.fill: parent
                 orientation: ListView.Horizontal; spacing: 12; clip: true
                 boundsBehavior: Flickable.StopAtBounds
-                model: Walls.LIST
-                footer: Item {
-                    width: 144 + 12; height: walls.height
-                    Column {
-                        x: 12; spacing: 8
-                        property string aiName: "Your photos"; property string aiRole: "button"
-                        function aiActivate() { picker.open(); }
-                        Rectangle {
-                            width: 144; height: 90; radius: 10; color: "transparent"; border.color: Theme.hairline2; border.width: 1
-                            Text { anchors.centerIn: parent; text: "+"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 20 }
-                            MouseArea { anchors.fill: parent; onClicked: picker.open() }
-                        }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Your photos…"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 12 }
-                    }
-                }
+                model: Walls.LIST.slice(0, 2).concat([["yours", "Your photos…"]], Walls.LIST.slice(2))
                 delegate: Column {
                     id: wpc
                     required property var modelData
-                    readonly property bool on: Os.settings.wallpaper === modelData[0]
-                    property string aiName: modelData[1] + " wallpaper"; property string aiRole: "radio"
-                    function aiActivate() { Os.settings.wallpaper = modelData[0]; }
+                    // "Your photos…": a + until you pick one, then that photo, selected
+                    readonly property bool yours: modelData[0] === "yours"
+                    readonly property bool mine: String(Os.settings.wallpaper).indexOf("file:") === 0
+                    readonly property bool on: yours ? mine : Os.settings.wallpaper === modelData[0]
+                    property string aiName: yours ? "Your photos" : modelData[1] + " wallpaper"; property string aiRole: yours ? "button" : "radio"
+                    function aiActivate() { if (yours) picker.open(); else Os.settings.wallpaper = modelData[0]; }
                     spacing: 8
                     Rectangle {
                         width: 144; height: 90; radius: 10; color: "transparent"
@@ -265,7 +254,12 @@ Item {
                             anchors.fill: parent; anchors.margins: 4
                             layer.enabled: true
                             layer.effect: MultiEffect { maskEnabled: true; maskSource: wpMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
-                            Wallpaper { anchors.fill: parent; pick: wpc.modelData[0]; Rectangle { anchors.fill: parent; color: "transparent" } }
+                            Wallpaper { visible: !wpc.yours || wpc.mine; anchors.fill: parent; pick: wpc.yours ? Os.settings.wallpaper : wpc.modelData[0] }
+                        }
+                        Rectangle {
+                            visible: wpc.yours && !wpc.mine
+                            anchors.fill: parent; anchors.margins: 4; radius: 7; color: "transparent"; border.color: Theme.hairline2; border.width: 1
+                            Text { anchors.centerIn: parent; text: "+"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 20 }
                         }
                         Rectangle { id: wpMask; anchors.fill: parent; anchors.margins: 4; radius: 7; visible: false; layer.enabled: true }
                         // Dynamic shows its four lights as a strip along the bottom
