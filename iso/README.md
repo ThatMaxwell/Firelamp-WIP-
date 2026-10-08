@@ -18,7 +18,7 @@ from a profile based on Arch's `releng`.
 Package sets live in `packages/`, one file per set, and `build.sh` adds them all:
 `10-desktop-plasma`, `20-basic-tools` (Firefox, Dolphin, Konsole, Kate, archive and CLI basics),
 `30-dev-tools` (base-devel, git, gh, clang, cmake, Python, Node, Go, rustup, VS Code OSS, Podman),
-`40-ricing` (Kvantum, qt6ct, nwg-look, Nerd Fonts, Starship, kitty, cava, btop, pywal) and
+`40-ricing` (Kvantum, qt6ct, nwg-look, Nerd Fonts, Starship, kitty, cava, btop) and
 `50-ai-tools` (Ollama and a small Python stack). Add a package by adding a line.
 
 The CachyOS repo is the generic x86-64 one, so the ISO boots on any 64-bit PC.

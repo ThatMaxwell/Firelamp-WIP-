@@ -42,7 +42,7 @@ jobs:
         run: python3 iso/test-boot.py iso/out/*.iso --out boot-test/bios
 
       - name: Boot in QEMU (UEFI)
-        if: always()
+        if: always() && hashFiles('iso/out/*.iso') != ''
         run: python3 iso/test-boot.py iso/out/*.iso --out boot-test/uefi --uefi
 
       - name: Print desktop screenshot (base64 JPEG, for tools without artifact access)
