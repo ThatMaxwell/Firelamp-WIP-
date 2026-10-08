@@ -12,13 +12,14 @@ Item {
     readonly property var catalog: [
         { group: "Desktops", items: [
             { id: "plasma", name: "KDE Plasma", what: "The default. Firelamp’s shell sits on top of it." },
-            { id: "gnome", name: "GNOME", what: "Calm and focused, with Activities and a top bar." },
-            { id: "cosmic", name: "COSMIC", what: "System76’s new desktop, written in Rust, with optional tiling." },
-            { id: "xfce", name: "Xfce", what: "Light and classic. Good on older machines." } ] },
+            { id: "gnome", name: "GNOME", size: "410 MB", what: "Calm and focused, with Activities." },
+            { id: "cosmic", name: "COSMIC", size: "190 MB", what: "System76’s Rust desktop, with tiling." },
+            { id: "cinnamon", name: "Cinnamon", size: "260 MB", what: "Classic, with a bottom panel." },
+            { id: "xfce", name: "Xfce", size: "120 MB", what: "Light and traditional. Runs anywhere." } ] },
         { group: "Window managers", items: [
-            { id: "hyprland", name: "Hyprland", what: "Dynamic tiling with smooth animations. A ricer favourite." },
-            { id: "niri", name: "niri", what: "Scrollable tiling: windows sit on an endless strip." },
-            { id: "sway", name: "Sway", what: "i3-style tiling for Wayland. Plain and fast." } ] }
+            { id: "niri", name: "niri", size: "45 MB", what: "Scrollable tiling on an endless strip." },
+            { id: "hyprland", name: "Hyprland", size: "70 MB", what: "Dynamic tiling, smooth animations." },
+            { id: "sway", name: "Sway", size: "40 MB", what: "i3-style tiling. Plain and fast." } ] }
     ]
     property var status: ({ plasma: { installed: true } })   // id -> { installed, state, log }
     property bool offline: false
@@ -28,7 +29,7 @@ Item {
             if (x.readyState !== XMLHttpRequest.DONE) return;
             if (x.status !== 200) { dp.offline = !Os.demoInstalls; return; }
             var st = {};
-            JSON.parse(x.responseText).forEach(function (d) { st[d.id] = d; });
+            var r = JSON.parse(x.responseText); (r.desktops || r).forEach(function (d) { st[d.id] = d; });
             dp.offline = false; dp.status = st;
         };
         x.open("GET", api + "/desktops"); x.send();
@@ -40,6 +41,7 @@ Item {
         x.open("POST", api + "/install/" + id); x.send();
     }
     property bool helperSeen: false
+    function scrollTo(y) { fl.contentY = Math.max(0, Math.min(y, fl.contentHeight - fl.height)); }
     function set(id, f) { var st = Object.assign({}, status); st[id] = Object.assign({}, st[id] || {}, f); status = st; }
     readonly property bool busy: { for (var k in status) if (status[k].state === "installing") return true; return false; }
     onActiveChanged: if (active) fetch()
@@ -74,65 +76,63 @@ Item {
                 Column {
                     id: grp
                     required property var modelData
-                    width: col.width; spacing: 8
-                    Text { x: 4; text: grp.modelData.group; color: Theme.text2; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold; topPadding: 6 }
-                    Rectangle {
-                        width: parent.width; height: rows.height; radius: 10
-                        color: Qt.rgba(1, 1, 1, 0.04); border.color: Theme.line; border.width: 0.5
-                        Column {
-                            id: rows; width: parent.width
-                            Repeater {
-                                model: grp.modelData.items
+                    width: col.width; spacing: 12
+                    Text { x: 2; text: grp.modelData.group; color: Theme.text2; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold; topPadding: 8 }
+                    Grid {
+                        columns: 2; columnSpacing: 20; rowSpacing: 22
+                        Repeater {
+                            model: grp.modelData.items
+                            Item {
+                                id: card
+                                required property var modelData
+                                readonly property var st: dp.status[modelData.id] || {}
+                                readonly property bool isDefault: modelData.id === "plasma"
+                                readonly property bool working: st.state === "installing"
+                                readonly property bool have: !!st.installed
+                                property string aiName: modelData.name
+                                property string aiRole: "listitem"
+                                width: (col.width - 20) / 2; height: thumb.height + 62
+                                DeskThumb { id: thumb; kind: card.modelData.id; width: parent.width; height: Math.round(width * 10 / 16) }
+                                // installing: a quiet hairline sweeps along the thumbnail's lower edge
                                 Item {
-                                    id: row
-                                    required property var modelData
-                                    required property int index
-                                    readonly property var st: dp.status[modelData.id] || {}
-                                    readonly property bool isDefault: modelData.id === "plasma"
-                                    readonly property bool working: st.state === "installing"
-                                    readonly property bool have: !!st.installed
-                                    property string aiName: modelData.name
-                                    property string aiRole: "listitem"
-                                    width: rows.width; height: 58
-                                    Rectangle { visible: row.index > 0; x: 16; width: parent.width - 32; height: 0.5; color: Theme.line }
-                                    Column {
-                                        x: 16; anchors.verticalCenter: parent.verticalCenter; spacing: 2; width: parent.width - 170
-                                        Text { text: row.modelData.name; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium }
-                                        Text { width: parent.width; elide: Text.ElideRight; text: row.working && row.st.log ? row.st.log : row.modelData.what; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
+                                    visible: card.working; clip: true
+                                    x: 10; width: parent.width - 20; height: 1; y: thumb.height + 5
+                                    Rectangle {
+                                        width: parent.width * 0.3; height: 1; color: Theme.text3
+                                        SequentialAnimation on x { running: card.working; loops: Animation.Infinite
+                                            NumberAnimation { from: -width; to: parent.width; duration: 1400; easing.type: Easing.InOutSine } }
                                     }
-                                    Item {
-                                        anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
-                                        width: Math.max(btn.width, state2.width); height: 28
-                                        FButton {
-                                            id: btn
-                                            visible: !row.have && !row.working
-                                            anchors.right: parent.right
-                                            text: row.st.state === "failed" ? "Try Again" : "Install"
-                                            label: "Install " + row.modelData.name
-                                            enabledState: !dp.offline
-                                            onClicked: dp.install(row.modelData.id)
-                                        }
-                                        Row {
-                                            id: state2
-                                            visible: row.have || row.working
-                                            anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; spacing: 6
-                                            Glyph { visible: row.have; name: "check"; width: 12; height: 12; color: Theme.ok; anchors.verticalCenter: parent.verticalCenter }
-                                            Text {
-                                                text: row.working ? "Installing…" : row.isDefault ? "In use" : "Installed"
-                                                color: Theme.text3; font.family: Theme.font; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter
-                                            }
-                                        }
+                                }
+                                Column {
+                                    y: thumb.height + 12; x: 2; spacing: 3; width: parent.width - btnBox.width - 12
+                                    Row {
+                                        spacing: 6
+                                        Text { text: card.modelData.name; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium }
+                                        Text { visible: !!card.modelData.size && !card.have; text: "· " + (card.modelData.size || ""); color: Theme.text3; font.family: Theme.font; font.pixelSize: 12 }
                                     }
-                                    // installing: a quiet hairline that sweeps along the bottom of the row
-                                    Item {
-                                        visible: row.working
-                                        x: 16; width: parent.width - 32; height: 1; anchors.bottom: parent.bottom; anchors.bottomMargin: 6; clip: true
-                                        Rectangle {
-                                            width: parent.width * 0.3; height: 1; color: Theme.text3
-                                            SequentialAnimation on x { running: row.working; loops: Animation.Infinite
-                                                NumberAnimation { from: -width; to: parent.width; duration: 1400; easing.type: Easing.InOutSine } }
-                                        }
+                                    Text {
+                                        width: parent.width; elide: Text.ElideRight
+                                        text: card.working ? (card.st.log || "Installing…")
+                                            : card.isDefault ? "In use. Firelamp runs on it."
+                                            : card.have ? "Installed · pick it on the login screen"
+                                            : card.modelData.what
+                                        color: card.have && !card.isDefault ? Theme.text2 : Theme.text3; font.family: Theme.font; font.pixelSize: 11
                                     }
+                                }
+                                Item {
+                                    id: btnBox
+                                    anchors.right: parent.right; y: thumb.height + 12
+                                    width: Math.max(btn.visible ? btn.width : 0, mark.visible ? mark.width : 0); height: 28
+                                    FButton {
+                                        id: btn
+                                        visible: !card.have && !card.working
+                                        anchors.right: parent.right
+                                        text: card.st.state === "failed" ? "Try Again" : "Install"
+                                        label: "Install " + card.modelData.name
+                                        enabledState: !dp.offline && !dp.busy
+                                        onClicked: dp.install(card.modelData.id)
+                                    }
+                                    Glyph { id: mark; visible: card.have; anchors.right: parent.right; y: 3; name: "check"; width: 13; height: 13; color: Theme.text2 }
                                 }
                             }
                         }
@@ -140,8 +140,8 @@ Item {
                 }
             }
             Text {
-                width: parent.width; wrapMode: Text.WordWrap; topPadding: 4
-                text: "Installed desktops appear in the session menu on the login screen. The assistant and fire cursor are built for the default Plasma session."
+                width: parent.width; wrapMode: Text.WordWrap; topPadding: 6
+                text: "Firelamp’s assistant, fire cursor, dock and home screen run on Plasma. Other desktops come the way their makers ship them, without Firelamp’s shell. To use the assistant, pick Plasma on the login screen."
                 color: Theme.text3; font.family: Theme.font; font.pixelSize: 11
             }
         }

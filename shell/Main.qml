@@ -32,7 +32,7 @@ Window {
         { id: "calendar", title: "Calendar", icon: "calendar", src: "Calendar", w: 780, h: 560 },
         { id: "photos", title: "Photos", icon: "photos", src: "Photos", w: 760, h: 528 },
         { id: "music", title: "Music", icon: "music", src: "Music", w: 340, h: 700 },
-        { id: "settings", title: "System Settings", icon: "settings", src: "Settings", w: 720, h: 520 },
+        { id: "settings", title: "System Settings", icon: "settings", src: "Settings", w: 800, h: 640 },
         { id: "about", title: "About Firelamp OS", icon: "assistant", src: "About", w: 360, h: 480, noDock: true }
     ]
 

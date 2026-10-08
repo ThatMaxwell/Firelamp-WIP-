@@ -8,7 +8,7 @@ Item {
     property var win
     property string pane: "Assistant"
     function start(opts) { if (opts && opts.pane) pane = opts.pane; }
-    function scrollTo(y) { fl.contentY = Math.max(0, Math.min(y, fl.contentHeight - fl.height)); }
+    function scrollTo(y) { if (pane === "Desktops") return desks.scrollTo(y); fl.contentY = Math.max(0, Math.min(y, fl.contentHeight - fl.height)); }
 
     component Row2: Item {
         id: r
@@ -70,6 +70,7 @@ Item {
         }
     }
     DesktopsPane {
+        id: desks
         visible: app.pane === "Desktops"
         active: visible
         anchors { left: side.right; right: parent.right; top: parent.top; bottom: parent.bottom }

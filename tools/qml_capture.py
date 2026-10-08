@@ -244,9 +244,11 @@ elif scene == "desktops":
     def press():
         call("probe", "Install Hyprland")
         x, y = win.property("probeX"), win.property("probeY")
-        glide(1250, 820, x, y, 900, lambda: (mouse(x, y, "press"), mouse(x, y, "release")))
-    at(2600, press)
-    still("desktops-installing", 5200)
+        glide(1250, 820, x, y, 900, lambda: (mouse(x, y, "press"), mouse(x, y, "release"),
+                                              QTimer.singleShot(500, lambda: glide(x, y, x + 140, y + 150, 700))))
+    at(2400, lambda: call("settingsScroll", 640))
+    at(3000, press)
+    still("desktops-installing", 5600)
     still("desktops-installed", 11000)
     stop(11800)
 elif scene == "effort":
