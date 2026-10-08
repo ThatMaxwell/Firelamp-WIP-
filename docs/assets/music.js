@@ -137,6 +137,16 @@ window.Music = (() => {
     f.type = 'lowpass'; f.frequency.setValueAtTime(5000, t); f.frequency.exponentialRampToValueAtTime(200, t + 1.4);
     env(g, t, 0.003, 0.35 * v, 1.5); s.connect(f); f.connect(g); g.connect(out); g.connect(verbIn);
   }
+  // camera-shutter tick for the screenshot words
+  function shutter(t) {
+    const s = noiseSrc(t, 0.08), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    f.type = 'bandpass'; f.frequency.value = 3800; f.Q.value = 1.4;
+    env(g, t, 0.001, 0.5, 0.05); s.connect(f); f.connect(g); g.connect(out);
+    const s2 = noiseSrc(t + 0.045, 0.06), g2 = ctx.createGain(), f2 = ctx.createBiquadFilter();
+    f2.type = 'highpass'; f2.frequency.value = 2500;
+    env(g2, t + 0.045, 0.001, 0.3, 0.04); s2.connect(f2); f2.connect(g2); g2.connect(out); g2.connect(verbIn);
+  }
+  const SHUTTER = new Set([36, 40, 44, 48, 52, 54, 56, 57, 58, 59]);
   function sparkle(t, m) { pluck(t, m, 0.05, 6000); }
 
   /* ---------- arrangement, one 16th step at a time ---------- */
@@ -144,6 +154,7 @@ window.Music = (() => {
     const time = i * S16, bar = Math.floor(i / 16), s = i % 16, ci = bar % 4, ch = CH[ci];
     if (time >= END) return;
 
+    if (SHUTTER.has(i)) shutter(t);
     if (bar < 4) {                       // 0-8s intro build
       if (s === 0) pad(t, ch, BAR, bar < 2 ? 0.055 : 0.065, 800 + bar * 400);
       const arpOn = bar < 2 ? s % 4 === 0 : s % 2 === 0;
