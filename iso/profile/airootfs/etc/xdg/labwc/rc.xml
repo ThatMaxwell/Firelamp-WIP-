@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<!-- Firelamp OS window manager settings (labwc). -->
+<labwc_config>
+  <core>
+    <decoration>server</decoration>
+    <gap>8</gap>
+  </core>
+
+  <placement>
+    <policy>center</policy>
+  </placement>
+
+  <theme>
+    <name>Firelamp</name>
+    <cornerRadius>12</cornerRadius>
+    <dropShadows>yes</dropShadows>
+    <titlebar>
+      <!-- Mac-style: window buttons on the left, title centred. -->
+      <layout>close,iconify,max:</layout>
+      <showTitle>yes</showTitle>
+    </titlebar>
+    <font place="ActiveWindow"><name>Inter</name><size>10</size><weight>bold</weight></font>
+    <font place="InactiveWindow"><name>Inter</name><size>10</size></font>
+    <font place="MenuItem"><name>Inter</name><size>10</size></font>
+    <font place="OnScreenDisplay"><name>Inter</name><size>11</size></font>
+  </theme>
+
+
+  <keyboard>
+    <default />
+    <keybind key="W-Return"><action name="Execute" command="foot" /></keybind>
+    <keybind key="W-q"><action name="Close" /></keybind>
+    <keybind key="W-Up"><action name="ToggleMaximize" /></keybind>
+    <keybind key="W-Down"><action name="Iconify" /></keybind>
+    <keybind key="Print"><action name="Execute" command="sh -c 'grim ~/Pictures/firelamp-$(date +%Y%m%d-%H%M%S).png'" /></keybind>
+  </keyboard>
+
+  <mouse>
+    <default />
+  </mouse>
+
+  <libinput>
+    <device category="touchpad">
+      <naturalScroll>yes</naturalScroll>
+      <tap>yes</tap>
+    </device>
+  </libinput>
+</labwc_config>

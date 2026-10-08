@@ -1,0 +1,75 @@
+name: Firelamp ISO
+
+on:
+  push:
+    branches: [main, master]
+    paths: ['iso/**', 'shell/**', '.github/workflows/iso.yml']
+  pull_request:
+    paths: ['iso/**', 'shell/**', '.github/workflows/iso.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: iso-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-boot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Build ISO (archiso in an Arch container)
+        run: sudo iso/build.sh --docker
+
+      - name: Install QEMU
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q qemu-system-x86 ovmf ffmpeg
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm || true
+
+      - name: Boot in QEMU (BIOS) and screenshot the desktop
+        run: python3 iso/test-boot.py iso/out/*.iso --out boot-test/bios
+
+      - name: Boot in QEMU (UEFI)
+        if: always()
+        run: python3 iso/test-boot.py iso/out/*.iso --out boot-test/uefi --uefi
+
+      - name: Print desktop screenshot (base64 JPEG, for tools without artifact access)
+        if: always()
+        run: |
+          for mode in bios uefi; do
+            f=boot-test/$mode/desktop.png
+            [ -f "$f" ] || continue
+            ffmpeg -loglevel error -y -i "$f" -vf scale=960:-1 -q:v 6 "boot-test/$mode/desktop-small.jpg"
+            echo "::group::desktop-$mode.jpg base64"
+            echo "BEGIN_DESKTOP_JPEG_$mode"
+            base64 -w 0 "boot-test/$mode/desktop-small.jpg"; echo
+            echo "END_DESKTOP_JPEG_$mode"
+            echo "::endgroup::"
+          done
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boot-screenshots
+          path: |
+            boot-test/*/desktop.png
+            boot-test/*/boot.gif
+            boot-test/*/serial.log
+          if-no-files-found: warn
+
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: firelamp-iso
+          path: iso/out/*.iso
+          compression-level: 0
+          retention-days: 14

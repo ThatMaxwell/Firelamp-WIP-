@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Starts the Firelamp OS Wayland session on the current VT.
+#
+# Kernel command line switches:
+#   firelamp.compositor=cage   run the shell full screen in the cage kiosk
+#                              compositor instead of labwc
+set -u
+
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/firelamp"
+mkdir -p "$state_dir"
+log="$state_dir/session.log"
+: >"$log"
+
+export XDG_SESSION_TYPE=wayland
+export XDG_CURRENT_DESKTOP=Firelamp:wlroots
+export XDG_SESSION_DESKTOP=firelamp
+
+# Qt: native Wayland, and always expose widgets on the AT-SPI2 bus so the AI
+# can read every window's UI tree.
+export QT_QPA_PLATFORM='wayland;xcb'
+export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+export QT_ACCESSIBILITY=1
+export QT_QUICK_CONTROLS_STYLE="${QT_QUICK_CONTROLS_STYLE:-Basic}"
+
+export MOZ_ENABLE_WAYLAND=1
+export XCURSOR_THEME=Adwaita
+export XCURSOR_SIZE=24
+
+# VMs (VirtualBox without 3D, QEMU std/virtio) often have no GPU render node:
+# let wlroots fall back to software rendering instead of refusing to start.
+export WLR_RENDERER_ALLOW_SOFTWARE=1
+if ! compgen -G '/dev/dri/renderD*' >/dev/null; then
+    export WLR_RENDERER=pixman
+    export QT_QUICK_BACKEND=software
+fi
+# VirtualBox's VMSVGA cursor plane is unreliable; draw cursors in software.
+if [[ "$(systemd-detect-virt 2>/dev/null)" == oracle ]]; then
+    export WLR_NO_HARDWARE_CURSORS=1
+fi
+
+compositor=labwc
+for arg in $(</proc/cmdline); do
+    case "$arg" in
+        firelamp.compositor=*) compositor="${arg#*=}" ;;
+    esac
+done
+compositor="${FIRELAMP_COMPOSITOR:-$compositor}"
+
+echo "firelamp-session: starting $compositor ($(date -Is))" >>"$log"
+case "$compositor" in
+    cage) exec cage -s -- /usr/local/bin/firelamp-shell >>"$log" 2>&1 ;;
+    *)    exec labwc >>"$log" 2>&1 ;;
+esac

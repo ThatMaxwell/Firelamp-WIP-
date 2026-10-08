@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="core" x1="0.2" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="#ffe29a"/>
+      <stop offset="0.35" stop-color="#ffb347"/>
+      <stop offset="0.75" stop-color="#ff6a2b"/>
+      <stop offset="1" stop-color="#d9361c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.45" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff7a3d" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ff7a3d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="28" cy="34" r="28" fill="url(#glow)"/>
+  <!-- cursor arrow whose upper edge flickers into flame tongues -->
+  <path fill="url(#core)" d="M17 6
+    C15.5 9 16.5 11 17 12.5
+    C14.8 11.6 14.4 9.2 14.6 7.6
+    C13.2 10.5 14.2 13.2 16 15
+    L16 50 L26 40.5 L32.6 55 L38.6 52.2 L32.2 38 L46 38
+    Z"/>
+  <path fill="#fff4d6" opacity="0.55" d="M18.5 18 L18.5 42 L25 35.6 Z"/>
+  <!-- the spark breaking off -->
+  <path fill="#ffd77a" d="M47 13 L48.4 17.6 L53 19 L48.4 20.4 L47 25 L45.6 20.4 L41 19 L45.6 17.6 Z"/>
+  <circle cx="54.5" cy="9.5" r="1.6" fill="#ffb347"/>
+</svg>
