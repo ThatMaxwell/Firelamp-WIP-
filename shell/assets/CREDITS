@@ -1,12 +1,12 @@
 Photographs in assets/photos/ (cropped and colour-graded for Firelamp; the originals
 ship with scikit-image's sample data, skimage/data/):
 
-- launch-dusk.jpg, launch-tower.jpg: Falcon 9 on the pad at dusk. SpaceX, released
+- launch-dusk.jpg: Falcon 9 on the pad at dusk. SpaceX, released
   into the public domain (CC0). https://www.flickr.com/photos/spacexphotos/16511594820/
-- espresso.jpg, espresso-spoon.jpg: espresso at Pikolo Espresso Bar. Photo by
+- espresso.jpg: espresso at Pikolo Espresso Bar. Photo by
   Rachel Michetti, CC0.
-- chelsea.jpg, chelsea-close.jpg: Chelsea the cat. Photo by Stefan van der Walt, CC0.
-- deep-field.jpg, deep-field-detail.jpg: Hubble eXtreme Deep Field. NASA, public domain.
+- chelsea.jpg: Chelsea the cat. Photo by Stefan van der Walt, CC0.
+- deep-field.jpg: Hubble eXtreme Deep Field. NASA, public domain.
   http://hubblesite.org/newscenter/archive/releases/2012/37/image/a/
 - brick.jpg: Bricks25 from CC0Textures (now ambientCG), CC0.
 - gravel.jpg: Gravel04 from CC0Textures (now ambientCG), CC0.
