@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-800 -800 1600 1600" width="1600" height="1600">
+  <title>ThatMaxwell</title>
+  <!-- Eight-petal flower, built from one petal rotated 8x. Tweak the petal path or the
+       rotations to play with it; each <use> can be animated on its own. -->
+  <defs>
+    <path id="petal" d="M-105 -252C-110 -285 -118 -325 -118 -365C-118 -450 -80 -498 0 -498C80 -498 118 -450 118 -365C118 -325 110 -285 105 -252Z"/>
+  </defs>
+  <rect x="-800" y="-800" width="1600" height="1600" fill="#000"/>
+  <g fill="#fff">
+    <circle r="273"/>
+    <use href="#petal"/>
+    <use href="#petal" transform="rotate(45)"/>
+    <use href="#petal" transform="rotate(90)"/>
+    <use href="#petal" transform="rotate(135)"/>
+    <use href="#petal" transform="rotate(180)"/>
+    <use href="#petal" transform="rotate(225)"/>
+    <use href="#petal" transform="rotate(270)"/>
+    <use href="#petal" transform="rotate(315)"/>
+  </g>
+</svg>
