@@ -81,6 +81,25 @@ QtObject {
         onTriggered: { var j = queue.shift(); if (j) os.setPack(j[0], { state: "", installed: !j[1] }); if (!queue.length) stop(); }
     }
 
+    // ---- events from firelamp-desktops (long poll): the Super key opens our launcher ----
+    signal launcherKey()
+    property int lastEvent: -1
+    function listen() {
+        var x = new XMLHttpRequest();
+        x.onreadystatechange = function () {
+            if (x.readyState !== XMLHttpRequest.DONE) return;
+            // helper not up (or restarted): start over from "where is the queue"
+            if (x.status !== 200) { os.lastEvent = -1; relisten.interval = 5000; relisten.start(); return; }
+            var r = JSON.parse(x.responseText);
+            // the first answer only tells us where the queue is; act on what comes after
+            if (os.lastEvent >= 0) r.events.forEach(function (e) { if (e.kind === "launcher") os.launcherKey(); });
+            os.lastEvent = r.last;
+            relisten.interval = 10; relisten.start();
+        };
+        x.open("GET", "http://127.0.0.1:7341/events?after=" + lastEvent); x.send();
+    }
+    property Timer relisten: Timer { onTriggered: os.listen() }
+
     // ---- browsers: first boot and Settings › Browser share one status ----
     property var browserStatus: ({})              // id -> { installed, state, log }
     property string defaultBrowser: "firefox"

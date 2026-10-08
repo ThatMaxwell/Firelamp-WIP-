@@ -7,6 +7,7 @@
     firelamp-desktops install-pack ID  install a pack;  remove-pack ID removes it
     firelamp-desktops browsers         the browsers you can pick, and which one is the default
     firelamp-desktops browser ID       install it if needed and make it the default
+    firelamp-desktops launcher         open (or close) the shell's launcher, as the Super key does
     firelamp-desktops serve            local API for Settings > Desktops and Packs (127.0.0.1:7341)
 
 The shell's Settings page talks to `serve` over plain HTTP on localhost:
@@ -18,6 +19,13 @@ The shell's Settings page talks to `serve` over plain HTTP on localhost:
     POST /browser/ID      -> install (if needed) and set as the default browser
     GET  /live            -> {live}: true on the live ISO (/run/archiso exists)
     POST /install-os      -> opens the installer (firelamp-install), live ISO only
+    GET  /events?after=N  -> {last, events:[{n, kind}]}; waits up to 25 s for one (long poll);
+                             after=-1 answers at once, with where the queue is
+    POST /event/launcher  -> tells the shell to toggle its launcher
+
+The Super key: KWin's ModifierOnlyShortcuts calls org.firelamp.Shell.ToggleLauncher on the
+session bus (see /etc/xdg/kwinrc). `serve` owns that name and turns the call into a
+"launcher" event, so Super opens Firelamp's launcher instead of Plasma's.
 Only the IDs below can be installed; nothing else is passed to pacman.
 Each one ships a wayland-sessions/xsessions entry, so it shows up at login.
 """
@@ -85,6 +93,53 @@ ICON_ROOTS = [os.path.expanduser("~/.local/share/flatpak/exports/share/icons/hic
               "/var/lib/flatpak/exports/share/icons/hicolor", "/usr/share/icons/hicolor"]
 APPSTREAM = [os.path.expanduser("~/.local/share/flatpak/appstream/flathub/{arch}/active/icons/128x128"),
              "/var/lib/flatpak/appstream/flathub/{arch}/active/icons/128x128"]
+# events for the shell (it long-polls GET /events): the Super key, for now
+events = []
+events_cv = threading.Condition()
+
+
+def push_event(kind):
+    with events_cv:
+        events.append({"n": (events[-1]["n"] + 1) if events else 1, "kind": kind})
+        del events[:-50]
+        events_cv.notify_all()
+
+
+def events_after(n, wait=25):
+    with events_cv:
+        if n >= 0:  # after=-1: just say where the queue is, without waiting
+            events_cv.wait_for(lambda: events and events[-1]["n"] > n, timeout=wait)
+        newer = [e for e in events if e["n"] > n]
+        return {"last": events[-1]["n"] if events else 0, "events": newer}
+
+
+DBUS_XML = """<node><interface name="org.firelamp.Shell">
+  <method name="ToggleLauncher"/>
+</interface></node>"""
+
+
+def serve_dbus():
+    """Own org.firelamp.Shell on the session bus, for KWin's Super-key shortcut."""
+    try:
+        import gi
+        from gi.repository import Gio, GLib
+    except Exception as e:  # no PyGObject: Super stays with Plasma
+        print("firelamp-desktops: no D-Bus service:", e, file=sys.stderr)
+        return
+    node = Gio.DBusNodeInfo.new_for_xml(DBUS_XML)
+
+    def on_call(conn, sender, path, iface, method, params, invocation):
+        if method == "ToggleLauncher":
+            push_event("launcher")
+        invocation.return_value(None)
+
+    def on_bus(conn, name):
+        conn.register_object("/org/firelamp/Shell", node.interfaces[0], on_call, None, None)
+
+    Gio.bus_own_name(Gio.BusType.SESSION, "org.firelamp.Shell", Gio.BusNameOwnerFlags.NONE, on_bus, None, None)
+    GLib.MainLoop().run()
+
+
 jobs = {}   # id -> {"state": "installing"|"installed"|"failed", "log": last line}
 
 
@@ -302,11 +357,20 @@ class Api(BaseHTTPRequestHandler):
             return self.reply(200, pack_listing())
         if self.path == "/browsers":
             return self.reply(200, browser_listing())
+        if self.path.startswith("/events"):
+            try:
+                after = int(self.path.split("after=", 1)[1]) if "after=" in self.path else 0
+            except ValueError:
+                after = -1
+            return self.reply(200, events_after(after))
         if self.path == "/live":
             return self.reply(200, {"live": os.path.isdir("/run/archiso")})
         self.reply(404, {"error": "not found"})
 
     def do_POST(self):
+        if self.path == "/event/launcher":
+            push_event("launcher")
+            return self.reply(202, {"ok": True})
         if self.path == "/install-os":
             if not os.path.isdir("/run/archiso") or not shutil.which("firelamp-install"):
                 return self.reply(404, {"error": "not a live session"})
@@ -357,8 +421,15 @@ def main():
         sys.exit(0 if (install_pack if cmd == "install-pack" else remove_pack)(sys.argv[2]) else 1)
     elif cmd == "install" and len(sys.argv) > 2 and sys.argv[2] in CATALOG:
         sys.exit(0 if install(sys.argv[2]) else 1)
+    elif cmd == "launcher":
+        import urllib.request
+        try:
+            urllib.request.urlopen(urllib.request.Request(f"http://127.0.0.1:{PORT}/event/launcher", method="POST"), timeout=2)
+        except OSError as e:
+            sys.exit(f"firelamp-desktops: serve isn't running ({e})")
     elif cmd == "serve":
         threading.Thread(target=refresh_appstream, daemon=True).start()
+        threading.Thread(target=serve_dbus, daemon=True).start()
         ThreadingHTTPServer(("127.0.0.1", PORT), Api).serve_forever()
     else:
         sys.exit(__doc__)

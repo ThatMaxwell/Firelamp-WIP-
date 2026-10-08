@@ -1,0 +1,4 @@
+# Super (tapped on its own) opens Firelamp's launcher, not Plasma's. KWin calls this D-Bus
+# method; firelamp-desktops serve owns the name and tells the shell.
+[ModifierOnlyShortcuts]
+Meta=org.firelamp.Shell,/org/firelamp/Shell,org.firelamp.Shell,ToggleLauncher
