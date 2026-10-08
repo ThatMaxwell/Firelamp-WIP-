@@ -24,7 +24,7 @@ out.mkdir(parents=True, exist_ok=True)
 for f in [*out.glob("*.png"), *out.glob("*.jpg")]:
     f.unlink()
 
-app = QGuiApplication(["firelamp", "--nosplash", "--windowed", "--name=Pip", *sys.argv[3:]])
+app = QGuiApplication(["firelamp", "--nosplash", "--windowed", "--name=Juniper", *sys.argv[3:]])
 engine = QQmlApplicationEngine()
 engine.warnings.connect(lambda ws: [print("QML:", w.toString(), file=sys.stderr) for w in ws])
 engine.load(QUrl.fromLocalFile(str(ROOT / "shell" / "Main.qml")))
@@ -103,9 +103,9 @@ if scene == "desktop":
     stop(2800)
 elif scene == "apps":
     for i, a in enumerate(["terminal", "settings", "calendar", "web", "photos", "music", "about"]):
-        at(500 + i * 1500, lambda a=a: call("launch", a))
-        still("app-" + a, 1400 + i * 1500)
-    stop(500 + 7 * 1500 + 300)
+        at(500 + i * 2000, lambda a=a: call("launch", a))
+        still("app-" + a, 1900 + i * 2000)
+    stop(500 + 7 * 2000 + 300)
 elif scene == "dock":
     start(300)
     cx, y = 720, 900 - 40
@@ -125,6 +125,10 @@ elif scene in ("email", "tidy", "vision"):
         when("ghost", "visible", "drag", 450)
     if scene == "vision":
         still("vision", 1400 + 5200)
+    if os.environ.get("CAPTURE_EVERY"):     # review frames: a still every N ms
+        n = int(os.environ["CAPTURE_EVERY"])
+        for k in range(1, 40000 // n):
+            still(f"{scene}-{k:02d}", 1400 + k * n)
     stop(1400 + int(sys.argv[3] if len(sys.argv) > 3 and sys.argv[3].isdigit() else 40000))
 elif scene == "timeline":
     at(300, lambda: call("launch", "assistant"))

@@ -86,7 +86,7 @@ Item {
                         width: parent.width
                         wrapMode: TextEdit.Wrap
                         color: Theme.text; font.family: Theme.font; font.pixelSize: 15
-                        selectionColor: Qt.rgba(0.94, 0.44, 0.23, 0.32); selectedTextColor: Theme.text
+                        selectionColor: Qt.rgba(1, 244 / 255, 232 / 255, 0.2); selectedTextColor: Theme.text
                         onTextChanged: if (activeFocus) app.save()
                     }
                 }

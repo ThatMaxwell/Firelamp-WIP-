@@ -26,17 +26,17 @@ Item {
         width: 420; height: 380
         anchors.centerIn: parent
         scale: nc.shown ? 1 : 0.96
-        Behavior on scale { NumberAnimation { duration: 450; easing.type: Easing.OutBack } }
+        Behavior on scale { NumberAnimation { duration: 450; easing.type: Easing.OutQuint } }
         RectangularShadow { anchors.fill: bg; radius: 18; blur: 80; offset.y: 30; color: Qt.rgba(0, 0, 0, 0.8) }
-        Rectangle { id: bg; anchors.fill: parent; radius: 18; color: Qt.rgba(0.125, 0.125, 0.12, 0.97); border.color: Qt.rgba(1, 1, 1, 0.12); border.width: 0.5 }
+        Rectangle { id: bg; anchors.fill: parent; radius: 18; color: Theme.surface1; border.color: Theme.hairline2; border.width: 1 }
         Column {
             anchors.horizontalCenter: parent.horizontalCenter
             y: 34; width: 352; spacing: 0
-            Logo { width: 64; height: 74; animated: nc.shown; anchors.horizontalCenter: parent.horizontalCenter }
+            Logo { width: 64; height: 74; anchors.horizontalCenter: parent.horizontalCenter }
             Item { width: 1; height: 18 }
             Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Name your assistant"; color: Theme.text; font.family: Theme.font; font.pixelSize: 21; font.weight: Font.DemiBold }
             Item { width: 1; height: 8 }
-            Text { width: 300; anchors.horizontalCenter: parent.horizontalCenter; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; text: "It will answer to this name, and you’ll see it on its fire cursor whenever it’s working."; color: Theme.text2; font.family: Theme.font; font.pixelSize: 13 }
+            Text { width: 300; anchors.horizontalCenter: parent.horizontalCenter; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; text: "It will answer to this name, and you’ll see it in the menu bar whenever it’s working."; color: Theme.text2; font.family: Theme.font; font.pixelSize: 13 }
             Item { width: 1; height: 18 }
             Item {
                 width: 250; height: 50; anchors.horizontalCenter: parent.horizontalCenter

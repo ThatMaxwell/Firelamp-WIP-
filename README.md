@@ -19,8 +19,8 @@ it to `/usr/share/firelamp/shell` and the session starts it with Qt's `qml` tool
 
 | | |
 |---|---|
-| <img src="media/qt/dock.gif" width="420"> | **Dock.** Dark grey backing, magnification with a cosine falloff that pushes neighbours apart, launch bounce, running dots, labels. |
-| <img src="media/qt/tidy.gif" width="420"> | **Fire cursor.** Glides on soft arcs, leaves embers, drags files, and its flame boils like hand-drawn animation. |
+| <img src="media/qt/dock.gif" width="420"> | **Dock.** Our own icon family on muted neutral tiles; only the Assistant is ember. Magnification with a cosine falloff, running dots, labels. |
+| <img src="media/qt/tidy.gif" width="420"> | **Fire cursor.** Moves on a Fitts path with minimum-jerk easing, settles, shows one small tag naming what it is about to touch, then acts. No outlines, no trail; it fades when idle. |
 | <img src="media/qt/vision.gif" width="420"> | **No screenshots.** The AI reads the live UI tree: every element's role, label and exact bounds, updated the instant anything changes. *View → Show what the AI sees* draws it on screen. |
 | <img src="media/qt/permission.png" width="420"> | **Permission sheets.** Sending, deleting and paying always stop and ask you. Every action also lands in the activity timeline with the reason it was taken. |
 
@@ -28,20 +28,20 @@ it to `/usr/share/firelamp/shell` and the session starts it with Qt's `qml` tool
 hidden from the AI's UI tree, so only a human can answer it. **Esc** stops the AI instantly and
 **Ctrl Space** pauses it, from anywhere, including mid-move.
 
-**Moving static.** A few components redraw their outline three times a loop, like hand-inked
-animation: the fire cursor's flame, the AI capsule, permission sheets and the timeline spine. Everything else stays still and crisp. See `shell/components/InkRect.qml`
-and `shell/js/logo.js`.
+**Moving static.** Only the AI's own marks boil on a three-frame loop, like hand-inked
+animation: the fire cursor's flame, its target tag and click ring, and the logo on the splash and
+About screens. Everything else stays still and crisp. See `shell/js/logo.js`.
 
 **First boot** asks you to name your assistant. There is no default name.
 
 ## Run it
 
 ```sh
-qml shell/Main.qml -- --windowed --name=Pip      # Qt 6.5+ with qt6-declarative, qt6-svg
+qml shell/Main.qml -- --windowed --name=Juniper     # Qt 6.5+ with qt6-declarative, qt6-svg
 ```
 
 Try the chips in the assistant window, or **⌥ Space** / **Ctrl K** for the Ask bar.
-Flags after `--`: `--name=Pip` skips naming, `--nosplash`, `--reset`, `--still` freezes the
+Flags after `--`: `--name=…` skips naming, `--nosplash`, `--reset`, `--still` freezes the
 wallpaper, `--windowed` instead of full screen.
 
 Every control the AI can use carries a name and role (`aiName`, `aiRole`) and sets the same
@@ -78,8 +78,9 @@ To preview locally: `npx http-server docs` and open http://localhost:8080.
 `brand/` has the logos as SVG, traced from the originals (under 1% pixel difference):
 `firelamp-cursor.svg`, an animated version with the boiling flame, and
 `thatmaxwell.svg`, built from one petal rotated eight times so it is easy to play with.
-Palette: the OS is graphite (`#1c1c1b` windows, `#0f0f0f` desktop) with ember `#F0703A` as a rare accent;
-the logo keeps ember `#E2402A`, orange `#FF8A3D` and cream `#FFD08A`.
+Palette and motion follow the design direction (`shell/components/Theme.qml` holds the tokens):
+graphite surfaces `#121110`–`#312E2B`, cream text `#EFEAE4`, and ember `#F26A2E` only on what the AI owns.
+The logo keeps ember `#E2402A`, orange `#FF8A3D` and cream `#FFD08A`.
 
 ## Checking the UI without a VM
 
@@ -93,4 +94,4 @@ it. `prototype/capture.mjs` does the same for the web prototype.
 
 ---
 
-Made with care by [ThatMaxwell](https://github.com/thatmaxwell). Fonts: Inter and JetBrains Mono (SIL OFL).
+Made with care by [ThatMaxwell](https://github.com/thatmaxwell). Fonts: Instrument Sans and Martian Mono, bundled in `shell/fonts/` (SIL OFL).

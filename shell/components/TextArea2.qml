@@ -21,7 +21,11 @@ Item {
         width: parent.width
         wrapMode: TextEdit.Wrap
         color: Theme.text; font.family: Theme.font; font.pixelSize: 14
-        selectionColor: Qt.rgba(0.94, 0.44, 0.23, 0.32)
+        selectionColor: Qt.rgba(1, 244 / 255, 232 / 255, 0.2)
+        selectedTextColor: Theme.text
+        cursorDelegate: Rectangle {
+            width: 2; color: Os.agent && Os.agent.mode !== "idle" ? Theme.amber : Theme.text
+        }
         Text { text: ta.placeholder; visible: !edit.text; color: Theme.text3; font: edit.font }
     }
 }

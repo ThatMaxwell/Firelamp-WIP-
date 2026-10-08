@@ -12,21 +12,20 @@ Item {
         target: Os
         function onLog(e) {
             var d = new Date(), h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
-            var t = (h % 12 || 12) + ":" + (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s + (h < 12 ? " AM" : " PM");
+            var two = function (n) { return (n < 10 ? "0" : "") + n; };
+            var t = two(h) + ":" + two(m) + ":" + two(s);
             entries.insert(0, { kind: e.kind, title: e.title, why: e.why || "", app: e.app || "", time: t });
         }
         function onTimelineToggle(on) { tl.open = on === undefined ? !tl.open : on; }
     }
-    readonly property var kindGlyph: ({ open: "open", click: "click", type: "type", ask: "shield", denied: "x", done: "check", look: "eye", move: "folder", think: "sparkle" })
 
-    transform: Translate { x: tl.open ? 0 : tl.width + 24; Behavior on x { NumberAnimation { duration: 480; easing.type: Easing.OutCubic } } }
+    transform: Translate { x: tl.open ? 0 : tl.width + 24; Behavior on x { NumberAnimation { duration: 320; easing.type: Easing.OutQuint } } }
 
-    RectangularShadow { anchors.fill: bg; radius: 18; blur: 50; offset.y: 14; color: Qt.rgba(0, 0, 0, 0.6) }
-    Rectangle { id: bg; anchors.fill: parent; radius: 18; color: Qt.rgba(0.11, 0.11, 0.105, 0.96); border.color: Qt.rgba(1, 1, 1, 0.13); border.width: 0.5 }
+    RectangularShadow { anchors.fill: bg; radius: 12; blur: 40; offset.y: 14; color: Qt.rgba(0, 0, 0, 0.45) }
+    Rectangle { id: bg; anchors.fill: parent; radius: 12; color: Theme.surface0; border.color: Theme.hairline; border.width: 1 }
 
     Row {
-        x: 18; y: 18; spacing: 10
-        Logo { width: 22; height: 26; animated: tl.open }
+        x: 18; y: 16; spacing: 10
         Column {
             Text { text: "Activity"; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.Bold }
             Text { text: "What " + Os.name + " did, and why"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
@@ -53,8 +52,8 @@ Item {
         clip: true
         model: entries
         spacing: 0
-        add: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 300 } NumberAnimation { property: "y"; from: -10; duration: 420; easing.type: Easing.OutBack } }
-        displaced: Transition { NumberAnimation { property: "y"; duration: 300; easing.type: Easing.OutCubic } }
+        add: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 200 } }
+        displaced: Transition { NumberAnimation { property: "y"; duration: 280; easing.type: Easing.OutQuint } }
         delegate: Item {
             id: row
             required property int index
@@ -64,42 +63,20 @@ Item {
             required property string app
             required property string time
             width: list.width
-            height: card.implicitHeight + 16
-            readonly property color tint: kind === "ask" ? Theme.accent : kind === "denied" ? Theme.danger : kind === "done" ? Theme.success : Theme.text2
-            // the spine: an inked line that boils between entries
-            InkRect {
-                visible: row.index < entries.count - 1
-                x: 14; y: 28; width: 2; height: row.height - 26
-                radius: 1; lineWidth: 1.4; wobble: 0.8
-                color: Theme.line3
-            }
-            Rectangle {
-                x: 2; y: 2; width: 26; height: 26; radius: 13
-                color: Qt.rgba(row.tint.r, row.tint.g, row.tint.b, 0.15)
-                Glyph { anchors.centerIn: parent; width: 13; height: 13; name: tl.kindGlyph[row.kind] || "sparkle"; color: row.tint }
-                InkRect { anchors.fill: parent; anchors.margins: -1; radius: 14; lineWidth: 1.4; wobble: 0.9; color: Qt.rgba(row.tint.r, row.tint.g, row.tint.b, 0.55) }
-            }
+            height: card.implicitHeight + 14
+            Text { x: 4; y: 6; width: 62; text: row.time; color: Theme.text3; font.family: Theme.mono; font.pixelSize: 10 }
             Column {
                 id: card
-                x: 38; y: 4
-                width: parent.width - 42
+                x: 74; y: 4
+                width: parent.width - 78
                 spacing: 2
-                Text { width: parent.width; text: row.title; textFormat: Text.StyledText; wrapMode: Text.WordWrap; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold }
-                Text { visible: row.why !== ""; width: parent.width; text: row.why; wrapMode: Text.WordWrap; color: Theme.text2; font.family: Theme.font; font.pixelSize: 12 }
-                Row {
-                    spacing: 6; topPadding: 3
-                    Text { text: row.time; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
-                    Rectangle {
-                        visible: row.app !== ""
-                        height: 17; radius: 8.5; width: chip.implicitWidth + 14
-                        color: Qt.rgba(1, 1, 1, 0.07)
-                        Text { id: chip; anchors.centerIn: parent; text: row.app; color: Theme.text2; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.Medium }
-                    }
-                }
+                Text { width: parent.width; text: row.title; textFormat: Text.StyledText; wrapMode: Text.WordWrap; color: row.kind === "denied" ? Theme.danger : Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium }
+                Text { visible: row.why !== ""; width: parent.width; text: row.why; wrapMode: Text.WordWrap; color: Theme.text3; font.family: Theme.font; font.pixelSize: 12 }
+                Text { visible: row.app !== ""; text: row.app; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11; topPadding: 2 }
             }
         }
     }
-    Rectangle { anchors.bottom: parent.bottom; anchors.bottomMargin: 44; width: parent.width; height: 0.5; color: Theme.line2 }
+    Rectangle { anchors.bottom: parent.bottom; anchors.bottomMargin: 44; width: parent.width; height: 1; color: Theme.hairline }
     Row {
         anchors.bottom: parent.bottom; anchors.bottomMargin: 15; x: 18; spacing: 8
         Glyph { name: "shield"; width: 14; height: 14; color: Theme.text3 }

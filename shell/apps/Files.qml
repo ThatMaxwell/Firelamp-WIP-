@@ -65,7 +65,7 @@ Item {
             cellWidth: 112; cellHeight: 112
             clip: true
             model: files
-            add: Transition { NumberAnimation { property: "scale"; from: 0.4; to: 1; duration: 380; easing.type: Easing.OutBack } NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 200 } }
+            add: Transition { NumberAnimation { property: "scale"; from: 0.4; to: 1; duration: 380; easing.type: Easing.OutQuint } NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 200 } }
             remove: Transition { NumberAnimation { property: "scale"; to: 0.3; duration: 260; easing.type: Easing.InCubic } NumberAnimation { property: "opacity"; to: 0; duration: 260 } }
             displaced: Transition { NumberAnimation { properties: "x,y"; duration: 380; easing.type: Easing.OutCubic } }
             delegate: Item {
@@ -88,7 +88,7 @@ Item {
                     color: tile.aiDropTarget ? Theme.selStrong : app.selIndex === tile.index ? Theme.sel : "transparent"
                     border.color: tile.aiDropTarget ? Theme.line3 : "transparent"; border.width: 1.5
                     scale: tile.aiDropTarget ? 1.08 : 1
-                    Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
+                    Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutQuint } }
                     Image { anchors.centerIn: parent; width: 52; height: 52; sourceSize: Qt.size(104, 104); source: Art.fileIcon(tile.kind); smooth: true }
                 }
                 Rectangle {

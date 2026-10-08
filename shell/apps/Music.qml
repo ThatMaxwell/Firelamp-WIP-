@@ -16,13 +16,15 @@ Rectangle {
             width: parent.width; height: width; radius: 14
             gradient: Gradient { GradientStop { position: 0; color: "#3a3836" } GradientStop { position: 1; color: "#1e1d1c" } }
             scale: app.playing ? 1 : 0.88
-            Behavior on scale { NumberAnimation { duration: 500; easing.type: Easing.OutBack } }
-            Logo { anchors.centerIn: parent; width: parent.width * 0.42; height: width * 1.16; animated: app.playing }
+            Behavior on scale { NumberAnimation { duration: 500; easing.type: Easing.OutQuint } }
+            // album art: two quiet shapes, no logo
+            Rectangle { x: parent.width * 0.18; y: parent.height * 0.2; width: parent.width * 0.46; height: width; radius: width / 2; color: "#5C6B78"; opacity: 0.85 }
+            Rectangle { x: parent.width * 0.42; y: parent.height * 0.42; width: parent.width * 0.38; height: width; radius: 6; color: "#C9BFAF"; opacity: 0.8 }
         }
         Column {
             spacing: 2
-            Text { text: "Ember Hours"; color: Theme.text; font.family: Theme.font; font.pixelSize: 17; font.weight: Font.Bold }
-            Text { text: "Lo-Fi Hearth · Warm Static"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 13 }
+            Text { text: "Slow Rooms"; color: Theme.text; font.family: Theme.font; font.pixelSize: 17; font.weight: Font.Bold }
+            Text { text: "Hearth Tapes · Night Shift"; color: Theme.text3; font.family: Theme.font; font.pixelSize: 13 }
         }
         Column {
             width: parent.width; spacing: 4

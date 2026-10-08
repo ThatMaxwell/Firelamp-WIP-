@@ -70,10 +70,11 @@ Item {
     function point(target, verb, k) {
         locate(target, function (n) {
             cursor.verb = verb + " " + (target.say || n.name);
-            markItem(n);
             var b = n.bounds;
             var tx = b.w > 120 ? b.x + Math.min(b.w / 2, 40 + Math.random() * 20) : b.x + b.w / 2;
-            cursor.moveTo(tx, b.y + b.h / 2, function () { gate(function () { k(n); }); });
+            cursor.moveTo(tx, b.y + b.h / 2, function () {
+                cursor.aim(target.say || n.name, function () { gate(function () { k(n); }); });
+            }, Math.min(b.w, b.h * 3));
         });
     }
     // every continuation passes through the gate, so pause and stop take effect between moves
@@ -96,20 +97,24 @@ Item {
             capsule.what = "Opening " + title; cursor.verb = "opening " + title;
             var r = Os.dock.iconRect(s.app);
             return cursor.moveTo(r.x + r.width / 2, r.y + r.height / 2, function () {
-                gate(function () {
-                    cursor.click(function () {
-                        Os.desktop.open(s.app);
-                        log("open", "Opened " + title, s.why, title);
-                        after(560, next);
+                cursor.aim(title, function () {
+                    gate(function () {
+                        cursor.click(function () {
+                            Os.desktop.open(s.app);
+                            cursor.clearTarget();
+                            log("open", "Opened " + title, s.why, title);
+                            after(560, next);
+                        });
                     });
                 });
-            });
+            }, r.width);
         }
         case "click":
             capsule.what = s.title || "Clicking “" + (s.target.say || s.target.name) + "”";
             return point(s.target, "clicking", function (n) {
                 cursor.click(function () {
                     if (n.item.aiActivate) n.item.aiActivate();
+                    cursor.clearTarget();
                     log("click", s.title || "Clicked “" + (s.target.say || n.name) + "”", s.why, appTitle(n.app));
                     after(280, function () { unmark(); next(); });
                 });
@@ -119,7 +124,8 @@ Item {
             return point(s.target, "reading", function (n) {
                 if (n.item.aiSelectAll) n.item.aiSelectAll();
                 s.done(n.item.aiText ? n.item.aiText() : "");
-                after(500, function () { log("look", s.title, s.why, appTitle(n.app)); unmark(); next(); });
+                cursor.busy = true;
+                after(500, function () { cursor.busy = false; cursor.clearTarget(); log("look", s.title, s.why, appTitle(n.app)); unmark(); next(); });
             });
         case "type":
             capsule.what = s.title || "Typing in “" + (s.target.say || s.target.name) + "”";
@@ -127,7 +133,9 @@ Item {
                 cursor.click(function () {
                     if (n.item.aiActivate) n.item.aiActivate();
                     cursor.verb = "typing…";
-                    typer.start2(n.item, typeof s.text === "function" ? s.text() : s.text, s.cps || 38, function () {
+                    cursor.clearTarget(); cursor.busy = true;
+                    typer.start2(n.item, typeof s.text === "function" ? s.text() : s.text, s.cps ? 1000 / s.cps : 45, function () {
+                        cursor.busy = false;
                         log("type", s.title || "Typed into “" + (s.target.say || n.name) + "”", s.why, appTitle(n.app));
                         unmark(); next();
                     });
@@ -143,21 +151,24 @@ Item {
                     ghost.source = src; ghost.width = w; ghost.height = h; ghost.visible = true;
                     sn.item.opacity = 0.35;
                     unmark();
+                    cursor.clearTarget();
                     locate(s.dst, function (dn) {
                         cursor.verb = "moving to " + dn.name;
-                        markItem(dn);
                         if (dn.item.aiDropTarget !== undefined) dn.item.aiDropTarget = true;
                         cursor.moveTo(dn.bounds.x + dn.bounds.w / 2, dn.bounds.y + dn.bounds.h / 2 - 10, function () {
+                          cursor.aim(s.dst.say || dn.name, function () {
                             gate(function () {
                                 cursor.pressed = false; ghost.visible = false;
                                 if (dn.item.aiDropTarget !== undefined) dn.item.aiDropTarget = false;
                                 cursor.click(function () {
                                     if (s.drop) s.drop(api);
                                     log("move", s.title || "Moved “" + sn.name + "” into “" + dn.name + "”", s.why, appTitle(sn.app));
+                                    cursor.clearTarget();
                                     after(380, function () { unmark(); next(); });
                                 });
                             });
-                        });
+                          });
+                        }, dn.bounds.w);
                     });
                 };
                 // apps can hand over a clean icon for the dragged thing; otherwise snapshot it
@@ -166,10 +177,11 @@ Item {
             });
         case "confirm":
             if (!Os.settings.askBeforeRisky) return next();
-            capsule.what = "Waiting for your OK"; cursor.verb = "waiting for you";
+            capsule.what = "Waiting for your OK"; cursor.verb = "waiting for you"; cursor.clearTarget(); cursor.busy = true;
             log("ask", s.logTitle || "Asked for permission", s.why, "Firelamp");
             var req = Object.assign({ why: s.why }, s.request);
             return permission.ask(req, function (ok) {
+                cursor.busy = false;
                 if (stopped) return;
                 if (ok) return after(250, next);
                 log("denied", "You said no, so I stopped there", "", "Firelamp");
@@ -180,14 +192,14 @@ Item {
         next();
     }
 
-    // types at a human-ish rhythm; catches up if frames are slow, so the speed holds anywhere
+    // types about 45 ms a character, ±15; catches up if frames are slow, so the speed holds anywhere
     Timer {
         id: typer
-        property var item; property string text; property int i; property var k; property real base: 26; property real last: 0; property real owed: 0
+        property var item; property string text; property int i; property var k; property real base: 45; property real last: 0; property real owed: 0
         repeat: true
-        function start2(it, t, cps, done) {
+        function start2(it, t, perChar, done) {
             item = it; text = t; i = 0; k = done; owed = 0; last = Date.now();
-            base = 1000 / cps / (Os.settings.cursorSpeed || 1); interval = Math.max(8, base); start();
+            base = perChar / (Os.settings.cursorSpeed || 1); interval = Math.max(8, Math.min(15, base)); start();
         }
         onTriggered: {
             var now = Date.now(), dt = now - last; last = now;
@@ -196,7 +208,7 @@ Item {
             while (i < text.length && owed > 0) {
                 var ch = text[i++];
                 if (item.aiType) item.aiType(ch);
-                owed -= (ch === " " ? 1.6 : 1) * base * (0.6 + Math.random() * 0.8);
+                owed -= (ch === " " ? 1.3 : 1) * base * (1 + (Math.random() * 2 - 1) / 3);
             }
             if (i >= text.length) { stop(); var f = k; k = null; f(); }
         }
@@ -226,7 +238,7 @@ Item {
         if (how === "done") log("done", "Done", label, "Firelamp");
         if (how === "stopped") { log("denied", "Stopped by you", "You pressed stop, so I stopped right away.", "Firelamp"); Os.say("Stopped. Nothing else was changed."); }
         stopped = true;
-        unmark(); ghost.visible = false; cursor.pressed = false; cursor.paused = false; cursor.verb = "";
+        unmark(); ghost.visible = false; cursor.pressed = false; cursor.paused = false; cursor.verb = ""; cursor.busy = false; cursor.clearTarget();
         var r = Os.dock.iconRect("assistant");
         var end = function () { cursor.hide(); capsule.shown = false; mode = "idle"; };
         if (r) cursor.moveTo(r.x + r.width / 2, r.y + 4, end); else end();

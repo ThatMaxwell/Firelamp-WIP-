@@ -29,13 +29,14 @@ Item {
     property real k: 1          // 0 = at the dock, 1 = in place
     readonly property real dx: (dockPoint.x - (x + width / 2)) * (1 - k)
     readonly property real dy: (dockPoint.y - (y + height / 2)) * (1 - k)
+    property real appear: 1     // opening: 0.94 → 1 with a fade, 300 ms
     transform: [
-        Scale { origin.x: w.width / 2; origin.y: w.height / 2; xScale: 0.08 + 0.92 * w.k; yScale: 0.06 + 0.94 * w.k },
+        Scale { origin.x: w.width / 2; origin.y: w.height / 2; xScale: (0.08 + 0.92 * w.k) * (0.94 + 0.06 * w.appear); yScale: (0.06 + 0.94 * w.k) * (0.94 + 0.06 * w.appear) },
         Translate { x: w.dx; y: w.dy }
     ]
-    opacity: Math.min(1, k * 2.5)
+    opacity: Math.min(1, k * 2.5) * appear
 
-    function openAnim() { dockOrigin(); k = 0; openA.start(); }
+    function openAnim() { k = 1; appearA.start(); }
     function close() { closeA.start(); }
     function minimize() { dockOrigin(); minA.start(); }
     function restore() { visible = true; minimized = false; dockOrigin(); openA.start(); }
@@ -45,7 +46,8 @@ Item {
         else { restoreRect = Qt.rect(x, y, width, height); frameA.to = area; }
         frameA.start();
     }
-    NumberAnimation { id: openA; target: w; property: "k"; from: 0; to: 1; duration: 520; easing.type: Easing.OutQuint }
+    NumberAnimation { id: appearA; target: w; property: "appear"; from: 0; to: 1; duration: 300; easing.type: Easing.OutQuint }
+    NumberAnimation { id: openA; target: w; property: "k"; from: 0; to: 1; duration: 420; easing.type: Easing.OutQuint }
     ParallelAnimation {
         id: closeA
         NumberAnimation { target: w; property: "opacity"; to: 0; duration: 180 }
@@ -107,7 +109,7 @@ Item {
         visible: false
         Rectangle { anchors.fill: parent; radius: Theme.rWin; color: "black" }
     }
-    Rectangle { anchors.fill: parent; radius: Theme.rWin; color: "transparent"; border.color: Qt.rgba(1, 1, 1, 0.13); border.width: 0.5 }
+    Rectangle { anchors.fill: parent; radius: Theme.rWin; color: "transparent"; border.color: Theme.hairline2; border.width: 1 }
 
     // title bar: drag + double-click zoom
     MouseArea {

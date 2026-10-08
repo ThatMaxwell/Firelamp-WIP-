@@ -1,5 +1,6 @@
 // The menu bar: Firelamp menu, the focused app's menus, and status items on the right.
 import QtQuick
+import "../js/logo.js" as L
 
 Rectangle {
     id: bar
@@ -8,8 +9,8 @@ Rectangle {
     property Item menuLayer
     property string aiApp: "menubar"
     height: Theme.menubarH
-    color: Qt.rgba(0.06, 0.06, 0.058, 0.5)
-    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 0.5; color: Qt.rgba(1, 1, 1, 0.06) }
+    color: Qt.rgba(18 / 255, 17 / 255, 16 / 255, 0.85)
+    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.hairline }
 
     property var menu: null
     function closeMenu() { if (menu) menu.destroy(); menu = null; openFor = null; }
@@ -58,7 +59,7 @@ Rectangle {
         height: 22; radius: 5
         width: inner.childrenRect.width + 18
         anchors.verticalCenter: parent ? parent.verticalCenter : undefined
-        color: bar.openFor === bi || ma.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+        color: bar.openFor === bi ? Theme.surface3 : ma.containsMouse ? Theme.hover : "transparent"
         Item { id: inner; x: 9; height: parent.height; width: childrenRect.width }
         MouseArea {
             id: ma; anchors.fill: parent; hoverEnabled: true
@@ -68,13 +69,16 @@ Rectangle {
     }
     component BarText: Text {
         anchors.verticalCenter: parent.verticalCenter
-        color: Theme.text; font.family: Theme.font; font.pixelSize: 13
+        color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium
     }
 
     Row {
         x: 8; height: parent.height
-        BarItem { key: "logo"; label: "Firelamp menu"; width: 34; Logo { width: 14; height: 16; y: 3; x: 1 } }
-        BarItem { key: "app"; label: "App menu"; BarText { text: bar.appName; font.weight: Font.Bold } }
+        // the menu-bar mark is a plain cream glyph; colour stays with the AI
+        BarItem { key: "logo"; label: "Firelamp menu"; width: 30
+            Image { width: 12; height: 17; y: 2; x: 0; sourceSize: Qt.size(24, 34); smooth: true
+                source: "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="24 26 644 966"><path fill="#EFEAE4" d="' + L.PATHS.outer + '"/></svg>') } }
+        BarItem { key: "app"; label: "App menu"; BarText { text: bar.appName; font.weight: Font.DemiBold } }
         Repeater {
             model: ["File", "Edit", "View", "Window", "Help"]
             BarItem { required property string modelData; key: modelData; label: modelData + " menu"; BarText { text: modelData } }
@@ -93,24 +97,23 @@ Rectangle {
             function aiActivate() { Os.timelineToggle(undefined); }
             readonly property string st: Os.agent ? Os.agent.mode : "idle"
             anchors.verticalCenter: parent.verticalCenter
-            height: 22; radius: 11
-            width: aiRow.width + 16
-            color: st === "running" ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.06)
+            height: 22; radius: 5
+            width: aiRow.width + 18
+            color: aim.containsMouse ? Theme.hover : "transparent"
             Row {
-                id: aiRow; x: 7; spacing: 6; anchors.verticalCenter: parent.verticalCenter
-                Logo { width: 12; height: 14; animated: ai.st !== "idle" }
-                BarText { text: Os.name; font.pixelSize: 12; font.weight: Font.DemiBold }
+                id: aiRow; x: 9; spacing: 6; anchors.verticalCenter: parent.verticalCenter
                 Rectangle {
                     width: 6; height: 6; radius: 3; anchors.verticalCenter: parent.verticalCenter
-                    color: ai.st === "running" ? Theme.accent : ai.st === "paused" ? Theme.text2 : Theme.text4
-                    SequentialAnimation on opacity { running: ai.st === "running"; loops: Animation.Infinite; NumberAnimation { to: 0.35; duration: 600 } NumberAnimation { to: 1; duration: 600 } }
+                    color: ai.st === "running" ? Theme.ember : ai.st === "paused" ? Theme.text2 : Theme.text4
+                    Behavior on color { ColorAnimation { duration: 280 } }
                 }
+                BarText { text: Os.name; color: Theme.text2; font.weight: Font.Medium }
             }
-            MouseArea { anchors.fill: parent; onClicked: ai.aiActivate() }
+            MouseArea { id: aim; anchors.fill: parent; hoverEnabled: true; onClicked: ai.aiActivate() }
         }
         BarItem { key: "battery"; label: "Battery"; alignRight: true
             Row { spacing: 5; height: parent.height
-                BarText { text: "87%"; font.pixelSize: 12; color: Theme.text2 }
+                BarText { text: "87%"; color: Theme.text; font.features: { "tnum": 1 } }
                 Glyph { name: "battery"; width: 25; height: 12; anchors.verticalCenter: parent.verticalCenter } } }
         BarItem { key: "wifi"; label: "Wi-Fi"; alignRight: true; Glyph { name: "wifi"; width: 15; height: 15; anchors.verticalCenter: parent.verticalCenter } }
         Rectangle {
@@ -118,13 +121,14 @@ Rectangle {
             property string aiRole: "button"
             function aiActivate() { Os.askOpen(); }
             width: 33; height: 22; radius: 5; anchors.verticalCenter: parent.verticalCenter
-            color: sma.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            color: sma.containsMouse ? Theme.hover : "transparent"
             Glyph { name: "search"; width: 15; height: 15; anchors.centerIn: parent }
             MouseArea { id: sma; anchors.fill: parent; hoverEnabled: true; onClicked: Os.askOpen() }
         }
         BarItem { key: "control"; label: "Control Center"; alignRight: true; Glyph { name: "control"; width: 15; height: 15; anchors.verticalCenter: parent.verticalCenter } }
         BarText {
             id: clock
+            font.weight: Font.Medium
             leftPadding: 8; rightPadding: 8
             font.features: { "tnum": 1 }
             function tick() { var d = new Date(); text = Os.days[d.getDay()] + " " + Os.months[d.getMonth()].slice(0, 3) + " " + d.getDate() + "  " + Os.clock(d); }

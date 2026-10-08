@@ -28,7 +28,11 @@ Item {
         color: f.textColor
         font.family: Theme.font
         font.pixelSize: f.pixelSize
-        selectionColor: Qt.rgba(0.94, 0.44, 0.23, 0.32)
+        selectionColor: Qt.rgba(1, 244 / 255, 232 / 255, 0.2)
+        selectedTextColor: Theme.text
+        cursorDelegate: Rectangle {
+            width: 2; color: Os.agent && Os.agent.mode !== "idle" ? Theme.amber : Theme.text
+        }
         clip: true
         onAccepted: f.accepted()
         Text {

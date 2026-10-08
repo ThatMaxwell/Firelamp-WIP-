@@ -1,56 +1,73 @@
-// Firelamp OS design tokens: ember palette from the logo, warm darks, Mac-like metrics.
+// Firelamp OS design tokens (design/DIRECTION.md §4). Graphite surfaces, cream text.
+// Ember belongs to the AI only: the fire cursor, its target tag, the Assistant, a live dot.
 pragma Singleton
 import QtQuick
 
 QtObject {
-    // Ember lives in the logo and the fire cursor. Everywhere else it is a rare accent:
-    // primary buttons, switches that are on, today's date, an unread dot. Nothing more.
-    readonly property color ember: "#E2402A"
-    readonly property color orange: "#FF8A3D"
-    readonly property color amber: "#FFB547"
-    readonly property color cream: "#FFD08A"
-    readonly property color accent: "#F0703A"
-    readonly property color accentSoft: Qt.rgba(0.94, 0.44, 0.23, 0.16)
+    // ---- surfaces ----
+    readonly property color bg: "#121110"
+    readonly property color surface0: "#181716"
+    readonly property color surface1: "#1F1D1B"
+    readonly property color surface2: "#272422"
+    readonly property color surface3: "#312E2B"
+    readonly property color hairline: Qt.rgba(1, 244 / 255, 232 / 255, 0.07)
+    readonly property color hairline2: Qt.rgba(1, 244 / 255, 232 / 255, 0.12)
 
-    // selection and ink are neutral
-    readonly property color sel: Qt.rgba(1, 1, 1, 0.085)
-    readonly property color selStrong: Qt.rgba(1, 1, 1, 0.14)
-    readonly property color ink: Qt.rgba(0.96, 0.94, 0.92, 0.5)
-    readonly property color success: "#7fcf95"
-    readonly property color danger: "#ff7b68"
+    // ---- text ----
+    readonly property color text: "#EFEAE4"
+    readonly property color text2: "#ABA49C"
+    readonly property color text3: "#76706A"
+    readonly property color text4: "#57524D"
 
-    // graphite with the faintest warmth, never brown
-    readonly property color bg: "#0f0f0f"
-    readonly property color win: "#1c1c1b"
-    readonly property color win2: "#222221"
-    readonly property color win3: "#2a2a29"
-    readonly property color win4: "#353534"
-    readonly property color side: "#191918"
-    readonly property color line: Qt.rgba(1, 1, 1, 0.06)
-    readonly property color line2: Qt.rgba(1, 1, 1, 0.1)
-    readonly property color line3: Qt.rgba(1, 1, 1, 0.18)
-    readonly property color hover: Qt.rgba(1, 1, 1, 0.055)
+    // ---- the AI's colours ----
+    readonly property color ember: "#F26A2E"
+    readonly property color emberSoft: Qt.rgba(242 / 255, 106 / 255, 46 / 255, 0.14)
+    readonly property color amber: "#FFB65C"
 
-    readonly property color text: "#f3f1ef"
-    readonly property color text2: "#bdb9b5"
-    readonly property color text3: "#87837f"
-    readonly property color text4: "#5c5956"
+    // ---- status ----
+    readonly property color danger: "#E5484D"
+    readonly property color ok: "#3FB97A"
+    readonly property color focusRing: Qt.rgba(239 / 255, 234 / 255, 228 / 255, 0.4)
 
-    // the dock is plain dark grey, on purpose
-    readonly property color dock: Qt.rgba(0.165, 0.157, 0.153, 0.86)
-    readonly property color glass: Qt.rgba(0.11, 0.11, 0.105, 0.92)
+    // older names, kept so every component reads from the same tokens
+    readonly property color win: surface0
+    readonly property color side: surface1
+    readonly property color win2: surface1
+    readonly property color win3: surface2
+    readonly property color win4: surface3
+    readonly property color sel: surface2
+    readonly property color selStrong: surface3
+    readonly property color line: hairline
+    readonly property color line2: hairline2
+    readonly property color line3: Qt.rgba(1, 244 / 255, 232 / 255, 0.2)
+    readonly property color hover: Qt.rgba(1, 244 / 255, 232 / 255, 0.05)
+    readonly property color ink: Qt.rgba(239 / 255, 234 / 255, 228 / 255, 0.4)
+    readonly property color success: ok
+    readonly property color accent: text             // primary actions are cream, not orange
+    readonly property color onAccent: bg
 
-    readonly property string font: "Inter"
-    readonly property string mono: "JetBrains Mono"
+    readonly property color dock: Qt.rgba(0x23 / 255, 0x21 / 255, 0x20 / 255, 0.92)
+    readonly property color glass: Qt.rgba(0x1F / 255, 0x1D / 255, 0x1B / 255, 0.96)
 
-    readonly property int menubarH: 30
+    // ---- type: Instrument Sans + Martian Mono, bundled (OFL) ----
+    readonly property FontLoader sansLoader: FontLoader { source: Qt.resolvedUrl("../fonts/InstrumentSans.ttf") }
+    readonly property FontLoader monoLoader: FontLoader { source: Qt.resolvedUrl("../fonts/MartianMono.ttf") }
+    readonly property string font: sansLoader.status === FontLoader.Ready ? sansLoader.name : "Instrument Sans"
+    readonly property string mono: monoLoader.status === FontLoader.Ready ? monoLoader.name : "Martian Mono"
+
+    readonly property int menubarH: 28
     readonly property int rWin: 12
 
-    // traffic lights stay exactly Mac
-    readonly property color lightClose: "#ff5f57"
-    readonly property color lightMin: "#febc2e"
-    readonly property color lightZoom: "#28c840"
+    // traffic lights, 10% quieter than Mac
+    readonly property color lightClose: "#E8574F"
+    readonly property color lightMin: "#E6B03A"
+    readonly property color lightZoom: "#3BB54E"
 
-    // a little "spring" every Mac animation has
-    readonly property int springCurve: Easing.OutBack
+    // ---- motion (§6): critically damped, no overshoot ----
+    readonly property int ease: Easing.OutQuint
+    readonly property int springCurve: Easing.OutQuint
+    readonly property int tFast: 140
+    readonly property int tBase: 280
+    readonly property int tOpen: 300
+    readonly property int tClose: 180
 }

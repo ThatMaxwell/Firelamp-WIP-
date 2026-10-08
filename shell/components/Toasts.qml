@@ -24,11 +24,11 @@ Column {
             width: 344; height: 64
             property real slide: 380
             Component.onCompleted: { slide = 0; life.start(); }
-            transform: Translate { x: t.slide; Behavior on x { NumberAnimation { duration: 520; easing.type: Easing.OutBack } } }
+            transform: Translate { x: t.slide; Behavior on x { NumberAnimation { duration: 520; easing.type: Easing.OutQuint } } }
             Timer { id: life; interval: 4200; onTriggered: { t.slide = 400; gone.start(); } }
             Timer { id: gone; interval: 400; onTriggered: model.remove(t.index) }
             RectangularShadow { anchors.fill: tb; radius: 16; blur: 40; offset.y: 10; color: Qt.rgba(0, 0, 0, 0.55) }
-            Rectangle { id: tb; anchors.fill: parent; radius: 16; color: Qt.rgba(0.15, 0.15, 0.145, 0.96); border.color: Qt.rgba(1, 1, 1, 0.12); border.width: 0.5 }
+            Rectangle { id: tb; anchors.fill: parent; radius: 16; color: Theme.surface1; border.color: Theme.hairline2; border.width: 1 }
             Image { x: 14; anchors.verticalCenter: parent.verticalCenter; width: 34; height: 34; sourceSize: Qt.size(68, 68); source: Art.icon(t.icon) }
             Column {
                 x: 59; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 110

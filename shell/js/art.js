@@ -37,7 +37,7 @@ function tile(bg, art, opts) {
     <path d="${SQUIRCLE}" fill="${bg.fill}"/>
     ${art}
     <path d="${SQUIRCLE}" fill="url(#${id}s)"/>
-    <path d="${SQUIRCLE}" fill="none" stroke="#ffffff" stroke-opacity=".14" stroke-width=".8"/>`);
+    <path d="${SQUIRCLE}" fill="none" stroke="#ffffff" stroke-opacity=".08" stroke-width=".8"/>`);
 }
 
 var lin = (id, a, b, x2 = 0, y2 = 1) =>
@@ -56,77 +56,31 @@ function maxwellSVG(fill = 'currentColor') {
 function calendarIcon() {
   var d = new Date();
   var mon = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][d.getMonth()];
-  return tile({ fill: '#fbf7f2' }, `
-    <text x="50" y="33" text-anchor="middle" font-family="Inter" font-weight="650" font-size="13" letter-spacing="1" fill="#E2402A">${mon}</text>
-    <text x="50" y="75" text-anchor="middle" font-family="Inter" font-weight="300" font-size="44" fill="#2a2320">${d.getDate()}</text>`, { sheen: 0 });
+  return flat('#ECE7DF', `
+    <text x="50" y="40" text-anchor="middle" font-family="Instrument Sans" font-weight="700" font-size="13" letter-spacing=".5" fill="#B04A2A">${mon}</text>
+    <text x="50" y="74" text-anchor="middle" font-family="Instrument Sans" font-weight="600" font-size="34" fill="#2A2622">${d.getDate()}</text>`);
+}
+
+// Our own icon family (design/DIRECTION.md §8): muted neutral tiles, one simple glyph each.
+// Graphite, paper, clay, sage, slate, ink-blue. Only the Assistant is ember.
+function flat(bg, art) {
+  return tile({ fill: bg }, `<g transform="translate(50 50) scale(.71) translate(-50 -50)">${art}</g>`, { sheen: .07 });
 }
 
 var APP_ICONS = {
-  assistant: () => tile({ fill: 'url(#aBg)', defs: `
-      <radialGradient id="aBg" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="#2f2e2d"/><stop offset="1" stop-color="#121212"/></radialGradient>
-      <radialGradient id="aGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ff7a33" stop-opacity=".35"/><stop offset="1" stop-color="#ff7a33" stop-opacity="0"/></radialGradient>` },
-    `<circle cx="50" cy="56" r="34" fill="url(#aGlow)"/>
-     <g transform="translate(29.5 17) scale(.0585)">${logoInner()}</g>`),
-
-  files: () => tile({ fill: 'url(#fBg)', defs: lin('fBg', '#7cc4ff', '#2f7be0') + lin('fFr', '#ffffff', '#eaf3ff') }, `
-    <path d="M22 34a5 5 0 0 1 5-5h14l6 6h26a5 5 0 0 1 5 5v4H22z" fill="#fff" opacity=".72"/>
-    <rect x="22" y="40" width="56" height="34" rx="5" fill="url(#fFr)"/>
-    <path d="M38 55q12 8 24 0" fill="none" stroke="#2f7be0" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="40" cy="49" r="2" fill="#2f7be0"/><circle cx="60" cy="49" r="2" fill="#2f7be0"/>`),
-
-  web: () => tile({ fill: 'url(#wBg)', defs: lin('wBg', '#fdfdfd', '#e8eaed') + lin('wRing', '#62b6ff', '#1f66d6') }, `
-    <circle cx="50" cy="50" r="31" fill="none" stroke="url(#wRing)" stroke-width="5"/>
-    ${Array.from({ length: 24 }, (_, i) => { var a = i * 15 * Math.PI / 180, r1 = i % 6 ? 24 : 21; return `<line x1="${50 + Math.cos(a) * r1}" y1="${50 + Math.sin(a) * r1}" x2="${50 + Math.cos(a) * 26}" y2="${50 + Math.sin(a) * 26}" stroke="#b9bdc3" stroke-width="1.2"/>`; }).join('')}
-    <path d="M50 50 L66 33 L54 54 Z" fill="#ff4d3d"/><path d="M50 50 L34 67 L46 46 Z" fill="#d4d7dc"/>
-    <circle cx="50" cy="50" r="2.6" fill="#fff" stroke="#b9bdc3"/>`, { sheen: .3 }),
-
-  terminal: () => tile({ fill: 'url(#tBg)', defs: lin('tBg', '#2e2e2e', '#0d0d0d') }, `
-    <rect x="8" y="8" width="84" height="84" rx="16" fill="none" stroke="#ffffff" stroke-opacity=".08"/>
-    <path d="M27 36l11 9-11 9" fill="none" stroke="#f2f2f2" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="43" y="52" width="18" height="5" rx="2.5" fill="#9a9a9a"/>`),
-
-  notes: () => tile({ fill: 'url(#nBg)', defs: '<linearGradient id="nBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffdd5c"/><stop offset=".29" stop-color="#f7c331"/><stop offset=".29" stop-color="#e3e1dc"/><stop offset=".305" stop-color="#fdfcf9"/><stop offset="1" stop-color="#fdfcf9"/></linearGradient>' }, `
-    ${[44, 56, 68, 80].map(y => `<line x1="20" y1="${y}" x2="80" y2="${y}" stroke="#e6e4df" stroke-width="1.6"/>`).join('')}
-    <path d="M22 44h40M22 56h48M22 68h30" stroke="#a9a7a2" stroke-width="2.4" stroke-linecap="round" stroke-opacity=".6"/>`, { sheen: .25 }),
-
-  mail: () => tile({ fill: 'url(#mBg)', defs: lin('mBg', '#64b2ff', '#1e6be0') + lin('mEnv', '#ffffff', '#eef4fc') }, `
-    <rect x="20" y="31" width="60" height="40" rx="6" fill="url(#mEnv)"/>
-    <path d="M22 34l28 21 28-21" fill="none" stroke="#7aa8e6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`),
-
-  music: () => tile({ fill: 'url(#muBg)', defs: lin('muBg', '#ff6681', '#e2304e') }, `
-    <path d="M41 30v32a8 8 0 1 1-4-7V36l28-6v26a8 8 0 1 1-4-7V30z" fill="#fff" transform="translate(-1 2)"/>
-    <path d="M40 36l26-6" stroke="#fff" stroke-width="5" stroke-linecap="round"/>`),
-
-  photos: () => tile({ fill: '#fdfaf6' }, `
-    <g transform="translate(50 50) scale(.064)">
-      ${['#ffcf4a', '#ff9b3d', '#ff5a5f', '#d65db1', '#8a6ff0', '#3fa7f5', '#3ccf9a', '#a3d94a'].map((c, i) => `<path d="${PETAL}" transform="rotate(${i * 45})" fill="${c}" opacity=".88"/>`).join('')}
-    </g>`, { sheen: .2 }),
-
+  assistant: () => flat('#2A2622', `<g transform="translate(27.9 17.4) scale(.064)"><path fill="#F26A2E" d="${Logo.PATHS.outer}"/><path fill="#2A2622" d="${Logo.PATHS.arrow}"/></g>`),
+  files: () => flat('#3A4A57', '<path d="M20 34h22l6 6h32v38H20z" fill="#C9D4DC"/>'),
+  web: () => flat('#E9E4DC', '<circle cx="50" cy="50" r="26" fill="none" stroke="#3A3631" stroke-width="5"/><path d="M24 50h52M50 24c10 10 10 42 0 52M50 24c-10 10-10 42 0 52" fill="none" stroke="#3A3631" stroke-width="4"/>'),
+  mail: () => flat('#2F3B4A', '<rect x="22" y="30" width="56" height="40" rx="5" fill="none" stroke="#DCE3EA" stroke-width="5"/><path d="M24 34l26 20 26-20" fill="none" stroke="#DCE3EA" stroke-width="5" stroke-linejoin="round"/>'),
+  notes: () => flat('#D9CDB5', '<path d="M30 24h40v52H30z" fill="#F4EEE2"/><path d="M36 38h28M36 48h28M36 58h18" stroke="#8B7E68" stroke-width="4" stroke-linecap="round"/>'),
+  terminal: () => flat('#1A1918', '<path d="M28 38l12 12-12 12" fill="none" stroke="#EFEAE4" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M48 64h22" stroke="#76706A" stroke-width="5" stroke-linecap="round"/>'),
   calendar: calendarIcon,
-
-  settings: () => tile({ fill: 'url(#sBg)', defs: lin('sBg', '#a2a2a5', '#5c5c60') + lin('sG', '#48484b', '#2a2a2c') }, `
-    <g transform="translate(50 50)">
-      ${Array.from({ length: 12 }, (_, i) => `<rect x="-4.5" y="-33" width="9" height="12" rx="2" fill="url(#sG)" transform="rotate(${i * 30})"/>`).join('')}
-      <circle r="24" fill="url(#sG)"/><circle r="15" fill="#8e8e92"/><circle r="9" fill="#38383a"/>
-    </g>`, { sheen: .3 }),
-
-  timeline: () => tile({ fill: 'url(#tlBg)', defs: lin('tlBg', '#2f221d', '#140e0b') }, `
-    <line x1="34" y1="26" x2="34" y2="74" stroke="#5a463c" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="34" cy="30" r="6" fill="#ffd08a"/><circle cx="34" cy="50" r="6" fill="#ff8a3d"/><circle cx="34" cy="70" r="6" fill="#e2402a"/>
-    <rect x="46" y="27" width="30" height="6" rx="3" fill="#6e5649"/><rect x="46" y="47" width="22" height="6" rx="3" fill="#6e5649"/><rect x="46" y="67" width="26" height="6" rx="3" fill="#6e5649"/>`),
-
-  downloads: () => svg(`
-    <defs>${lin('dlB', '#79bdfd', '#4b98f0')}${lin('dlF', '#9fd2ff', '#5aa6f6')}</defs>
-    <path d="M10 26a6 6 0 0 1 6-6h22l7 7h39a6 6 0 0 1 6 6v6H10z" fill="url(#dlB)"/>
-    <rect x="10" y="32" width="80" height="54" rx="7" fill="url(#dlF)"/>
-    <path d="M50 44v26m-10-10l10 10 10-10" fill="none" stroke="#2a6fd0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`),
-
-  trash: (full = false) => svg(`
-    <defs><linearGradient id="trB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".62"/><stop offset="1" stop-color="#ffffff" stop-opacity=".28"/></linearGradient></defs>
-    <path d="M24 26h52l-5 60a6 6 0 0 1-6 5H35a6 6 0 0 1-6-5z" fill="url(#trB)" stroke="#ffffff" stroke-opacity=".5" stroke-width="1"/>
-    ${[36, 44, 52, 60, 68].map(x => `<path d="M${x} 32l${(x - 52) * .07} 54" stroke="#ffffff" stroke-opacity=".35" stroke-width="1.6"/>`).join('')}
-    ${full ? '<path d="M30 30q8-12 18-4q10-10 22 2" fill="#fff" opacity=".85"/>' : ''}
-    <rect x="20" y="20" width="60" height="7" rx="3.5" fill="#ffffff" fill-opacity=".75"/>`),
+  photos: () => flat('#5B6B57', '<circle cx="38" cy="40" r="7" fill="#E8E2D2"/><path d="M20 74l20-20 12 12 10-10 18 18z" fill="#E8E2D2"/>'),
+  music: () => flat('#4A3B47', '<path d="M42 28v34a8 8 0 1 1-6-7.7V34l28-6v28a8 8 0 1 1-6-7.7V34" fill="none" stroke="#EADDE6" stroke-width="5" stroke-linejoin="round"/>'),
+  settings: () => flat('#3A3836', '<circle cx="50" cy="50" r="10" fill="none" stroke="#D8D2CA" stroke-width="6"/><path d="M50 22v10M50 68v10M22 50h10M68 50h10M30 30l7 7M63 63l7 7M70 30l-7 7M37 63l-7 7" stroke="#D8D2CA" stroke-width="6" stroke-linecap="round"/>'),
+  timeline: () => flat('#2C2B2A', '<path d="M30 30h.01M30 50h.01M30 70h.01" stroke="#D8D2CA" stroke-width="8" stroke-linecap="round"/><path d="M44 30h28M44 50h20M44 70h24" stroke="#8D867F" stroke-width="5" stroke-linecap="round"/>'),
+  downloads: () => flat('#3A3E44', '<path d="M50 26v36M36 50l14 14 14-14M28 74h44" fill="none" stroke="#D4D9DE" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'),
+  trash: (full = false) => flat('#2C2B2A', `${full ? '<path d="M36 34q4-10 12-5 8-8 16 2z" fill="#E9E4DC"/>' : ''}<path d="M32 34h36l-4 42H36z" fill="none" stroke="#BDB6AE" stroke-width="4" stroke-linejoin="round"/><path d="M28 34h44M42 28h16" stroke="#BDB6AE" stroke-width="4" stroke-linecap="round"/>`),
 };
 
 // ---------- 16px line glyphs ----------
@@ -192,17 +146,17 @@ function maxwell(color) {
 
 // ---------- file icons (Files app) ----------
 function page(band, label, lines) {
-  return svg(`<path d="M14 4h22l12 12v38a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z" fill="#fbf6f0"/><path d="M36 4v9a3 3 0 0 0 3 3h9z" fill="#e6dacd"/>${lines === false ? '' : '<path d="M17 26h20M17 31h24M17 36h16" stroke="#d8cabd" stroke-width="2" stroke-linecap="round"/>'}<rect x="11" y="42" width="37" height="11" fill="${band}"/><text x="29.5" y="50.5" text-anchor="middle" font-family="Inter" font-weight="700" font-size="7.5" fill="#fff">${label}</text>`, '0 0 60 60');
+  return svg(`<path d="M14 4h22l12 12v38a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z" fill="#fbf6f0"/><path d="M36 4v9a3 3 0 0 0 3 3h9z" fill="#e6dacd"/>${lines === false ? '' : '<path d="M17 26h20M17 31h24M17 36h16" stroke="#d8cabd" stroke-width="2" stroke-linecap="round"/>'}<rect x="11" y="42" width="37" height="11" fill="${band}"/><text x="29.5" y="50.5" text-anchor="middle" font-family="Instrument Sans" font-weight="700" font-size="7.5" fill="#fff">${label}</text>`, '0 0 60 60');
 }
 function photo(a, b) {
-  return svg(`<defs>${lin('ph', a, b)}</defs><rect x="6" y="11" width="48" height="38" rx="3" fill="#fff"/><rect x="9" y="14" width="42" height="32" rx="1.5" fill="url(#ph)"/><circle cx="40" cy="22" r="4" fill="#fff4d6" fill-opacity=".9"/><path d="M9 46l12-12 9 8 7-6 14 10z" fill="#280e08" fill-opacity=".55"/>`, '0 0 60 60');
+  return svg(`<defs>${lin('ph', a, b)}</defs><rect x="6" y="11" width="48" height="38" rx="3" fill="#fff"/><rect x="9" y="14" width="42" height="32" rx="1.5" fill="url(#ph)"/><circle cx="40" cy="22" r="4" fill="#fff4d6" fill-opacity=".9"/><path d="M9 46l12-12 9 8 7-6 14 10z" fill="#1B201D" fill-opacity=".5"/>`, '0 0 60 60');
 }
 var FILE_ICONS = {
-  jpg: () => photo('#7fc4ff', '#2f6fb8'), png: () => photo('#ff9f6b', '#6a1f10'),
-  pdf: () => page('#e2402a', 'PDF'), docx: () => page('#3a7bd5', 'DOC'), txt: () => page('#8a7a70', 'TXT'),
-  gz: () => page('#6a5c54', 'TAR', false), mp3: () => page('#e2304e', 'MP3', false),
+  jpg: () => photo('#8DA2B4', '#3E4C59'), png: () => photo('#A7B2A0', '#4F5A4A'),
+  pdf: () => page('#9A4B3A', 'PDF'), docx: () => page('#3E5568', 'DOC'), txt: () => page('#7A6C5D', 'TXT'),
+  gz: () => page('#5B5550', 'TAR', false), mp3: () => page('#5E4A5A', 'MP3', false),
   iso: () => svg(`<defs><radialGradient id="dsc"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#ffd9b0"/><stop offset=".75" stop-color="#ffb3a0"/><stop offset="1" stop-color="#e9e2ff"/></radialGradient></defs><circle cx="30" cy="30" r="24" fill="url(#dsc)"/><circle cx="30" cy="30" r="6" fill="#1b1614" stroke="#ccc"/>`, '0 0 60 60'),
-  folder: () => APP_ICONS.downloads().replace(/<path d="M50 44v26[^>]*>/, ''),
+  folder: () => svg(`<path d="M10 26a6 6 0 0 1 6-6h22l7 7h39a6 6 0 0 1 6 6v6H10z" fill="#6F8496"/><rect x="10" y="32" width="80" height="54" rx="7" fill="#8FA3B3"/><path d="M10 39h80" stroke="#fff" stroke-opacity=".12"/>`),
 };
 function fileIcon(kind) { return uri((FILE_ICONS[kind] || FILE_ICONS.txt)()); }
 function logo() { return Logo.uri(-1); }

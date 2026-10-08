@@ -8,18 +8,20 @@ Item {
     signal picked()
     width: Math.max(232, col.implicitWidth + 10)
     height: col.implicitHeight + 10
-    opacity: 0; scale: 0.985; transformOrigin: Item.TopLeft
-    Component.onCompleted: { opacity = 1; scale = 1; }
-    Behavior on opacity { NumberAnimation { duration: 120 } }
-    Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+    opacity: 0
+    property real drop: -4
+    transform: Translate { y: drop }
+    Component.onCompleted: { opacity = 1; drop = 0; }
+    Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutQuint } }
+    Behavior on drop { NumberAnimation { duration: 140; easing.type: Easing.OutQuint } }
 
     RectangularShadow { anchors.fill: bg; radius: 10; blur: 30; offset.y: 12; color: Qt.rgba(0, 0, 0, 0.6) }
     Rectangle {
         id: bg
         anchors.fill: parent
         radius: 10
-        color: Qt.rgba(0.14, 0.14, 0.135, 0.96)
-        border.color: Qt.rgba(1, 1, 1, 0.14); border.width: 0.5
+        color: Theme.surface2
+        border.color: Theme.hairline2; border.width: 1
     }
     Column {
         id: col

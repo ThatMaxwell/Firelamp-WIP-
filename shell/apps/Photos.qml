@@ -1,4 +1,4 @@
-// Photos: a warm library grid.
+// Photos: a library grid.
 import QtQuick
 import "../components"
 
@@ -6,8 +6,9 @@ Item {
     id: app
     property var win
     function start(opts) {}
-    readonly property var photos: [["#ffb547", "#e2402a"], ["#3a1a10", "#ff8a3d"], ["#ffd08a", "#ff6a3a"], ["#2a1f1b", "#c8402f"], ["#ff9f6b", "#6a1f10"], ["#ffe3b8", "#ffb547"],
-                                   ["#e2402a", "#2a0f08"], ["#ffc27a", "#8a3a1a"], ["#5a2a1a", "#ffd08a"], ["#ff7a33", "#ffd08a"], ["#1c0f0a", "#e2402a"], ["#ffb547", "#fff1d6"]]
+    // a real-looking library: skies, sea, moss, stone, dusk; one warm evening, not twelve
+    readonly property var photos: [["#8DA2B4", "#3E4C59"], ["#C9C0B0", "#6E665A"], ["#5E6E58", "#26301F"], ["#2E3A48", "#11161C"], ["#B7C3C8", "#56656C"], ["#7A6C5D", "#2E2822"],
+                                   ["#D8A47A", "#4A3428"], ["#3F4A44", "#1B201D"], ["#A7B2A0", "#4F5A4A"], ["#606B78", "#262B31"], ["#D9D2C5", "#9A9183"], ["#4B5563", "#1E232A"]]
     Row {
         x: 92; y: 15; spacing: 10
         Text { text: "Library"; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.Bold }
@@ -26,7 +27,7 @@ Item {
                 property string aiRole: "image"
                 width: g.cell; height: g.cell * 0.72; radius: 3
                 gradient: Gradient { GradientStop { position: 0; color: app.photos[index][0] } GradientStop { position: 1; color: app.photos[index][1] } }
-                Rectangle { x: parent.width * (0.2 + (index * 17 % 50) / 100); y: parent.height * (0.15 + (index * 11 % 40) / 100); width: parent.width * 0.32; height: width; radius: width / 2; color: "#fff4d6"; opacity: 0.22 }
+                Rectangle { x: parent.width * (0.2 + (index * 17 % 50) / 100); y: parent.height * (0.15 + (index * 11 % 40) / 100); width: parent.width * 0.32; height: width; radius: width / 2; color: "#F4EFE6"; opacity: 0.16 }
             }
         }
     }

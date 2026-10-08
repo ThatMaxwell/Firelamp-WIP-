@@ -12,7 +12,7 @@ Item {
     anchors.fill: parent
     visible: opacity > 0
     opacity: shown ? 1 : 0
-    Behavior on opacity { NumberAnimation { duration: 260 } }
+    Behavior on opacity { NumberAnimation { duration: ps.shown ? 300 : 180; easing.type: Easing.OutQuint } }
 
     function ask(req, cb) { request = req; callback = cb; shown = true; card.forceActiveFocus(); }
     function answer(ok) { if (!shown) return; shown = false; var cb = callback; callback = null; if (cb) cb(ok); }
@@ -25,36 +25,37 @@ Item {
         id: card
         width: 420; height: col.implicitHeight + 42
         anchors.horizontalCenter: parent.horizontalCenter
-        y: Theme.menubarH + 70 + (ps.shown ? 0 : -24)
-        scale: ps.shown ? 1 : 0.95
-        Behavior on y { NumberAnimation { duration: 480; easing.type: Easing.OutBack } }
-        Behavior on scale { NumberAnimation { duration: 480; easing.type: Easing.OutBack } }
+        y: Theme.menubarH + 80 + (ps.shown ? 0 : -8)
+        scale: ps.shown ? 1 : 0.94
+        Behavior on y { NumberAnimation { duration: 300; easing.type: Easing.OutQuint } }
+        Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutQuint } }
         Keys.onEscapePressed: ps.answer(false)
 
-        RectangularShadow { anchors.fill: bg; radius: 18; blur: 80; offset.y: 30; color: Qt.rgba(0, 0, 0, 0.8) }
-        Rectangle { id: bg; anchors.fill: parent; radius: 18; color: Qt.rgba(0.125, 0.125, 0.12, 0.97) }
-        InkRect { anchors.fill: parent; anchors.margins: -1; radius: 18; color: Theme.ink; lineWidth: 1.5; running: ps.shown }
+        RectangularShadow { anchors.fill: bg; radius: 14; blur: 60; offset.y: 24; color: Qt.rgba(0, 0, 0, 0.6) }
+        Rectangle { id: bg; anchors.fill: parent; radius: 14; color: Theme.surface1; border.color: Theme.hairline2; border.width: 1 }
 
         Column {
             id: col
             x: 24; y: 24; width: parent.width - 48
             spacing: 0
-            Row {
-                spacing: 14
-                Rectangle {
-                    width: 46; height: 46; radius: 13; color: Theme.win4
-                    Logo { anchors.centerIn: parent; width: 30; height: 35; animated: ps.shown }
-                }
-                Column {
-                    width: col.width - 60; spacing: 4
-                    Text { width: parent.width; text: (ps.request.title || "").replace("{name}", Os.name); wrapMode: Text.WordWrap; color: Theme.text; font.family: Theme.font; font.pixelSize: 15; font.weight: Font.Bold }
-                    Text { width: parent.width; text: ps.request.body || ""; wrapMode: Text.WordWrap; color: Theme.text2; font.family: Theme.font; font.pixelSize: 12 }
+            // the only ember on the sheet: who is asking
+            Rectangle {
+                height: 22; radius: 6; width: badge.implicitWidth + 18
+                color: Theme.emberSoft; border.color: Qt.rgba(242 / 255, 106 / 255, 46 / 255, 0.3); border.width: 1
+                Row {
+                    id: badge; anchors.centerIn: parent; spacing: 6
+                    Rectangle { width: 6; height: 6; radius: 3; color: Theme.ember; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: Os.name + " wants to"; color: Theme.text; font.family: Theme.font; font.pixelSize: 11; font.weight: Font.DemiBold }
                 }
             }
+            Item { width: 1; height: 14 }
+            Text { width: parent.width; text: (ps.request.title || "").replace("{name}", Os.name); wrapMode: Text.WordWrap; color: Theme.text; font.family: Theme.font; font.pixelSize: 17; font.weight: Font.DemiBold; lineHeight: 1.1 }
+            Item { width: 1; height: 6 }
+            Text { width: parent.width; text: ps.request.body || ""; wrapMode: Text.WordWrap; color: Theme.text2; font.family: Theme.font; font.pixelSize: 13; lineHeight: 1.15 }
             Item { width: 1; height: 16 }
             Rectangle {
                 width: parent.width; height: det.implicitHeight + 20; radius: 10
-                color: Qt.rgba(0, 0, 0, 0.25); border.color: Theme.line2; border.width: 0.5
+                color: Theme.surface0; border.color: Theme.hairline; border.width: 1
                 visible: !!ps.request.details
                 Column {
                     id: det; x: 12; y: 10; width: parent.width - 24; spacing: 4
@@ -71,17 +72,16 @@ Item {
             Item { width: 1; height: 12 }
             Row {
                 spacing: 7; visible: !!ps.request.why
-                Glyph { name: "sparkle"; width: 13; height: 13; color: Theme.text3; anchors.verticalCenter: parent.verticalCenter }
                 Text { text: ps.request.why || ""; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
             }
             Item { width: 1; height: 18 }
             Row {
                 spacing: 8
-                FButton { width: (col.width - 8) / 2; height: 32; text: ps.request.deny || "Don't Allow"; onClicked: ps.answer(false) }
+                FButton { width: (col.width - 8) / 2; height: 32; text: ps.request.deny || "Don’t Allow"; onClicked: ps.answer(false) }
                 FButton { objectName: "permAllow"; width: (col.width - 8) / 2; height: 32; primary: true; text: ps.request.allow || "Allow Once"; onClicked: ps.answer(true) }
             }
             Item { width: 1; height: 12 }
-            Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; text: "Only you can answer this. " + Os.name + " is waiting."; color: Theme.text4; font.family: Theme.font; font.pixelSize: 11 }
+            Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; text: "Only you can answer this."; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
         }
     }
 }

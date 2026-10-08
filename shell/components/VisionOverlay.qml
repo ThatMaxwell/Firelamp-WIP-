@@ -18,29 +18,48 @@ Item {
         running: vo.visible; interval: 120; repeat: true; triggeredOnStart: true
         onTriggered: { var l = Tree.nodes(vo.target); if (l.length !== vo.list.length) vo.changes++; vo.list = l; }
     }
-    Rectangle { anchors.fill: parent; color: Qt.rgba(0.03, 0.03, 0.03, 0.4) }
+    // the menu bar and dock stay clean; only app content is drawn, as quiet hairlines
+    readonly property var shownList: list.filter(function (n) { return n.app !== "menubar" && n.app !== "dock"; })
+    Rectangle { anchors.fill: parent; color: Qt.rgba(0.04, 0.04, 0.035, 0.25) }
+    MouseArea { id: hov; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+    // the one element under your pointer (or the fire cursor) gets its label; the smallest wins
+    readonly property var hotNode: {
+        var c = Os.cursor, px = -1, py = -1;
+        if (hov.containsMouse) { px = hov.mouseX; py = hov.mouseY; }
+        else if (c && c.shown) { px = c.px; py = c.py; }
+        var best = null, area = 1e12;
+        for (var i = 0; i < shownList.length; i++) {
+            var b = shownList[i].bounds;
+            if (shownList[i].role === "window" || px < b.x || px > b.x + b.w || py < b.y || py > b.y + b.h) continue;
+            if (b.w * b.h < area) { area = b.w * b.h; best = shownList[i]; }
+        }
+        return best;
+    }
     Repeater {
-        model: vo.list
+        model: vo.shownList
         delegate: Rectangle {
+            id: box
             required property var modelData
             readonly property bool win: modelData.role === "window"
+            readonly property bool hot: vo.hotNode !== null && vo.hotNode.item === modelData.item
             x: modelData.bounds.x; y: modelData.bounds.y; width: modelData.bounds.w; height: modelData.bounds.h
             radius: win ? 12 : 4
-            color: win ? "transparent" : Qt.rgba(1, 1, 1, 0.04)
-            border.color: modelData.role === "textbox" ? Qt.rgba(1, 0.72, 0.5, 0.9) : Qt.rgba(1, 1, 1, win ? 0.35 : 0.6)
-            border.width: win ? 1.5 : 1
+            color: hot ? Qt.rgba(1, 244 / 255, 232 / 255, 0.05) : "transparent"
+            border.color: Qt.rgba(1, 244 / 255, 232 / 255, hot ? 0.5 : 0.25)
+            border.width: 1
             Rectangle {
-                visible: parent.width > 26 || parent.win
-                y: parent.win ? -17 : -15
-                height: parent.win ? 16 : 14
-                width: Math.min(tag.implicitWidth + 10, 220)
-                radius: 3
-                color: parent.win ? Theme.text : Qt.rgba(0.08, 0.08, 0.08, 0.92)
+                visible: box.hot
+                y: -height - 4
+                height: 18
+                width: Math.min(tag.implicitWidth + 12, 260)
+                radius: 5
+                color: Theme.surface2
+                border.color: Theme.hairline2; border.width: 1
                 Text {
-                    id: tag; x: 5; anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - 10; elide: Text.ElideRight
-                    text: modelData.role + " · " + modelData.name
-                    color: parent.parent.win ? Theme.bg : Theme.text2
+                    id: tag; x: 6; anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - 12; elide: Text.ElideRight
+                    text: box.modelData.role + " · " + box.modelData.name
+                    color: Theme.text2
                     font.family: Theme.mono; font.pixelSize: 9
                 }
             }
@@ -49,11 +68,11 @@ Item {
     Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom; anchors.bottomMargin: 100
-        width: hud.implicitWidth + 28; height: 32; radius: 12
-        color: Qt.rgba(0.09, 0.09, 0.09, 0.92); border.color: Theme.line3; border.width: 0.5
+        width: hud.implicitWidth + 28; height: 32; radius: 10
+        color: Theme.surface1; border.color: Theme.hairline2; border.width: 1
         Row {
             id: hud; anchors.centerIn: parent; spacing: 14
-            Text { text: "● LIVE"; color: Theme.success; font.family: Theme.mono; font.pixelSize: 11 }
+            Text { text: "UI tree"; color: Theme.text; font.family: Theme.font; font.pixelSize: 12; font.weight: Font.DemiBold }
             Text { text: "<b>" + vo.list.length + "</b> elements"; textFormat: Text.StyledText; color: Theme.text2; font.family: Theme.mono; font.pixelSize: 11 }
             Text { text: "<b>" + vo.changes + "</b> changes"; textFormat: Text.StyledText; color: Theme.text2; font.family: Theme.mono; font.pixelSize: 11 }
             Text { text: "<b>0</b> screenshots"; textFormat: Text.StyledText; color: Theme.text2; font.family: Theme.mono; font.pixelSize: 11 }

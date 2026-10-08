@@ -25,11 +25,11 @@ Item {
         scale: ask.shown ? 1 : 0.97
         Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
         RectangularShadow { anchors.fill: bg; radius: 16; blur: 80; offset.y: 30; color: Qt.rgba(0, 0, 0, 0.7) }
-        Rectangle { id: bg; anchors.fill: parent; radius: 16; color: Qt.rgba(0.125, 0.125, 0.12, 0.97); border.color: Qt.rgba(1, 1, 1, 0.14); border.width: 0.5 }
+        Rectangle { id: bg; anchors.fill: parent; radius: 16; color: Theme.surface1; border.color: Theme.hairline2; border.width: 1 }
         MouseArea { anchors.fill: parent }
         Row {
             x: 16; height: 58; spacing: 12
-            Logo { width: 22; height: 26; animated: ask.shown; anchors.verticalCenter: parent.verticalCenter }
+            Logo { width: 22; height: 26; anchors.verticalCenter: parent.verticalCenter }
             Field {
                 id: field
                 width: box.width - 110; height: 58

@@ -50,7 +50,7 @@ Item {
         width: row.width + 12
         radius: 22
         color: Theme.dock
-        border.color: Qt.rgba(1, 1, 1, 0.11); border.width: 0.5
+        border.color: Theme.hairline; border.width: 1
         Rectangle { x: 20; width: parent.width - 40; height: 1; y: 1; color: Qt.rgba(1, 1, 1, 0.06) }
     }
 
@@ -96,7 +96,7 @@ Item {
                 width: sep ? 15 : size + 4
                 height: dock.base
 
-                Rectangle { visible: di.sep; width: 1; height: dock.base * 0.82; anchors.centerIn: parent; color: Qt.rgba(1, 1, 1, 0.17) }
+                Rectangle { visible: di.sep; width: 1; height: dock.base * 0.82; anchors.centerIn: parent; color: Theme.hairline2 }
 
                 Item {
                     id: iconBox
@@ -131,7 +131,7 @@ Item {
                     width: 4; height: 4; radius: 2
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.bottom; anchors.topMargin: 1.5
-                    color: dock.aiActiveId === di.appId ? Theme.orange : Qt.rgba(1, 1, 1, 0.78)
+                    color: dock.aiActiveId === di.appId ? Theme.ember : Theme.text2
                     opacity: dock.running[di.appId] ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 250 } }
                 }
@@ -144,8 +144,8 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     y: parent.height - di.size - 14 - height
                     width: tipText.implicitWidth + 20; height: 26; radius: 7
-                    color: Qt.rgba(0.15, 0.15, 0.145, 0.94)
-                    border.color: Qt.rgba(1, 1, 1, 0.14); border.width: 0.5
+                    color: Theme.surface2
+                    border.color: Theme.hairline2; border.width: 1
                     Text { id: tipText; anchors.centerIn: parent; text: di.aiName; color: Theme.text; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Medium }
                 }
                 MouseArea {

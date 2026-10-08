@@ -19,7 +19,7 @@ QtObject {
         property string assistantName: ""      // the user names their assistant; no default
         property bool askBeforeRisky: true
         property real cursorSpeed: 1.0
-        property bool showTrail: true
+        property bool idleFade: true
     }
     readonly property string name: settings.assistantName || "Assistant"
     property bool vision: false

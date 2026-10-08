@@ -59,7 +59,7 @@ Item {
                                     Component.onCompleted: text = Os.settings.assistantName
                                     onAccepted: if (text.trim()) Os.settings.assistantName = text.trim() }
                         }
-                        Text { width: 300; wrapMode: Text.WordWrap; text: "The name your assistant answers to, and the name on its cursor."; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
+                        Text { width: 300; wrapMode: Text.WordWrap; text: "The name your assistant answers to. Until you pick one, it is just “Assistant”."; color: Theme.text3; font.family: Theme.font; font.pixelSize: 11 }
                     }
                 }
                 Group {
@@ -88,8 +88,8 @@ Item {
                         }
                     }
                     Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
-                    Row2 { title: "Ember trail"; hint: "Little sparks that follow it around"
-                           Toggle { label: "Ember trail"; checked: Os.settings.showTrail; onToggled: (c) => Os.settings.showTrail = c } }
+                    Row2 { title: "Fade when idle"; hint: "The fire cursor hides after a moment of rest"
+                           Toggle { label: "Fade when idle"; checked: Os.settings.idleFade; onToggled: (c) => Os.settings.idleFade = c } }
                     Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
                     Row2 { title: "Show what the AI sees"; hint: "Outline every element in the live UI tree"
                            Toggle { label: "Show what the AI sees"; checked: Os.vision; onToggled: (c) => Os.vision = c } }

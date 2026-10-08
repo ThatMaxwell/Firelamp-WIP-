@@ -86,7 +86,7 @@ Rectangle {
                 }
                 Row {
                     topPadding: 6; spacing: 0
-                    Repeater { model: ["#0f0f0f", "#1c1c1b", "#353534", "#87837f", "#f3f1ef", "#F0703A"]; Rectangle { required property string modelData; width: 20; height: 12; color: modelData } }
+                    Repeater { model: ["#121110", "#1F1D1B", "#312E2B", "#76706A", "#EFEAE4", "#F26A2E"]; Rectangle { required property string modelData; width: 20; height: 12; color: modelData } }
                 }
             }
         }
