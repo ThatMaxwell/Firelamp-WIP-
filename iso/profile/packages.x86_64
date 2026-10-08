@@ -1,0 +1,136 @@
+# Firelamp OS live image packages (Arch x86_64).
+# Base system and boot
+base
+linux
+linux-firmware
+linux-firmware-marvell
+sof-firmware
+amd-ucode
+intel-ucode
+mkinitcpio
+mkinitcpio-archiso
+mkinitcpio-nfs-utils
+syslinux
+grub
+efibootmgr
+edk2-shell
+memtest86+
+memtest86+-efi
+sudo
+less
+nano
+vim
+man-db
+zsh
+grml-zsh-config
+arch-install-scripts
+archinstall
+reflector
+rsync
+squashfs-tools
+
+# Storage tools (for installing / rescue)
+btrfs-progs
+cryptsetup
+dosfstools
+e2fsprogs
+exfatprogs
+f2fs-tools
+gptfdisk
+lvm2
+mdadm
+ntfsprogs
+parted
+xfsprogs
+nvme-cli
+smartmontools
+usbutils
+
+# Networking
+iwd
+iw
+wireless-regdb
+wpa_supplicant
+dhcpcd
+systemd-resolvconf
+openssh
+curl
+wget
+
+# Virtual machine guests (VirtualBox is the dev target)
+virtualbox-guest-utils
+qemu-guest-agent
+spice-vdagent
+open-vm-tools
+
+# Graphics stack
+mesa
+vulkan-swrast
+vulkan-intel
+vulkan-radeon
+libva-mesa-driver
+
+# Wayland session
+# labwc: small wlroots stacking compositor with layer-shell, so the QML shell
+# (top bar, dock) can sit on screen edges while apps get normal floating windows.
+# cage: kiosk compositor, a fallback that runs the shell full screen.
+labwc
+cage
+xorg-xwayland
+wlr-randr
+wl-clipboard
+grim
+slurp
+wtype
+ydotool
+swaybg
+xdg-desktop-portal
+xdg-desktop-portal-wlr
+xdg-utils
+polkit
+foot
+foot-terminfo
+
+# Qt 6 / QML (the Firelamp shell is written in QML)
+qt6-base
+qt6-declarative
+qt6-wayland
+qt6-svg
+qt6-shadertools
+qt6-5compat
+qt6-imageformats
+qt6-multimedia
+qt6-multimedia-ffmpeg
+qt6-virtualkeyboard
+layer-shell-qt
+python-pyqt6
+
+# Accessibility: AT-SPI2 is how the AI reads the live UI tree
+at-spi2-core
+python-atspi
+python-gobject
+orca
+
+# Audio
+pipewire
+pipewire-pulse
+pipewire-alsa
+wireplumber
+alsa-utils
+livecd-sounds
+espeakup
+brltty
+
+# Fonts and cursor theme
+noto-fonts
+noto-fonts-emoji
+inter-font
+ttf-jetbrains-mono
+adwaita-cursors
+papirus-icon-theme
+
+# Python runtime for the AI layer
+python
+python-pip
+python-dbus
+python-requests

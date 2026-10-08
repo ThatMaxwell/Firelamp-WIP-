@@ -1,0 +1,11 @@
+[Unit]
+Description=Report Firelamp desktop boot status on the serial port
+After=getty@tty1.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/firelamp-boot-report
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
