@@ -239,7 +239,7 @@ img, video { display: block; max-width: 100%; }
 @keyframes chip { from { opacity: 0; transform: translateY(6px); } }
 
 /* control + name */
-.name { padding: clamp(140px, 22vh, 240px) var(--gut) 0; max-width: calc(var(--max) + 2 * var(--gut)); margin: 0 auto; display: flex; flex-direction: column; align-items: flex-start; }
+.ctl-try { margin-top: 10px; color: var(--t3); font-size: 15px; }
 .keycap { margin-top: 36px; width: 104px; height: 90px; border-radius: 18px; position: relative; background: linear-gradient(#2a2826, #1e1d1b); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 1px 0 rgba(255,255,255,.12) inset, 0 8px 0 #0a0909, 0 10px 30px rgba(0,0,0,.6); transition: transform .12s, box-shadow .12s; }
 .keycap span { position: absolute; left: 16px; top: 14px; font: 500 16px var(--sans); color: var(--t2); }
 .keycap:active, .keycap.down { transform: translateY(6px); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 1px 0 rgba(255,255,255,.12) inset, 0 2px 0 #0a0909, 0 4px 14px rgba(0,0,0,.6); }
@@ -248,10 +248,10 @@ img, video { display: block; max-width: 100%; }
 .paused .ctl-state::before { background: var(--ember); }
 
 /* name */
-.name-field { position: relative; margin-top: 48px; width: min(560px, 100%); }
-#aiName { width: 100%; background: none; border: 0; outline: none; font: 600 clamp(40px, 6vw, 84px)/1.1 var(--display); font-stretch: 88%; letter-spacing: -.03em; color: var(--t1); caret-color: var(--ember); padding-bottom: 10px; }
+.name-field { position: relative; display: block; margin-top: 36px; width: 100%; }
+#aiName { width: 100%; background: none; border: 0; outline: none; font: 600 clamp(38px, 4.4vw, 68px)/1.1 var(--display); font-stretch: 88%; letter-spacing: -.03em; color: var(--t1); caret-color: var(--ember); padding-bottom: 10px; }
 #aiName::placeholder { color: var(--t4); }
-.name-ask { margin-top: 26px; }
+.name-ask { margin-top: 22px; }
 .name-field svg { position: absolute; left: 0; bottom: 0; width: 100%; height: 14px; }
 
 /* end */

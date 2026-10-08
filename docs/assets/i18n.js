@@ -39,11 +39,13 @@ window.I18N = {
     'live.btn': 'Start the desktop',
 
     'ctl.h': 'You can stop it. Instantly.',
-    'ctl.p': "See the little fire cursor wandering around this page? Press Esc, or the key below. That's how pausing works in Firelamp, too.",
+    'ctl.p': "Reach into the window it's working in and it pauses itself. Press Esc and it stops.",
+    'ctl.try': 'Try it on the fire cursor wandering around this page.',
+    'pl.t': 'It shows you the plan first.', 'pl.p': "Before it touches anything, you see every step it's about to take. Say go, or change the plan.",
     'ctl.run': "It's running.", 'ctl.paused': 'Paused. Press again to let it go.',
 
     'nm.h': 'No default name.',
-    'nm.p': 'Your assistant is called whatever you call it. Try it: the fire cursor on this page will wear the name.',
+    'nm.p': 'The first time you turn it on, you name it, and the fire cursor signs it. Try it here: the cursor on this page will wear the name.',
     'nm.ph': 'Type a name',
 
     'nm.ask': 'Or let the fire cursor type one', 'nm.sample': 'Juniper',
@@ -90,11 +92,13 @@ window.I18N = {
     'live.btn': 'Ligar o desktop',
 
     'ctl.h': 'Você pode parar. Na hora.',
-    'ctl.p': 'Viu o cursorzinho de fogo passeando pela página? Aperte Esc, ou a tecla aqui embaixo. É assim que pausar funciona no Firelamp também.',
+    'ctl.p': 'Mexa na janela em que ela está trabalhando e ela se pausa sozinha. Aperte Esc e ela para.',
+    'ctl.try': 'Teste no cursorzinho de fogo passeando pela página.',
+    'pl.t': 'Ela mostra o plano antes.', 'pl.p': 'Antes de mexer em qualquer coisa, você vê cada passo que ela vai dar. Mande seguir, ou mude o plano.',
     'ctl.run': 'Está rodando.', 'ctl.paused': 'Pausado. Aperte de novo para soltar.',
 
     'nm.h': 'Sem nome padrão.',
-    'nm.p': 'Sua assistente se chama do jeito que você quiser. Teste: o cursor de fogo desta página vai usar o nome.',
+    'nm.p': 'Na primeira vez que você liga, você dá o nome, e o cursor de fogo assina. Teste aqui: o cursor desta página vai usar o nome.',
     'nm.ph': 'Digite um nome',
 
     'nm.ask': 'Ou deixe o cursor de fogo digitar um', 'nm.sample': 'Jabuticaba',
