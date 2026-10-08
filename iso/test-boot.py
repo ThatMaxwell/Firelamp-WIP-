@@ -13,6 +13,7 @@ Exits non-zero if the desktop session or the AT-SPI2 tree never came up.
 """
 import argparse
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -126,7 +127,9 @@ def main():
         ], check=False)
 
     print(report or "test-boot: no boot report on the serial port", flush=True)
-    ok = "FIRELAMP_ATSPI_OK" in report and "compositor: NOT RUNNING" not in report
+    m = re.search(r"FIRELAMP_ATSPI_OK apps=(\d+)", report)
+    ok = bool(m) and int(m.group(1)) > 0 and "compositor: NOT RUNNING" not in report \
+        and "shell: NOT RUNNING" not in report
     print("test-boot:", "PASS" if ok else "FAIL", flush=True)
     sys.exit(0 if ok else 1)
 

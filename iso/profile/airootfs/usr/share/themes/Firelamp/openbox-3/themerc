@@ -1,7 +1,6 @@
 # Firelamp: warm ember accents on soft dark charcoal.
 border.width: 1
 padding.height: 6
-titlebar.height: 30
 window.titlebar.padding.width: 10
 window.button.width: 22
 window.button.spacing: 2

@@ -75,6 +75,16 @@ def run(cmd):
         return f"({exc})"
 
 
+def shell_env():
+    pid = run(["pgrep", "-n", "-f", "qml|firelamp-shell"]).split("\n")[0]
+    try:
+        with open(f"/proc/{pid}/environ", "rb") as fh:
+            env = fh.read().decode(errors="replace").split("\0")
+    except OSError as exc:
+        return f"({exc})"
+    return " ".join(e for e in env if e.startswith(("QT_", "DBUS_", "XDG_RUNTIME", "WAYLAND")))
+
+
 def boot_report():
     time.sleep(20)
     out = []
@@ -83,8 +93,17 @@ def boot_report():
     out.append("shell: " + (run(["pgrep", "-a", "-f", "qml|firelamp-shell"]) or "NOT RUNNING"))
     out.append("qt: " + run(["/usr/lib/qt6/bin/qtpaths6", "--qt-version"]))
     out.append("renderer: " + os.environ.get("WLR_RENDERER", "auto"))
+    out.append("a11y bus enabled: " + run(["busctl", "--user", "get-property", "org.a11y.Bus", "/org/a11y/bus", "org.a11y.Status", "IsEnabled"]))
+    out.append("a11y launcher: " + (run(["pgrep", "-a", "-f", "at-spi"]) or "NOT RUNNING"))
     try:
-        apps, nodes, lines = snapshot(4)
+        # Apps register on the bus a moment after they start; give them time.
+        for _ in range(30):
+            apps, nodes, lines = snapshot(4)
+            if apps:
+                break
+            time.sleep(2)
+        if not apps:
+            out.append("shell env: " + shell_env())
         out.append(f"FIRELAMP_ATSPI_OK apps={len(apps)} nodes={nodes} names={apps}")
         out.extend(lines[:40])
     except Exception as exc:

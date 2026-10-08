@@ -41,6 +41,20 @@ jobs:
         if: always()
         run: python3 iso/test-boot.py iso/out/*.iso --out boot-test/uefi --uefi
 
+      - name: Print desktop screenshot (base64 JPEG, for tools without artifact access)
+        if: always()
+        run: |
+          for mode in bios uefi; do
+            f=boot-test/$mode/desktop.png
+            [ -f "$f" ] || continue
+            ffmpeg -loglevel error -y -i "$f" -vf scale=960:-1 -q:v 6 "boot-test/$mode/desktop-small.jpg"
+            echo "::group::desktop-$mode.jpg base64"
+            echo "BEGIN_DESKTOP_JPEG_$mode"
+            base64 -w 0 "boot-test/$mode/desktop-small.jpg"; echo
+            echo "END_DESKTOP_JPEG_$mode"
+            echo "::endgroup::"
+          done
+
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4

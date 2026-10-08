@@ -25,12 +25,6 @@
     <font place="OnScreenDisplay"><name>Inter</name><size>11</size></font>
   </theme>
 
-  <windowSwitcher show="yes" preview="yes" outlines="yes">
-    <fields>
-      <field content="icon" width="5%" />
-      <field content="title" width="95%" />
-    </fields>
-  </windowSwitcher>
 
   <keyboard>
     <default />
