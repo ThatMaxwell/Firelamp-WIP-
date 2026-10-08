@@ -33,6 +33,20 @@ starts the Firelamp shell.
 or Sway on demand; `firelamp-desktops serve` is the local API Settings > Desktops talks to.
 Installed desktops appear as sessions on the SDDM login screen.
 
+## Installer
+
+Calamares (the CachyOS build) does an offline install: it copies the live system from the
+ISO's squashfs, creates the user, removes the live-only bits (`firelamp-postinstall`),
+rebuilds the initramfs and installs GRUB for BIOS or UEFI. Btrfs with `@`, `@home`,
+`@cache` and `@log` subvolumes is the default; ext4 and XFS are offered. Its settings and
+branding live in `profile/airootfs/usr/share/firelamp/calamares/`, and `firelamp-install`
+(the "Install Firelamp OS" launcher) copies them over the package defaults before starting.
+
+## Releases
+
+Pushing a `v*` tag runs the same build and boot test, then publishes the ISO as a GitHub
+Release with its SHA-256 (split into parts when it is over the 2 GiB asset limit).
+
 ## The shell contract
 
 `/usr/local/bin/firelamp-shell` picks the first of:

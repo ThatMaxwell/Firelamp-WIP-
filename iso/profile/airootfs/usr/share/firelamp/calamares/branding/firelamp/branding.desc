@@ -1,0 +1,37 @@
+---
+componentName:  firelamp
+
+welcomeStyleCalamares:   false
+welcomeExpandingLogo:   true
+windowExpanding:    normal
+windowSize: 1000px,640px
+windowPlacement: center
+sidebar: widget
+navigation: widget
+
+strings:
+    productName:         Firelamp OS
+    shortProductName:    Firelamp
+    version:             rolling
+    shortVersion:        rolling
+    versionedName:       Firelamp OS
+    shortVersionedName:  Firelamp
+    bootloaderEntryName: Firelamp OS
+    productUrl:          https://github.com/ThatMaxwell/Firelamp-WIP-
+    supportUrl:          https://github.com/ThatMaxwell/Firelamp-WIP-/issues
+    knownIssuesUrl:      https://github.com/ThatMaxwell/Firelamp-WIP-/issues
+    releaseNotesUrl:     https://github.com/ThatMaxwell/Firelamp-WIP-/releases
+
+images:
+    productLogo:         "logo.png"
+    productIcon:         "logo.png"
+    productWelcome:      "welcome.png"
+
+slideshow:               "show.qml"
+slideshowAPI:            2
+
+style:
+   SidebarBackground:        "#1b1210"
+   SidebarText:              "#f4e6dc"
+   SidebarTextCurrent:       "#1a100c"
+   SidebarBackgroundCurrent: "#ff6a2b"

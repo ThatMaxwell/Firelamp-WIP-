@@ -97,6 +97,7 @@ def boot_report():
     out.append("compositor: " + (compositor or "NOT RUNNING"))
     out.append("desktop: " + os.environ.get("XDG_CURRENT_DESKTOP", "-") + " " + (run(["pgrep", "-a", "-x", "plasmashell"]) or "(no plasmashell)"))
     out.append("kernel: " + run(["uname", "-r"]))
+    out.append("installer: " + (run(["pacman", "-Q", "cachyos-calamares-next"]) or "NOT INSTALLED"))
     out.append("shell: " + (run(["pgrep", "-a", "-f", "qt6/bin/qml|firelamp/shell/firelamp-shell"]) or "NOT RUNNING"))
     out.append("qt: " + run(["/usr/lib/qt6/bin/qtpaths6", "--qt-version"]))
     out.append("renderer: " + os.environ.get("WLR_RENDERER", "auto"))

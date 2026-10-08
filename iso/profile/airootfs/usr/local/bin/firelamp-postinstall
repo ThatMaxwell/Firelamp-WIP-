@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Run by the installer inside the newly installed system (chroot). Removes
+# everything that only makes sense on the live ISO.
+set -u
+
+# Kernel: the ISO keeps it outside the squashfs, so restore it from the package.
+for mod in /usr/lib/modules/*/; do
+    [[ -f "$mod/pkgbase" && -f "$mod/vmlinuz" ]] || continue
+    pkgbase="$(<"$mod/pkgbase")"
+    install -Dm644 "$mod/vmlinuz" "/boot/vmlinuz-$pkgbase"
+    cat >"/etc/mkinitcpio.d/$pkgbase.preset" <<PRESET
+# mkinitcpio preset for the '$pkgbase' package
+ALL_kver="/boot/vmlinuz-$pkgbase"
+PRESETS=('default')
+default_image="/boot/initramfs-$pkgbase.img"
+PRESET
+done
+rm -f /etc/mkinitcpio.conf.d/archiso.conf
+
+# Live user conveniences.
+rm -f /etc/sudoers.d/10-firelamp-live \
+      /etc/sddm.conf.d/20-live-autologin.conf \
+      /usr/share/applications/firelamp-install.desktop /etc/skel/Desktop/firelamp-install.desktop \
+      /etc/motd /root/.zlogin
+
+# Live-only services and settings.
+for unit in choose-mirror.service pacman-init.service livecd-talk.service \
+            livecd-alsa-unmuter.service firelamp-boot-report.service etc-pacman.d-gnupg.mount; do
+    rm -f "/etc/systemd/system/$unit"
+    find /etc/systemd/system -name "$unit" -type l -delete
+done
+rm -f /etc/systemd/journald.conf.d/volatile-storage.conf \
+      /etc/systemd/logind.conf.d/do-not-suspend.conf \
+      /etc/systemd/resolved.conf.d/archiso.conf
+rm -rf /etc/systemd/system-generators/systemd-gpt-auto-generator
+
+# Fresh pacman keyring for this machine.
+rm -rf /etc/pacman.d/gnupg
+pacman-key --init
+pacman-key --populate
+
+# Name the boot entry.
+if [[ -f /etc/default/grub ]]; then
+    sed -i 's/^GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="Firelamp OS"/' /etc/default/grub
+fi
+
+# The installer itself is not needed on the installed system.
+pacman -Rns --noconfirm calamares cachyos-calamares-next >/dev/null 2>&1 || true
+rm -rf /etc/calamares /usr/share/firelamp/calamares
+exit 0
