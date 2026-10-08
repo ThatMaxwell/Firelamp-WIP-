@@ -281,7 +281,7 @@ elif scene == "trust":
     at(300, lambda: call("launch", "settings"))
     at(1200, lambda: call("setTrust", "terminal", "all"))
     at(1300, lambda: call("setTrust", "web", "never"))
-    at(1500, lambda: call("settingsScroll", 230))
+    at(1500, lambda: call("settingsScroll", 640))
     still("settings-trust", 2400)
     at(2500, lambda: (call("setTrust", "terminal", "risky"), call("setTrust", "web", "risky")))
     stop(2800)
