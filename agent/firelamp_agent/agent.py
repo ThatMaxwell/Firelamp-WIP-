@@ -37,7 +37,7 @@ Answer with exactly ONE JSON object and nothing else:
 Actions ("do"):
  open   {{"do":"open","app":"Kate"}}  start an installed app (or one of Firelamp's own apps)
  click  {{"do":"click","id":12,"name":"Save"}}  press a button, menu, menu item, tab, link, list item or checkbox
- type   {{"do":"type","id":7,"name":"Search","text":"hello"}}  write into a text field: a one-line field gets just this text, a document gets it at the cursor ("replace": true clears a document first)
+ type   {{"do":"type","id":7,"name":"Search","text":"hello"}}  write into a text field: a one-line field gets just this text, a document gets it at the cursor ("replace": true clears a document first). Text goes in exactly as written: put \\n where a new line starts
  key    {{"do":"key","keys":"ctrl+s"}}  press keys in the active window: Return, Tab, Escape, ctrl+s, alt+F4…
  focus  {{"do":"focus","window":"w2"}}  bring a window to the front and see inside it
  read   {{"do":"read","id":7,"name":"Search"}}  get the full text of an element
@@ -55,6 +55,7 @@ Rules:
 - Set "risky": true on anything that deletes, sends, publishes, buys, shares, installs or removes software, or can't be undone. The user approves those first.
 - Don't type passwords or personal details the user didn't give you.
 - If you are stuck after two tries, use done and say plainly what blocked you. Never guess.
+- When the task is done, answer done. Leave apps and files open: don't close, quit or start anything new the user didn't ask for.
 - Keep "say" and "why" short and friendly, in the language the user wrote in.
 """
 
