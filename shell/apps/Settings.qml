@@ -169,15 +169,52 @@ Item {
                         }
                     }
                     Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
-                    // Fast to Ultra go through Puter.js, signed in as the user
+                    // Fast to Ultra go through Puter.js, signed in as the user (Puter's own browser sign-in,
+                    // run by firelamp-agent, which keeps the token)
                     Row2 {
-                        title: "Puter account"; hint: "Fast to Ultra run on your Puter account."
+                        id: puterRow
+                        readonly property var link: Os.agent ? Os.agent.link : null
+                        property bool waiting: false
+                        title: "Puter account"; hint: Os.settings.puterUser ? "Fast to Ultra run on your Puter account." : waiting ? "Finish signing in in your browser." : "Free. Fast to Ultra run on your Puter account."
                         Text {
-                            property string aiName: Os.settings.puterUser ? "Puter account" : "Sign in to Puter"; property string aiRole: "link"
-                            function aiActivate() { if (!Os.settings.puterUser) Qt.openUrlExternally("https://puter.com"); }
-                            text: Os.settings.puterUser || "Sign in ›"; color: Os.settings.puterUser ? Theme.text2 : Theme.text; font.family: Theme.font; font.pixelSize: 12
+                            property string aiName: Os.settings.puterUser ? "Sign out of Puter" : "Sign in to Puter"; property string aiRole: "link"
+                            function aiActivate() {
+                                var l = puterRow.link;
+                                if (!l || !l.up) { Os.toast("assistant", "The assistant isn't running", "Start it with firelamp-agent serve, then sign in."); return; }
+                                if (Os.settings.puterUser) { l.signOutPuter(); return; }
+                                puterRow.waiting = true;
+                                l.signInPuter(function (ok) { if (!ok) puterRow.waiting = false; });
+                            }
+                            text: Os.settings.puterUser ? Os.settings.puterUser + "  ·  Sign out" : puterRow.waiting ? "Waiting…" : "Sign in ›"
+                            color: Os.settings.puterUser ? Theme.text2 : Theme.text; font.family: Theme.font; font.pixelSize: 12
                             MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor; onClicked: parent.aiActivate() }
                         }
+                        Connections { target: Os.settings; function onPuterUserChanged() { puterRow.waiting = false; } }
+                    }
+                    Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
+                    // no account: a model on this computer (Ollama), used when Puter isn't signed in
+                    Row2 {
+                        id: localRow
+                        title: "Local model"; hint: "Runs on this computer with Ollama. Used when you're not signed in to Puter."
+                        Rectangle {
+                            width: 150; height: 26; radius: 6; color: Theme.surface0; border.color: lm.input.activeFocus ? Theme.line3 : Theme.hairline; border.width: 1
+                            Field {
+                                id: lm; x: 8; width: parent.width - 16; height: parent.height; pixelSize: 11
+                                label: "Local model"; placeholder: "e.g. qwen2.5:7b"
+                                Component.onCompleted: text = Os.settings.localModel
+                                onAccepted: { Os.settings.localModel = text.trim(); if (Os.agent) Os.agent.link.post("/config", { local_model: text.trim() }, function () { Os.agent.link.refresh(); }); }
+                            }
+                        }
+                    }
+                    Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
+                    // what is actually answering right now, never assumed from the tier's name
+                    Row2 {
+                        readonly property var st: Os.agent ? Os.agent.link.status : ({})
+                        readonly property bool up: Os.agent ? Os.agent.link.up : false
+                        title: "Thinking with"
+                        hint: !up ? "The assistant isn't running" : st.brain && st.brain.ready ? (st.jev ? "Jev picks each element" : "Add a Jev key for faster reflexes")
+                                  : "Sign in to Puter or set a local model"
+                        Text { text: up && st.brain && st.brain.ready ? st.brain.model : "Nothing yet"; color: Theme.text2; font.family: Theme.font; font.pixelSize: 12 }
                     }
                     Rectangle { width: parent.width - 32; x: 16; height: 0.5; color: Theme.line }
                     Row2 {

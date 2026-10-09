@@ -29,6 +29,7 @@ QtObject {
         property bool reasoning: false
         property string jevKey: ""             // Jev is bring-your-own-key (TypeSafe)
         property string puterUser: ""          // signed-in Puter name; Fast to Ultra run through Puter.js
+        property string localModel: ""         // an Ollama model, used when Puter isn't signed in
         property string appTrust2: ""         // per app: "all" | "risky" (default) | "never"
         // ---- the home screen (DIRECTION §13) ----
         property string homeLayout: ""         // JSON [{uid, kind, size, x, y}]; empty = the default home
@@ -232,7 +233,11 @@ QtObject {
     onDemoChanged: { loadNotes(); if (!settings.homeLayout) loadHome(); }
     property bool vision: false
     property bool demo: false
-    readonly property var suggestions: demo ? Plans.SUGGESTIONS : Plans.SUGGESTIONS.filter(function (s) { return s.icon === "eye"; })
+    // a real install suggests things the assistant can do on any machine, with nothing set up
+    readonly property var suggestions: demo ? Plans.SUGGESTIONS : [
+        { text: "How much disk space do I have left?", icon: "search", hint: "Checks this computer" },
+        { text: "Open a text editor and start a to-do list", icon: "doc", hint: "Watch it type" },
+        { text: "What's using my memory right now?", icon: "eye", hint: "Reads it live" } ]
 
     // ---- notes: the Notes app and the Notes widget share them ----
     readonly property var sampleNotes: [

@@ -1,6 +1,9 @@
-// The agent runtime. A plan (from the "brain") is a list of small steps; each one is
-// resolved against the live UI tree (the "reflexes"), performed with the fire cursor,
-// and written to the timeline with its reason. Pause and stop work at any moment.
+// The agent runtime. On a real system the assistant is firelamp-agent (agent/): it thinks with
+// an LLM, reads every app through AT-SPI and acts on them, and AgentLink brings each step here
+// to be shown: the fire cursor, the capsule, the plan, Activity and the permission sheet.
+// With --demo (screenshots only) a few hand-written plans run against the shell's sample apps:
+// each step is resolved against the live UI tree, performed with the fire cursor and written
+// to the timeline with its reason. Pause and stop work at any moment either way.
 import QtQuick
 import "../js/uitree.js" as Tree
 import "../js/plans.js" as Plans
@@ -31,6 +34,11 @@ Item {
     property string workApp: ""              // the app whose window the AI is working in
     property var stuckOn: null               // { target, k } when it couldn't find something
     property string blind: ""                // test hook: pretend this target isn't on screen
+    property bool real: false                // the current task is firelamp-agent's, not a demo plan
+    property var realProposal: null          // { id, req } while its plan waits for Go
+    property var homeParent: null            // where the cursor lives when it's not over other apps
+    AgentLink { id: link; agent: ag }
+    readonly property alias link: link
 
     // ---- control ----
     function togglePause() {
@@ -38,6 +46,7 @@ Item {
         var p = mode !== "paused";
         mode = p ? "paused" : "running";
         cursor.paused = p; capsule.paused = p;
+        if (real) link.pause(p);
         if (p) cursor.verb = "paused";
         else { capsule.why = ""; if (pending) { var k = pending; pending = null; k(); } }
     }
@@ -49,6 +58,7 @@ Item {
     }
     function stop() {
         if (mode === "idle") return;
+        if (real) { link.stop(); if (permission.shown) permission.answer(false); return; }
         stopped = true;
         if (mode !== "running") { mode = "running"; cursor.paused = false; capsule.paused = false; capsule.why = ""; capsule.stuck = ""; stuckOn = null; }
         typer.stop(); waiter.stop();
@@ -65,7 +75,7 @@ Item {
     })
     function quoteTitle(t) { return t.replace(/“([^”]+)”/g, "<font color=\"#ffffff\">“$1”</font>"); }
     // routine steps file under the current milestone; asks, refusals and stops stand alone
-    readonly property var routine: ["open", "click", "type", "look", "move"]
+    readonly property var routine: ["open", "click", "type", "look", "move", "run"]
     function log(kind, title, why, app) {
         var inGroup = gid !== "" && routine.indexOf(kind) >= 0;
         Os.log({ kind: kind, title: quoteTitle(title), why: why || "", app: app || "", gid: inGroup ? gid : "" });
@@ -339,38 +349,168 @@ Item {
     function finish(how) {
         typer.stop();
         closeMilestone();
-        if (how === "done") log("done", "Done", label, "Firelamp");
-        if (how === "stopped") { log("denied", "Stopped by you", "You pressed stop, so I stopped right away.", "Firelamp"); Os.say("Stopped. Nothing else was changed."); }
+        var wasReal = real;
+        real = false; realProposal = null;
+        // firelamp-agent logs and says its own ending; the demo plans do it here
+        if (!wasReal && how === "done") log("done", "Done", label, "Firelamp");
+        if (!wasReal && how === "stopped") { log("denied", "Stopped by you", "You pressed stop, so I stopped right away.", "Firelamp"); Os.say("Stopped. Nothing else was changed."); }
         stopped = true;
         unmark(); ghost.visible = false; cursor.pressed = false; cursor.paused = false; cursor.note = ""; cursor.verb = ""; cursor.busy = false; cursor.clearTarget();
         Os.planEnded(planId, how);
         lines = []; workApp = ""; stuckOn = null;
+        cursorHome();
         var r = Os.dock.iconRect("assistant");
         var end = function () { cursor.hide(); capsule.shown = false; capsule.stuck = ""; capsule.why = ""; mode = "idle"; };
         if (r) cursor.moveTo(r.x + r.width / 2, r.y + 4, end); else end();
     }
 
+    // ---- the real assistant (firelamp-agent), step by step as it reports them ----
+    // the fire cursor moves up into the AI layer while it works in other apps, and back after
+    // the fire cursor above real apps; returns where its layer sits on screen, or null
+    function cursorAbove() {
+        // Layered.qml (Wayland) already keeps the cursor on the AI's own overlay, at the screen's origin
+        var w = Os.root ? Os.root.Window.window : null;
+        if (w && w.layered) return Qt.point(0, 0);
+        var l = link.ensureLayer();
+        if (!l) return null;
+        if (!homeParent) homeParent = cursor.parent;
+        if (cursor.parent !== l.contentItem) {
+            var p = cursor.parent.mapToGlobal(cursor.px, cursor.py);
+            cursor.parent = l.contentItem;
+            cursor.px = p.x - l.x; cursor.py = p.y - l.y;
+        }
+        if (!l.visible) l.visible = true;
+        l.raise();
+        return Qt.point(l.x, l.y);
+    }
+    function cursorHome() {
+        if (!homeParent || cursor.parent === homeParent) return;
+        var p = cursor.parent.mapToGlobal(cursor.px, cursor.py);
+        cursor.parent = homeParent;
+        var q = homeParent.mapFromGlobal(p.x, p.y);
+        cursor.px = q.x; cursor.py = q.y;
+        if (link.aiLayer) link.aiLayer.visible = false;
+    }
+    function realStart(e) {
+        if (mode !== "idle" && !real) return;
+        real = true;
+        steps = []; pc = 0; done = 0; stopped = false; pending = null; label = e.text;
+        lines = []; mi = -1; gid = ""; planId = e.task; workApp = "";
+        mode = "running";
+        capsule.steps = 0; capsule.what = "Reading the screen"; capsule.plan = ""; capsule.k = 0; capsule.total = 0;
+        capsule.paused = false; capsule.why = ""; capsule.stuck = ""; capsule.shown = true;
+        var r = Os.dock.iconRect("assistant");
+        cursor.verb = "";
+        cursor.show(r ? Qt.point(r.x + r.width / 2, r.y) : null);
+    }
+    function realPlan(e) {
+        if (!real) realStart({ task: e.task, text: e.text });
+        realProposal = { id: e.task, req: e.req, lines: e.lines };
+        Os.propose({ id: e.task, lines: e.lines.map(function (l) { return { plan: l, done: l }; }), prefs: null, text: e.text });
+    }
+    // screen coordinates from AT-SPI: over the shell they map onto its window, otherwise the AI layer
+    function realPoint(e, k) {
+        if (!real) return k();
+        var off = cursorAbove();
+        // a wide element (a text area, a long row): aim near its start, where the words are
+        var gx = e.w > 120 ? e.x + Math.min(e.w / 2, 40 + Math.random() * 20) : e.x + e.w / 2, gy = e.y + e.h / 2;
+        var p = off ? Qt.point(gx - off.x, gy - off.y) : cursor.parent.mapFromGlobal(gx, gy);
+        cursor.verb = (e.verb || "clicking") + " " + e.label;
+        cursor.moveTo(p.x, p.y, function () { cursor.aim(e.label, k); }, Math.min(e.w, e.h * 3));
+    }
+    function realOpening(e, k) {
+        if (!real) return k();
+        cursorHome();
+        var r = e.dock ? Os.dock.iconRect(e.dock) : null;
+        if (!r) return k();
+        cursor.moveTo(r.x + r.width / 2, r.y + r.height / 2, function () {
+            cursor.aim(e.app, function () { cursor.click(function () { cursor.clearTarget(); k(); }); });
+        }, r.width);
+    }
+    function realAsk(e, k) {
+        cursorHome();
+        capsule.what = "Waiting for your OK"; cursor.clearTarget(); cursor.busy = true;
+        permission.ask({ app: e.app, title: e.title, body: e.body, details: e.details, deny: e.deny, allow: e.allow, why: "" },
+                       function (ok) { cursor.busy = false; k(ok); });
+    }
+    function realPaused(on) {
+        if (!real || (mode === "paused") === on) return;
+        mode = on ? "paused" : "running";
+        cursor.paused = on; capsule.paused = on;
+    }
+    function realDone(how) {
+        if (!real) return;
+        if (permission.shown) permission.answer(false);
+        finish(how === "error" || how === "edited" ? "stopped" : how);
+    }
+    // the agent went away mid-task (crashed or restarted): don't leave the cursor hanging
+    function lost() { if (real) { Os.say("I lost my connection to the assistant, so I stopped."); finish("stopped"); } }
+    // one of the shell's own elements, picked by the agent: done here, like a demo step
+    function realShell(e, snap, k) {
+        if (e.op === "open") {
+            if (!Os.desktop.registry[e.app]) return k(false, "no such app");
+            cursorHome();
+            return exec({ op: "open", app: e.app, allowed: true, why: "" }, function () { k(true); });
+        }
+        if (e.op === "focus") { var w = Os.desktop.get(e.app); if (w) Os.desktop.focusWindow(w); return k(!!w); }
+        var n = snap[e.i];
+        if (!n || !n.item) return k(false, "that element is gone");
+        cursorHome();
+        var target = { name: n.name, app: n.app, role: n.role };
+        if (e.op === "click") {
+            return point(target, "clicking", function (m) {
+                cursor.click(function () { if (m.item.aiActivate) m.item.aiActivate(); cursor.clearTarget(); k(true); });
+            });
+        }
+        if (e.op === "type") {
+            return point(target, "typing in", function (m) {
+                cursor.click(function () {
+                    if (m.item.aiActivate) m.item.aiActivate();
+                    if (e.replace && m.item.aiSelectAll) m.item.aiSelectAll();
+                    cursor.clearTarget(); cursor.busy = true;
+                    typer.start2(m.item, e.text, 45, function () { cursor.busy = false; k(true); });
+                });
+            });
+        }
+        k(false, "unknown action");
+    }
+
     function handle(text) {
-        var p = Plans.match(text);
+        if (mode !== "idle") { Os.say("I'm still working on the last thing. Pause or stop me first."); return; }
         // the hand-written plans act on the sample notes, mail and Downloads, so only --demo runs them
-        if (p && !Os.demo && p !== Plans.vision) p = null;
-        if (!p) {
-            if (Os.demo) Os.say("I'm running in demo mode, so I only know a few tasks so far. Try “Email Ana my meeting notes”, “Tidy up my Downloads” or “Show me what you see”.");
-            else Os.say("I can't do that one yet: this build only knows “Show me what you see”. Nothing on your computer was touched.");
+        var p = Os.demo ? Plans.match(text) : null;
+        if (p) {
+            // simple things just happen; multi-step or risky ones show the plan first
+            if (!p.lines) return run(p);
+            proposal = { id: "p" + (++seq), plan: p, text: text };
+            Os.say(p.intro);
+            Os.propose({ id: proposal.id, lines: p.lines(0), prefs: p.prefs || null, text: text });
             return;
         }
-        if (mode !== "idle") { Os.say("I'm still working on the last thing. Pause or stop me first."); return; }
-        // simple things just happen; multi-step or risky ones show the plan first
-        if (!p.lines) return run(p);
-        proposal = { id: "p" + (++seq), plan: p, text: text };
-        Os.say(p.intro);
-        Os.propose({ id: proposal.id, lines: p.lines(0), prefs: p.prefs || null, text: text });
+        if (!link.up) {
+            Os.say("My brain isn't running: the Firelamp agent didn't answer. Start it from a terminal with firelamp-agent serve.");
+            return;
+        }
+        link.ask(text, function (code, r) {
+            if (code === 409) Os.say("I'm still working on the last thing. Pause or stop me first.");
+            else if (code !== 200) Os.say("The Firelamp agent didn't take that (" + code + ").");
+        });
     }
     function linesFor(pick) { return proposal ? proposal.plan.lines(pick) : []; }
     function go(id, pick) {
+        if (realProposal && realProposal.id === id) {
+            var rp = realProposal; realProposal = null;
+            lines = rp.lines.map(function (l) { return { plan: l, done: l }; });
+            capsule.total = lines.length;
+            link.reply(rp.req, { ok: true });
+            return;
+        }
         if (!proposal || proposal.id !== id) return;
         var p = proposal; proposal = null;
         run(p.plan, pick, id);
     }
-    function edit(id) { if (proposal && proposal.id === id) proposal = null; }
+    function edit(id) {
+        if (realProposal && realProposal.id === id) { link.reply(realProposal.req, { ok: false }); realProposal = null; return; }
+        if (proposal && proposal.id === id) proposal = null;
+    }
 }

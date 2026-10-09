@@ -271,7 +271,7 @@ Item {
                     model: Os.suggestions
                     Row { required property var modelData; spacing: 7
                         property string aiName: modelData.text; property string aiRole: "button"
-                        function aiActivate() { Os.submit(modelData.text); }
+                        function aiActivate() { var w = Os.root ? Os.root.Window.window : null; if (w && w.ask) w.ask(modelData.text); else Os.submit(modelData.text); }
                         Glyph { name: modelData.icon; width: 12; height: 12; color: Theme.text3; anchors.verticalCenter: parent.verticalCenter }
                         Line { text: modelData.text; font.weight: Font.Normal; color: Theme.text2; font.pixelSize: 12 }
                         TapHandler { enabled: !hw.preview && !Os.editingHome; onTapped: parent.aiActivate() } }
