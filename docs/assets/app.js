@@ -194,7 +194,7 @@
   // The page asks GitHub for the latest release, so a new ISO shows up here without a site change.
   // These values are only the fallback if that request fails.
   const REPO = 'ThatMaxwell/Firelamp-WIP-';
-  let REL = { tag: 'v0.1.0', iso: 'firelamp-2026.10.08-x86_64.iso', parts: ['part00', 'part01'], bytes: 3703177216 };
+  let REL = { tag: 'v0.1.1', iso: 'firelamp-2026.10.09-x86_64.iso', parts: ['part00', 'part01'], bytes: 3703177216 };
   function cmds() {
     const u = `https://github.com/${REPO}/releases/download/${REL.tag}`, n = REL.iso, P = REL.parts;
     const files = (P.length ? P.map(x => `$n.${x}`) : ['$n']).concat('$n.sha256');
