@@ -36,6 +36,40 @@ def hmp(sock_path, command):
             return ""
 
 
+def capsule_stop(mon, serial, out):
+    """The guest starts a real task, finds the capsule's Stop over AT-SPI and prints its screen
+    position; click it like a person would (QEMU's tablet) and print what the agent says."""
+    def serial_text():
+        with open(serial, errors="replace") as fh:
+            return fh.read()
+    pos = None
+    for _ in range(240):
+        m = re.search(r"=== FIRELAMP STOP (AT (\d+) (\d+)|SKIPPED)[^\n]*", serial_text())
+        if m:
+            print("test-boot:", m.group(0), flush=True)
+            if m.group(2):
+                pos = int(m.group(2)), int(m.group(3))
+            break
+        time.sleep(1)
+    else:
+        print("test-boot: capsule Stop test: the guest never sent a Stop position", flush=True)
+    if not pos:
+        return
+    hmp(mon, f"screendump {os.path.join(out, 'capsule.png')} -f png")
+    hmp(mon, f"mouse_move {pos[0]} {pos[1]}")
+    time.sleep(0.5)
+    hmp(mon, "mouse_button 1")
+    time.sleep(0.2)
+    hmp(mon, "mouse_button 0")
+    for _ in range(120):
+        m = re.search(r"=== FIRELAMP STOP RESULT[^\n]*", serial_text())
+        if m:
+            print("test-boot:", m.group(0), flush=True)
+            return
+        time.sleep(1)
+    print("test-boot: capsule Stop test: no result from the guest", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("iso")
@@ -44,6 +78,8 @@ def main():
     ap.add_argument("--memory", default="4096")
     ap.add_argument("--uefi", action="store_true", help="boot with OVMF instead of BIOS")
     ap.add_argument("--frame-interval", type=float, default=4.0)
+    ap.add_argument("--test-brain", default=os.environ.get("FIRELAMP_TEST_BRAIN", ""),
+                    help="BASE|MODEL of an OpenAI-compatible server the guest can reach; runs the capsule Stop test")
     args = ap.parse_args()
 
     out = os.path.abspath(args.out)
@@ -72,6 +108,8 @@ def main():
         # Tells the live session to skip the shell's first-boot naming screen.
         "-fw_cfg", "name=opt/firelamp/skip-onboarding,string=1",
     ]
+    if args.test_brain:
+        cmd += ["-fw_cfg", f"name=opt/firelamp/test-brain,string={args.test_brain}"]
     cmd += ["-enable-kvm", "-cpu", "host"] if kvm else ["-accel", "tcg", "-cpu", "max"]
     if args.uefi:
         for fw in ("/usr/share/ovmf/OVMF.fd", "/usr/share/OVMF/OVMF_CODE.fd", "/usr/share/edk2/x64/OVMF.4m.fd"):
@@ -109,8 +147,8 @@ def main():
             time.sleep(3)
             hmp(mon, f"screendump {os.path.join(out, 'desktop.png')} -f png")
             shutil.copy(os.path.join(out, "desktop.png"), os.path.join(frames, f"{frame:04d}.png"))
-            # Tap Super: it should open the Firelamp launcher, not Plasma's.
-            hmp(mon, "sendkey meta_l")
+            # Tap Super (held 150 ms, so KWin counts a modifier-only tap): it should open the Firelamp launcher.
+            hmp(mon, "sendkey meta_l 150")
             time.sleep(3)
             hmp(mon, f"screendump {os.path.join(out, 'super.png')} -f png")
             # The guest writes the shell's trace of that keypress to the serial port.
@@ -123,6 +161,8 @@ def main():
                 time.sleep(1)
             else:
                 print("test-boot: no Super debug on the serial port", flush=True)
+            if args.test_brain:
+                capsule_stop(mon, serial, out)
     finally:
         if vm.poll() is None:
             try:

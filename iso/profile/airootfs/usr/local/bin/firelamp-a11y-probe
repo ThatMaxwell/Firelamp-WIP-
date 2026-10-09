@@ -156,6 +156,125 @@ def agent_check():
         json.dumps(st.get("brain")), st.get("keyboard"), st.get("shell"), ydotoold)
 
 
+TEST_BRAIN = "/sys/firmware/qemu_fw_cfg/by_name/opt/firelamp/test-brain/raw"
+
+
+def agent_call(method, path, body=None, timeout=30):
+    import urllib.request
+    data = json.dumps(body).encode() if body is not None else (b"" if method == "POST" else None)
+    req = urllib.request.Request("http://127.0.0.1:7342" + path, method=method, data=data,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode() or "{}")
+
+
+def find_button(name, deadline):
+    """The first button called `name` in any app, with its window (for the surface size)."""
+    def search(node, win, depth):
+        if depth > 25:
+            return None
+        try:
+            if node.get_role_name() == "push button" or node.get_role_name() == "button":
+                if (node.get_name() or "") == name:
+                    return node, win
+            n = node.get_child_count()
+        except Exception:
+            return None
+        for i in range(n):
+            try:
+                c = node.get_child_at_index(i)
+            except Exception:
+                continue
+            if c is not None:
+                hit = search(c, win if depth else c, depth + 1)
+                if hit:
+                    return hit
+        return None
+    while time.time() < deadline:
+        desktop = Atspi.get_desktop(0)
+        for i in range(desktop.get_child_count()):
+            app = desktop.get_child_at_index(i)
+            if app is None:
+                continue
+            for j in range(app.get_child_count() or 0):
+                w = app.get_child_at_index(j)
+                if w is None:
+                    continue
+                hit = search(w, w, 1)
+                if hit:
+                    return hit
+        time.sleep(1)
+    return None
+
+
+def screen_size():
+    import glob
+    for f in sorted(glob.glob("/sys/class/drm/card*-*/modes")):
+        try:
+            first = open(f).readline().strip()
+        except OSError:
+            continue
+        if "x" in first:
+            w, h = first.split("x")[:2]
+            return int(w), int("".join(ch for ch in h if ch.isdigit()))
+    return 1280, 800
+
+
+def capsule_test():
+    """Boot test only (QEMU passes a test brain): start a real task, find the capsule's Stop button
+    over AT-SPI, hand its screen position to the host, which clicks it with QEMU's tablet."""
+    # firelamp-boot-report (root) copies these lines to the serial port for the host.
+    out = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-capsule.txt")
+
+    def say(text):
+        with open(out, "a") as fh:
+            fh.write(text + "\n")
+    if not os.path.exists(TEST_BRAIN):
+        return
+    base, _, model = open(TEST_BRAIN).read().strip().partition("|")
+    # Start once the boot report is out and the host has tapped Super.
+    report = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-boot-report.txt")
+    for _ in range(300):
+        if os.path.exists(report):
+            break
+        time.sleep(1)
+    time.sleep(15)
+    try:
+        agent_call("POST", "/config", {"api_base": base, "api_key": "ollama", "api_model": model})
+        agent_call("POST", "/ask", {"text": "Open a text editor and start a to-do list", "settings": {}})
+    except Exception as exc:
+        say(f"=== FIRELAMP STOP SKIPPED could not start a task: {exc} ===")
+        return
+    hit = find_button("Stop", time.time() + 90)
+    if not hit:
+        say("=== FIRELAMP STOP SKIPPED no Stop button on the AT-SPI tree within 90s ===")
+        return
+    btn, win = hit
+    b = btn.get_extents(Atspi.CoordType.WINDOW)
+    w = win.get_extents(Atspi.CoordType.WINDOW)
+    sw, _ = screen_size()
+    # The capsule surface is anchored top-centre just under the 28px bar (Layered.qml), and Wayland
+    # gives clients no global position, so place the button within that surface.
+    x = (sw - w.width) // 2 + b.x + b.width // 2
+    y = 28 + b.y + b.height // 2
+    say(f"=== FIRELAMP STOP AT {x} {y} button={b.x},{b.y} {b.width}x{b.height} surface={w.width}x{w.height} screen_w={sw} ===")
+    # Proof is the agent's own end-of-task event: Stop in the shell posts /stop, and the task
+    # ends with how=stopped. Any other ending means the click didn't land.
+    end = time.time() + 90
+    while time.time() < end:
+        try:
+            ev = agent_call("GET", "/events?after=-1", timeout=30).get("events", [])
+        except Exception:
+            time.sleep(2)
+            continue
+        done = [e for e in ev if e.get("kind") == "done"]
+        if done:
+            say(f"=== FIRELAMP STOP RESULT task ended how={done[-1].get('how')} ===")
+            return
+        time.sleep(2)
+    say("=== FIRELAMP STOP RESULT task still running 90s after the Stop position was sent ===")
+
+
 def installer_check(wait=45):
     """Start the installer the way the desktop button does and report whether its window stays up."""
     log = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-install.log")
@@ -220,7 +339,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--depth", type=int, default=6)
     parser.add_argument("--boot-report", action="store_true")
+    parser.add_argument("--capsule-test", action="store_true")
     args = parser.parse_args()
+    if args.capsule_test:
+        capsule_test()
+        return
     if args.boot_report:
         boot_report()
         return
