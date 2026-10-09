@@ -107,6 +107,7 @@ QtObject {
     property var browserStatus: ({})              // id -> { installed, state, log }
     property string defaultBrowser: "firefox"
     property bool browserHelper: false
+    function ack(what) { var x = new XMLHttpRequest(); x.open("POST", "http://127.0.0.1:7341/ack/" + what); x.send(); }
     function raiseShell() { var x = new XMLHttpRequest(); x.open("POST", "http://127.0.0.1:7341/raise"); x.send(); }
     // ---- real apps: the dock opens Dolphin, the default browser, Konsole… through the helper ----
     property var realApps: ({})                   // id -> the app behind it, or null when none is installed
