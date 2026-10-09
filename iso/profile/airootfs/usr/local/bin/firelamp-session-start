@@ -9,7 +9,8 @@
 #     `touch ~/.config/firelamp/no-shell` or the firelamp.noshell boot option.
 #     On Plasma it removes Plasma's own panel once, since the shell has its
 #     own bar and dock; Plasma keeps the desktop and wallpaper.
-#  3. Records what the AI can see, for boot diagnostics.
+#  3. Starts the assistant (firelamp-agent serve, on 127.0.0.1:7342).
+#  4. Records what the AI can see, for boot diagnostics.
 state="${XDG_STATE_HOME:-$HOME/.local/state}/firelamp"
 mkdir -p "$state"
 
@@ -23,6 +24,14 @@ cfg="${XDG_CONFIG_HOME:-$HOME/.config}/firelamp/shell.conf"
 if [[ -e /sys/firmware/qemu_fw_cfg/by_name/opt/firelamp/skip-onboarding/raw && ! -e "$cfg" ]]; then
     mkdir -p "$(dirname "$cfg")"
     printf '[General]\nassistantName=Test\npacksAsked=true\nbrowserAsked=true\n' >"$cfg"
+fi
+
+# The assistant runs in every session, shell or not: `firelamp-agent ask` works from a terminal.
+# It presses keys on Wayland through ydotoold (firelamp-ydotoold.service).
+export YDOTOOL_SOCKET="$XDG_RUNTIME_DIR/.ydotool_socket"
+systemctl --user import-environment YDOTOOL_SOCKET 2>/dev/null
+if [[ -x /usr/local/bin/firelamp-agent ]]; then
+    /usr/local/bin/firelamp-agent serve >>"$state/agent.log" 2>&1 &
 fi
 
 if [[ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/firelamp/no-shell" ]] && ! grep -qw firelamp.noshell /proc/cmdline; then

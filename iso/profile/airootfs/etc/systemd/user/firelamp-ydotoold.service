@@ -1,0 +1,12 @@
+# ydotoold lets the assistant press keys on Wayland (shortcuts, typing into terminals).
+# /dev/uinput is opened to the logged-in user by 60-firelamp-uinput.rules.
+[Unit]
+Description=Key presses for the Firelamp assistant (ydotoold)
+
+[Service]
+ExecStart=/usr/bin/ydotoold --socket-path=%t/.ydotool_socket --socket-perm=0600
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

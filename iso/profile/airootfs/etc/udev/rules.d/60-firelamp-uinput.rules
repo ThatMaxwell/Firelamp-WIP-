@@ -1,0 +1,2 @@
+# Give the user at the seat /dev/uinput, so ydotoold can press keys for the assistant.
+KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"
