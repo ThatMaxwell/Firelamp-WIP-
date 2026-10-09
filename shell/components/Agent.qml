@@ -173,7 +173,7 @@ Item {
         case "log": log(s.kind, s.title, s.why, s.app); return next();
         case "vision": Os.vision = s.on; return after(200, next);
         case "open": {
-            var title = Os.desktop.registry[s.app].title;
+            var title = Os.desktop.registry[s.app].winTitle || Os.desktop.registry[s.app].title;
             // "Ask before anything" for this app: one OK before it starts working there
             if (Os.trust(s.app) === "all" && !s.allowed) {
                 capsule.what = "Waiting for your OK"; cursor.busy = true;
@@ -188,6 +188,12 @@ Item {
             }
             capsule.what = "Opening " + title; cursor.verb = "opening " + title;
             var r = Os.dock.iconRect(s.app);
+            // not in the dock (the UI Tree console on a real install): open it without the trip
+            if (!r) {
+                Os.desktop.open(s.app); workApp = s.app;
+                log("open", "Opened " + title, s.why, title);
+                return after(560, next);
+            }
             return cursor.moveTo(r.x + r.width / 2, r.y + r.height / 2, function () {
                 cursor.aim(title, function () {
                     gate(function () {

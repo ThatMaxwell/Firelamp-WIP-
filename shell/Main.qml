@@ -28,7 +28,7 @@ Window {
         { id: "web", title: "Web", icon: "web", src: "Web", w: 940, h: 600 },
         { id: "mail", title: "Mail", icon: "mail", src: "Mail", w: 980, h: 600 },
         { id: "notes", title: "Notes", icon: "notes", src: "Notes", w: 820, h: 540 },
-        { id: "terminal", title: Os.demo ? "Terminal" : "UI Tree", icon: "terminal", src: "Terminal", w: 680, h: 440, titled: true },
+        { id: "terminal", title: "Terminal", winTitle: Os.demo ? "Terminal" : "UI Tree", icon: "terminal", src: "Terminal", w: 680, h: 440, titled: true },
         { id: "calendar", title: "Calendar", icon: "calendar", src: "Calendar", w: 780, h: 560 },
         { id: "photos", title: "Photos", icon: "photos", src: "Photos", w: 760, h: 528 },
         { id: "music", title: "Music", icon: "music", src: "Music", w: 340, h: 700 },

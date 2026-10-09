@@ -11,10 +11,10 @@ Item {
     property bool minimized: false
     property var restoreRect: null
     property var opts: ({})
-    property string aiName: app ? app.title : ""
+    property string aiName: title
     property string aiRole: "window"
     property string aiApp: app ? app.id : ""
-    readonly property string title: app ? app.title : ""
+    readonly property string title: app ? app.winTitle || app.title : ""
     signal closed()
     signal activated()
 
