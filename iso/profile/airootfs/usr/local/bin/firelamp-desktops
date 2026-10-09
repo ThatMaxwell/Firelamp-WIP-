@@ -28,6 +28,7 @@ The shell's Settings page talks to `serve` over plain HTTP on localhost:
     GET  /system          -> {wifi, bluetooth, volume, muted}; null when there's no such hardware
     POST /system/wifi|bluetooth/on|off, /system/volume/0-100
     POST /power/lock|sleep|restart|shutdown|logout
+    GET  /debug           -> what the shell acknowledged, the last /raise result, recent events
     POST /raise           -> brings the Firelamp shell window to the front (KWin script)
 
 The Super key: KWin's ModifierOnlyShortcuts calls org.firelamp.Shell.ToggleLauncher on the
@@ -351,10 +352,19 @@ def listing():
 # Wayland lets no window raise itself, so when Super opens the launcher over another app
 # (the installer, a browser), KWin is asked to activate the shell's window instead.
 KWIN_RAISE = """
-for (const w of workspace.windowList()) {
-    if (w.caption === "Firelamp OS") { workspace.activeWindow = w; break; }
+const all = workspace.windowList();
+// the shell's window: titled exactly "Firelamp OS" (the installer is "Firelamp OS Installer");
+// else the full-screen window of the qml runtime that hosts the shell
+let shell = all.find(w => w.caption === "Firelamp OS")
+         || all.find(w => w.fullScreen && /qml|firelamp/i.test(w.resourceClass + " " + w.desktopFileName) && !/Installer/.test(w.caption));
+if (shell) {
+    shell.minimized = false;
+    if (workspace.raiseWindow) workspace.raiseWindow(shell);
+    workspace.activeWindow = shell;
 }
 """
+last_raise = {}
+acks = {}
 
 
 def raise_shell():
@@ -370,12 +380,19 @@ def raise_shell():
                                "--method", method, *args], capture_output=True, text=True, timeout=3)
     try:
         call("/Scripting", "org.kde.kwin.Scripting.unloadScript", "firelamp-raise")
-        m = re.search(r"(-?\d+)", call("/Scripting", "org.kde.kwin.Scripting.loadScript", path, "firelamp-raise").stdout)
+        load = call("/Scripting", "org.kde.kwin.Scripting.loadScript", path, "firelamp-raise")
+        m = re.search(r"(-?\d+)", load.stdout)
+        last_raise.update(load=load.stdout.strip() + load.stderr.strip())
         if not m or int(m.group(1)) < 0:
-            return 502, {"error": "KWin didn't load the script"}
-        call(f"/Scripting/Script{m.group(1)}", "org.kde.kwin.Script.run")
-        return 202, {"ok": True}
+            return 502, {"error": "KWin didn't load the script", **last_raise}
+        run = call(f"/Scripting/Script{m.group(1)}", "org.kde.kwin.Script.run")
+        last_raise.update(run=run.stdout.strip() + run.stderr.strip())
+        if run.returncode:  # older or newer KWin: start every loaded script instead
+            start = call("/Scripting", "org.kde.kwin.Scripting.start")
+            last_raise.update(start=start.stdout.strip() + start.stderr.strip())
+        return 202, {"ok": True, **last_raise}
     except (OSError, subprocess.TimeoutExpired) as e:
+        last_raise.update(error=str(e))
         return 502, {"error": str(e)}
 
 
@@ -517,6 +534,8 @@ class Api(BaseHTTPRequestHandler):
             return self.reply(200, events_after(after))
         if self.path == "/live":
             return self.reply(200, {"live": os.path.isdir("/run/archiso")})
+        if self.path == "/debug":
+            return self.reply(200, {"acks": acks, "raise": last_raise, "events": events[-5:]})
         if self.path == "/apps":
             return self.reply(200, app_listing())
         if self.path == "/system":
@@ -527,6 +546,9 @@ class Api(BaseHTTPRequestHandler):
         if self.path == "/event/launcher":
             push_event("launcher")
             return self.reply(202, {"ok": True})
+        if self.path.startswith("/ack/"):     # the shell saying it acted on an event (boot-test trace)
+            acks[self.path[5:]] = acks.get(self.path[5:], 0) + 1
+            return self.reply(200, acks)
         if self.path == "/raise":
             return self.reply(*raise_shell())
         if self.path.startswith("/open/"):

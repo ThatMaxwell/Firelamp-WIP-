@@ -242,8 +242,10 @@ Window {
         function onSubmit(t) { agent.handle(t); }
         // Super, rerouted from KWin through firelamp-desktops: our launcher, never Plasma's
         function onLauncherKey() {
+            Os.ack("launcher-key");
             if (!screen.booted || Os.editingHome) return;
             if (askBar.shown) { askBar.close(); return; }
+            Os.ack("launcher-open");
             win.raise(); win.requestActivate();
             Os.raiseShell();                  // Wayland ignores raise(); KWin does it for us
             askBar.open();
