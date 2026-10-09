@@ -107,6 +107,14 @@ QtObject {
     property var browserStatus: ({})              // id -> { installed, state, log }
     property string defaultBrowser: "firefox"
     property bool browserHelper: false
+    function openTerminal() {
+        var x = new XMLHttpRequest();
+        x.onreadystatechange = function () {
+            if (x.readyState === XMLHttpRequest.DONE && x.status !== 202)
+                os.toast("terminal", "Couldn't open a terminal", x.status === 404 ? "No terminal app is installed. Try: sudo pacman -S konsole" : "The Firelamp helper isn't running.");
+        };
+        x.open("POST", "http://127.0.0.1:7341/open/terminal"); x.send();
+    }
     function setBrowser(id, f) { var st = Object.assign({}, browserStatus); st[id] = Object.assign({}, st[id] || {}, f); browserStatus = st; }
     function fetchBrowsers() {
         var x = new XMLHttpRequest();

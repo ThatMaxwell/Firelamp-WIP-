@@ -22,6 +22,7 @@ The shell's Settings page talks to `serve` over plain HTTP on localhost:
     GET  /events?after=N  -> {last, events:[{n, kind}]}; waits up to 25 s for one (long poll);
                              after=-1 answers at once, with where the queue is
     POST /event/launcher  -> tells the shell to toggle its launcher
+    POST /open/terminal   -> opens a real terminal (Konsole) running your login shell (bash)
 
 The Super key: KWin's ModifierOnlyShortcuts calls org.firelamp.Shell.ToggleLauncher on the
 session bus (see /etc/xdg/kwinrc). `serve` owns that name and turns the call into a
@@ -341,6 +342,20 @@ def listing():
     return out
 
 
+# The dock's Terminal is a real terminal: Konsole (or whatever is installed) running the
+# user's login shell, which is bash. Firelamp has no shell of its own.
+TERMINALS = (["konsole"], ["kitty"], ["alacritty"], ["foot"], ["gnome-terminal"], ["xterm"])
+
+
+def open_terminal():
+    for cmd in ([os.environ["TERMINAL"]] if os.environ.get("TERMINAL") else []) + [t[0] for t in TERMINALS]:
+        if shutil.which(cmd):
+            subprocess.Popen([cmd], cwd=os.path.expanduser("~"), start_new_session=True,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return 202, {"opened": cmd}
+    return 404, {"error": "no terminal installed"}
+
+
 class Api(BaseHTTPRequestHandler):
     def reply(self, code, body):
         data = json.dumps(body).encode()
@@ -371,6 +386,8 @@ class Api(BaseHTTPRequestHandler):
         if self.path == "/event/launcher":
             push_event("launcher")
             return self.reply(202, {"ok": True})
+        if self.path == "/open/terminal":
+            return self.reply(*open_terminal())
         if self.path == "/install-os":
             if not os.path.isdir("/run/archiso") or not shutil.which("firelamp-install"):
                 return self.reply(404, {"error": "not a live session"})

@@ -40,6 +40,8 @@ Window {
         if (id === "downloads") id = "files";
         if (id === "install") return Os.installOS();
         if (id === "trash") return;
+        // Terminal is real: Konsole running bash, opened by the helper (--demo keeps the mock)
+        if (id === "terminal" && !Os.demo) return Os.openTerminal();
         if (desktop.registry[id]) desktop.open(id);
     }
     function ask(text) {
