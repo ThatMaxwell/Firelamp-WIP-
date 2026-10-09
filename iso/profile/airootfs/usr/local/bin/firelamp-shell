@@ -14,6 +14,9 @@ if ! compgen -G '/dev/dri/renderD*' >/dev/null; then
     export LIBGL_ALWAYS_SOFTWARE=1
 fi
 
+# Qt sends QML errors to the journal when stderr isn't a terminal; keep them in the shell's log.
+export QT_FORCE_STDERR_LOGGING=1
+
 # Looks export and import as .firelamp-look files, read and written from QML.
 export QML_XHR_ALLOW_FILE_READ=1 QML_XHR_ALLOW_FILE_WRITE=1
 
