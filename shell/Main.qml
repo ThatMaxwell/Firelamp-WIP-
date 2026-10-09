@@ -241,6 +241,7 @@ Window {
             if (!screen.booted || Os.editingHome) return;
             if (askBar.shown) { askBar.close(); return; }
             win.raise(); win.requestActivate();
+            Os.raiseShell();                  // Wayland ignores raise(); KWin does it for us
             askBar.open();
         }
         function onTrashFull() { dock.trashIcon = Art.icon("trash", true); }

@@ -23,6 +23,7 @@ The shell's Settings page talks to `serve` over plain HTTP on localhost:
                              after=-1 answers at once, with where the queue is
     POST /event/launcher  -> tells the shell to toggle its launcher
     POST /open/terminal   -> opens a real terminal (Konsole) running your login shell (bash)
+    POST /raise           -> brings the Firelamp shell window to the front (KWin script)
 
 The Super key: KWin's ModifierOnlyShortcuts calls org.firelamp.Shell.ToggleLauncher on the
 session bus (see /etc/xdg/kwinrc). `serve` owns that name and turns the call into a
@@ -30,7 +31,7 @@ session bus (see /etc/xdg/kwinrc). `serve` owns that name and turns the call int
 Only the IDs below can be installed; nothing else is passed to pacman.
 Each one ships a wayland-sessions/xsessions entry, so it shows up at login.
 """
-import json, os, shutil, subprocess, sys, threading
+import json, os, re, shutil, subprocess, sys, tempfile, threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = 7341
@@ -342,6 +343,37 @@ def listing():
     return out
 
 
+# Wayland lets no window raise itself, so when Super opens the launcher over another app
+# (the installer, a browser), KWin is asked to activate the shell's window instead.
+KWIN_RAISE = """
+for (const w of workspace.windowList()) {
+    if (w.caption === "Firelamp OS") { workspace.activeWindow = w; break; }
+}
+"""
+
+
+def raise_shell():
+    gdbus = shutil.which("gdbus")
+    if not gdbus:
+        return 404, {"error": "no gdbus"}
+    path = os.path.join(tempfile.gettempdir(), f"firelamp-raise-{os.getuid()}.js")
+    with open(path, "w") as f:
+        f.write(KWIN_RAISE)
+
+    def call(obj, method, *args):
+        return subprocess.run([gdbus, "call", "--session", "--dest", "org.kde.KWin", "--object-path", obj,
+                               "--method", method, *args], capture_output=True, text=True, timeout=3)
+    try:
+        call("/Scripting", "org.kde.kwin.Scripting.unloadScript", "firelamp-raise")
+        m = re.search(r"(-?\d+)", call("/Scripting", "org.kde.kwin.Scripting.loadScript", path, "firelamp-raise").stdout)
+        if not m or int(m.group(1)) < 0:
+            return 502, {"error": "KWin didn't load the script"}
+        call(f"/Scripting/Script{m.group(1)}", "org.kde.kwin.Script.run")
+        return 202, {"ok": True}
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return 502, {"error": str(e)}
+
+
 # The dock's Terminal is a real terminal: Konsole (or whatever is installed) running the
 # user's login shell, which is bash. Firelamp has no shell of its own.
 TERMINALS = (["konsole"], ["kitty"], ["alacritty"], ["foot"], ["gnome-terminal"], ["xterm"])
@@ -386,6 +418,8 @@ class Api(BaseHTTPRequestHandler):
         if self.path == "/event/launcher":
             push_event("launcher")
             return self.reply(202, {"ok": True})
+        if self.path == "/raise":
+            return self.reply(*raise_shell())
         if self.path == "/open/terminal":
             return self.reply(*open_terminal())
         if self.path == "/install-os":

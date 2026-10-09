@@ -107,6 +107,7 @@ QtObject {
     property var browserStatus: ({})              // id -> { installed, state, log }
     property string defaultBrowser: "firefox"
     property bool browserHelper: false
+    function raiseShell() { var x = new XMLHttpRequest(); x.open("POST", "http://127.0.0.1:7341/raise"); x.send(); }
     function openTerminal() {
         var x = new XMLHttpRequest();
         x.onreadystatechange = function () {
