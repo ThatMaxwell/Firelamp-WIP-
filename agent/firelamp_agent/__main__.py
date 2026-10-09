@@ -31,8 +31,7 @@ class App:
     def __init__(self):
         from .agent import Agent
         from .eyes import Eyes
-        from .kwin import KWin, start_mainloop
-        start_mainloop()
+        from .kwin import KWin
         self.events = server.Events()
         self.kwin = KWin() if os.environ.get("WAYLAND_DISPLAY") else None
         self.eyes = Eyes()
@@ -55,14 +54,8 @@ class App:
         return out
 
     def shell_hello(self, pid, apps):
-        """The shell says it's here. Its pid comes from its window on the accessibility bus
-        (QML can't see its own pid); its windows are never the AI's to act on through AT-SPI."""
-        if not pid:
-            for app, apid, name in self.eyes.apps():
-                for j in range(app.get_child_count() or 0):
-                    w = app.get_child_at_index(j)
-                    if w is not None and (w.get_name() or "") in ("Firelamp OS", "Firelamp AI layer"):
-                        pid = apid
+        """The shell says it's here. QML can't see its own pid, so the task finds it on the
+        accessibility bus before it looks (AT-SPI is only ever used from the task's thread)."""
         self.events.shell_pid = pid
         self.events._shell_apps = apps
         self.eyes.own_pids = {pid} if pid else set()
