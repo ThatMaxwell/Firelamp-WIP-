@@ -187,6 +187,9 @@ def boot_report():
     except Exception as exc:
         out.append(f"FIRELAMP_ATSPI_FAIL {exc}")
     out.append("login theme: " + greeter_check())
+    out.append("layershell qml: " + ("OK" if os.path.isdir("/usr/lib/qt6/qml/org/kde/layershell") else "MISSING"))
+    out.append("plasma panels: " + run(["gdbus", "call", "--session", "--dest", "org.kde.plasmashell", "--object-path", "/PlasmaShell",
+                                        "--method", "org.kde.PlasmaShell.evaluateScript", "print(panels().length)"]))
     out.extend(launcher_checks())
     out.append("terminal window: " + open_check("terminal", "konsole"))
     out.append("files window: " + open_check("files", "dolphin"))

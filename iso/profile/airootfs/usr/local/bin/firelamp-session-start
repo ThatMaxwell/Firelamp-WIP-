@@ -7,6 +7,8 @@
 #     the screen through that tree.
 #  2. Starts the Firelamp shell on top of the desktop, unless turned off with
 #     `touch ~/.config/firelamp/no-shell` or the firelamp.noshell boot option.
+#     On Plasma it removes Plasma's own panel once, since the shell has its
+#     own bar and dock; Plasma keeps the desktop and wallpaper.
 #  3. Records what the AI can see, for boot diagnostics.
 state="${XDG_STATE_HOME:-$HOME/.local/state}/firelamp"
 mkdir -p "$state"
@@ -25,6 +27,17 @@ fi
 
 if [[ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/firelamp/no-shell" ]] && ! grep -qw firelamp.noshell /proc/cmdline; then
     /usr/local/bin/firelamp-shell >>"$state/shell.log" 2>&1 &
+    if [[ ":$XDG_CURRENT_DESKTOP:" == *:KDE:* && ! -e "$state/plasma-panel-removed" ]]; then
+        (
+            for _ in $(seq 60); do
+                gdbus call --session --dest org.kde.plasmashell --object-path /PlasmaShell \
+                    --method org.kde.PlasmaShell.evaluateScript \
+                    'var ps = panels(); if (!ps.length) throw "no panel yet"; ps.forEach(function (p) { p.remove(); })' >/dev/null 2>&1 \
+                    && { touch "$state/plasma-panel-removed"; break; }
+                sleep 2
+            done
+        ) &
+    fi
 fi
 
 /usr/local/bin/firelamp-a11y-probe --boot-report >/dev/null 2>&1 &
