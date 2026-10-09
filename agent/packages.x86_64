@@ -1,0 +1,13 @@
+# Arch packages firelamp-agent needs (most are already in iso/profile/packages.x86_64).
+python
+python-gobject
+python-dbus
+at-spi2-core
+python-atspi
+# keys and typing where AT-SPI can't: X11, then Wayland (with ydotoold running)
+xdotool
+ydotool
+# the fire cursor above every app on Wayland
+layer-shell-qt
+# opens Puter's sign-in page in the browser
+xdg-utils

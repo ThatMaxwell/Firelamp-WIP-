@@ -61,14 +61,17 @@ native apps.
 ## How the AI part fits together
 
 ```
-you ──ask──▶ brain (LLM: plans the steps)            shell/js/plans.js         (demo plans for now)
-                └─▶ reflexes (Jev: picks the element) shell/js/uitree.js find() (a small scorer stands in)
-                       └─▶ hands (fire cursor)        shell/components/Agent.qml + FireCursor.qml
-                              └─▶ timeline + permission sheets
+you ──ask──▶ brain (an LLM: plans, picks each action)   agent/firelamp_agent/brain.py   Puter, your own API, or Ollama
+                └─▶ reflexes (Jev: fast picks, risk)     agent/firelamp_agent/jev.py     optional, your TypeSafe key
+                       └─▶ eyes + hands (AT-SPI)          agent/firelamp_agent/eyes.py, hands.py
+                              └─▶ fire cursor, plan, Activity, permission sheets   shell/components/Agent.qml, AgentLink.qml
 ```
 
-This build runs in demo mode: three hand-written plans (“Email Ana my meeting notes”,
-“Tidy up my Downloads”, “Show me what you see”) exercise the full loop end to end.
+The assistant is `firelamp-agent` (see [agent/README.md](agent/README.md)), a normal Linux
+program the session starts next to the shell. It reads real apps through the accessibility
+tree and acts on them; the shell shows what it's doing and asks you before anything risky.
+Sign in to Puter in Settings › Assistant to give it a brain. The old hand-written plans only
+run with `--demo`. The `Assistant real run` workflow films a real model driving Kate.
 
 ## The ISO
 

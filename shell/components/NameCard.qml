@@ -104,7 +104,7 @@ Item {
         Text {
             id: sub
             width: parent.width; horizontalAlignment: Text.AlignHCenter
-            text: nc.stage === "signed" ? "Ask me for anything, and watch me do it." : "Give it a name. It’s what you’ll call it, and how it signs its work."
+            text: nc.stage === "signed" ? "Ask me to do things on your computer, and watch me do them." : "Give it a name. It’s what you’ll call it, and how it signs its work."
             color: Theme.text2; font.family: Theme.font; font.pixelSize: 15
             Behavior on text { SequentialAnimation {
                 NumberAnimation { target: sub; property: "opacity"; to: 0; duration: 140 }
