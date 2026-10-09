@@ -231,7 +231,7 @@ def main():
             _, r = call("/events?after=%d" % last, timeout=40)
             last = r["last"]
             for e in r["events"]:
-                ev.write(json.dumps(e, ensure_ascii=False) + "\n")
+                ev.write(json.dumps(dict(e, t=round(time.time() - t0, 1)), ensure_ascii=False) + "\n")
                 ev.flush()
                 events.append(e)
                 k = e["kind"]

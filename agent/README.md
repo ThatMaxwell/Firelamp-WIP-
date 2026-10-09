@@ -39,7 +39,7 @@ Nothing is canned. With no model set up it says so and tells you what it needs.
 | Provider | How you set it up | Notes |
 |---|---|---|
 | Puter | Settings › Assistant › Puter account › Sign in (opens your browser) | The default. Effort picks the model: Instant, Fast and Balanced are quick models; High, Max and Ultra are Grok 4.5, 4.6 and 4.7 (older Grok when Puter doesn't list those yet). Reasoning is a switch. |
-| Your own API | `FIRELAMP_API_BASE`, `FIRELAMP_API_KEY`, `FIRELAMP_API_MODEL`, or `api_*` in the config | Any OpenAI-compatible endpoint: xAI, OpenRouter, OpenAI, GitHub Models… |
+| Your own API | `FIRELAMP_API_BASE`, `FIRELAMP_API_KEY`, `FIRELAMP_API_MODEL`, or `api_*` in the config | Any OpenAI-compatible endpoint: xAI, OpenRouter, OpenAI… |
 | On this computer | Settings › Assistant › Local model (an Ollama model, e.g. `qwen2.5:7b`) | Nothing leaves the machine. Its smaller context is respected. |
 
 **Jev** (TypeSafe's decision model, bring your own key in Settings › Assistant) isn't a chat
@@ -84,6 +84,6 @@ start of each task.
 
 `.github/workflows/agent.yml` runs `test/real_run.py` on Arch with the ISO's packages: the real
 shell, the agent thinking with a real model (Puter when the `PUTER_AUTH_TOKEN` secret is set,
-otherwise GitHub Models), and Kate. It asks like a person (Ctrl+K, type, Enter, click Go),
+otherwise an open model in Ollama on the runner), and Kate. It asks like a person (Ctrl+K, type, Enter, click Go),
 films the screen, and reads the apps back through AT-SPI afterwards. The film, screenshots and
 summary land on the `agent-capture` branch.
