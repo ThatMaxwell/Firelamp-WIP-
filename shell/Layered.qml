@@ -12,6 +12,7 @@ import QtQuick
 import QtQuick.Window
 import org.kde.layershell 1.0 as LayerShell
 import "components"
+import "js/uitree.js" as Tree
 
 Main {
     id: main
@@ -93,5 +94,11 @@ Main {
             .forEach(function (it) { it.parent = overlayWin.contentItem; });
         [main.visionItem, main.capsuleItem, main.toastsItem, main.ghostItem, main.cursorItem]
             .forEach(function (it) { it.parent = aiWin.contentItem; });
+        // the AI still sees the bar and dock, at their real place on screen
+        Tree.setExtraRoots([Os.root, main.contentItem], [
+            { item: barWin.contentItem, origin: function () { return { x: 0, y: 0 }; } },
+            { item: dockWin.contentItem, origin: function () {
+                return { x: dockWin.side === "right" ? main.width - dockWin.width : 0,
+                         y: dockWin.side === "bottom" ? main.height - dockWin.height : 0 }; } }]);
     }
 }

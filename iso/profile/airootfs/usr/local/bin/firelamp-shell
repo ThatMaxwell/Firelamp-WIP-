@@ -8,9 +8,10 @@
 # With none of these installed it exits and leaves the desktop as it is.
 set -u
 
-# VMs without a GPU render node: render Qt Quick in software.
+# VMs without a GPU render node: keep Qt Quick on OpenGL, drawn by Mesa's llvmpipe on the CPU.
+# (Qt's own software backend skips window contents and dock icons that need shader effects.)
 if ! compgen -G '/dev/dri/renderD*' >/dev/null; then
-    export QT_QUICK_BACKEND=software
+    export LIBGL_ALWAYS_SOFTWARE=1
 fi
 
 # Looks export and import as .firelamp-look files, read and written from QML.
