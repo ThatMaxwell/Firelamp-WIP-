@@ -57,6 +57,15 @@ if [[ -d "$repo_dir/shell" ]]; then
     fi
 fi
 
+# Packages we rebuild ourselves (iso/pkgbuilds/) go in a local repo listed
+# before [cachyos], so they win over the prebuilt ones.
+if compgen -G "$iso_dir/pkgbuilds/*/PKGBUILD" >/dev/null; then
+    local_repo="$work_dir/local-repo"
+    "$iso_dir/build-local-pkgs.sh" "$local_repo"
+    sed -i "0,/^\[cachyos\]/s||[firelamp-local]\nSigLevel = Optional TrustAll\nServer = file://$local_repo\n\n[cachyos]|" "$staged/pacman.conf"
+    grep -q '^\[firelamp-local\]' "$staged/pacman.conf" || { echo "build.sh: could not add the local repo" >&2; exit 1; }
+fi
+
 export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(git -C "$repo_dir" log -1 --format=%ct 2>/dev/null || date +%s)}"
 mkarchiso -v -r -w "$work_dir/mkarchiso" -o "$out_dir" "$staged"
 

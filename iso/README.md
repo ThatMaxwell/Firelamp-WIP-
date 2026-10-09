@@ -42,6 +42,11 @@ rebuilds the initramfs and installs GRUB for BIOS or UEFI. Btrfs with `@`, `@hom
 branding live in `profile/airootfs/usr/share/firelamp/calamares/`, and `firelamp-install`
 (the "Install Firelamp OS" launcher) copies them over the package defaults before starting.
 
+The installer package itself is rebuilt on every ISO build from CachyOS's PKGBUILD
+(`pkgbuilds/cachyos-calamares-next/`, via `build-local-pkgs.sh`) into a local repo that
+wins over `[cachyos]`. The prebuilt one can lag behind Arch's library bumps and then fails
+to start. The boot test launches the installer and fails if its window doesn't stay up.
+
 ## Releases
 
 Pushing a `v*` tag runs the same build and boot test, then publishes the ISO as a GitHub

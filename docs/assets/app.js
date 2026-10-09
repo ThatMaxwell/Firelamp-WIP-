@@ -28,7 +28,7 @@
     $$('[data-i18n-ph]').forEach(n => (n.placeholder = d[n.dataset.i18nPh]));
     $$('#langToggle b').forEach(b => b.classList.toggle('on', b.dataset.l === l));
     try { localStorage.setItem('fl-lang', l); } catch (e) {}
-    splitWords(); onScroll(); pipeReset(); ctlText();
+    splitWords(); onScroll(); pipeReset(); ctlText(); if (typeof relText === 'function') relText();
   }
 
   /* ---------- flow ---------- */
@@ -224,26 +224,51 @@
   });
 
   /* ---------- download: the button reveals the terminal command ---------- */
-  const REL = 'https://github.com/ThatMaxwell/Firelamp-WIP-/releases/download/v0.1.0';
-  const ISO = 'firelamp-2026.10.08-x86_64.iso';
-  const CMD = {
-    win: { path: '$HOME\\Firelamp', text: [
-      '$d = "$HOME\\Firelamp"; mkdir $d -Force | Out-Null; cd $d',
-      `$u = "${REL}"`,
-      `$n = "${ISO}"`,
-      'foreach ($f in "$n.part00", "$n.part01", "$n.sha256") { curl.exe -L -C - -o $f "$u/$f" }',
-      'cmd /c "copy /b $n.part00+$n.part01 $n"',
-      'if ((Get-FileHash $n -Algorithm SHA256).Hash -eq (Get-Content "$n.sha256").Split(" ")[0]) { "OK: checksum matches, ISO is ready"; del "$n.part*" } else { "Checksum mismatch, run the command again" }'
-    ] },
-    nix: { path: '~/Firelamp', text: [
-      'mkdir -p ~/Firelamp && cd ~/Firelamp',
-      `u=${REL}`,
-      `n=${ISO}`,
-      'for f in $n.part00 $n.part01 $n.sha256; do curl -L -C - -o $f $u/$f; done',
-      'cat $n.part00 $n.part01 > $n',
-      'if sha256sum -c $n.sha256 2>/dev/null || shasum -a 256 -c $n.sha256; then rm $n.part0*; echo "OK: checksum matches, ISO is ready"; else echo "Checksum mismatch, run the command again"; fi'
-    ] }
-  };
+  // The page asks GitHub for the latest release, so a new ISO shows up here without a site change.
+  // These values are only the fallback if that request fails.
+  const REPO = 'ThatMaxwell/Firelamp-WIP-';
+  let REL = { tag: 'v0.1.0', iso: 'firelamp-2026.10.08-x86_64.iso', parts: ['part00', 'part01'], bytes: 3703177216 };
+  function cmds() {
+    const u = `https://github.com/${REPO}/releases/download/${REL.tag}`, n = REL.iso, P = REL.parts;
+    const files = (P.length ? P.map(x => `$n.${x}`) : ['$n']).concat('$n.sha256');
+    return {
+      win: { path: '$HOME\\Firelamp', text: [
+        '$d = "$HOME\\Firelamp"; mkdir $d -Force | Out-Null; cd $d',
+        `$u = "${u}"`,
+        `$n = "${n}"`,
+        `foreach ($f in ${files.map(f => `"${f}"`).join(', ')}) { curl.exe -L -C - -o $f "$u/$f" }`,
+        ...(P.length ? [`cmd /c "copy /b ${P.map(x => `$n.${x}`).join('+')} $n"`] : []),
+        `if ((Get-FileHash $n -Algorithm SHA256).Hash -eq (Get-Content "$n.sha256").Split(" ")[0]) { "OK: checksum matches, ISO is ready"${P.length ? '; del "$n.part*"' : ''} } else { "Checksum mismatch, run the command again" }`
+      ] },
+      nix: { path: '~/Firelamp', text: [
+        'mkdir -p ~/Firelamp && cd ~/Firelamp',
+        `u=${u}`,
+        `n=${n}`,
+        `for f in ${files.join(' ')}; do curl -L -C - -o $f $u/$f; done`,
+        ...(P.length ? [`cat ${P.map(x => `$n.${x}`).join(' ')} > $n`] : []),
+        `if sha256sum -c $n.sha256 2>/dev/null || shasum -a 256 -c $n.sha256; then ${P.length ? 'rm $n.part*; ' : ''}echo "OK: checksum matches, ISO is ready"; else echo "Checksum mismatch, run the command again"; fi`
+      ] }
+    };
+  }
+  function relText() {
+    const url = `https://github.com/${REPO}/releases/tag/${REL.tag}`;
+    $$('[data-rel-link]').forEach(a => (a.href = url));
+    $$('[data-rel-tag]').forEach(n => (n.textContent = REL.tag));
+    const gb = (REL.bytes / 1e9).toFixed(1);
+    $$('[data-rel-size]').forEach(n => (n.textContent = lang === 'pt' ? gb.replace('.', ',') : gb));
+  }
+  fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' } })
+    .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then(j => {
+      const names = j.assets.map(x => x.name), sha = names.find(x => /\.iso\.sha256$/.test(x));
+      if (!sha) return;
+      const iso = sha.replace(/\.sha256$/, '');
+      const parts = names.filter(x => x.startsWith(iso + '.part')).map(x => x.slice(iso.length + 1)).sort();
+      if (!parts.length && !names.includes(iso)) return;
+      const bytes = j.assets.filter(x => x.name === iso || x.name.startsWith(iso + '.part')).reduce((t, x) => t + x.size, 0);
+      REL = { tag: j.tag_name, iso, parts, bytes };
+      relText(); if (dlBtn.getAttribute('aria-expanded') === 'true') dlShow(dlOs);
+    }).catch(() => {});
   const dlBtn = $('#dlBtn'), dlPanel = $('#dlPanel'), dlCode = $('#dlCode'), dlCopy = $('#dlCopy');
   let dlOs = /Windows/i.test(navigator.userAgent) ? 'win' : 'nix'; // reduced UAs still name Windows
   const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -252,6 +277,7 @@
     $$('.dl-tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.os === os));
     // commands bright, arguments quieter, so the six steps read at a glance
     // wrap at spaces only: a word joiner keeps flags like -Force whole, and long URLs may break after a slash
+    const CMD = cmds();
     dlCode.innerHTML = CMD[os].text.map(l => '<span>' + esc(l).replace(/^(\S+)/, '<b>$1</b>').replace(/-/g, '-\u2060').replace(/(\w)\//g, '$1/<wbr>') + '</span>').join('');
     $('#dlPath').textContent = CMD[os].path;
     $('#dlShell').textContent = os === 'win' ? 'PowerShell' : 'Terminal';
@@ -270,7 +296,7 @@
     }
   });
   dlCopy.addEventListener('click', async () => {
-    const text = CMD[dlOs].text.join('\n');
+    const text = cmds()[dlOs].text.join('\n');
     try { await navigator.clipboard.writeText(text); }
     catch (e) { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'; document.body.append(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
     dlCopy.textContent = T[lang]['dl.copied'];
