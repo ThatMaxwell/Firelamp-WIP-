@@ -208,6 +208,9 @@ def cli_ask(text):
                 for d in e.get("details") or []:
                     print("  %s: %s" % (d[0], d[1]))
                 _call("/reply", {"req": e["req"], "ok": _yes(e.get("allow", "Allow") + "?")})
+            elif k == "stuck":
+                print("\n\033[1m%s\033[0m" % e["line"])
+                _call("/reply", {"req": e["req"], "ok": _yes("Do that step yourself now. Done, and carry on?")})
             elif k in ("point", "opening"):
                 _call("/reply", {"req": e["req"], "ok": True})
             elif k == "shell":

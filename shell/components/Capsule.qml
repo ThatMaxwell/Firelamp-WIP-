@@ -37,6 +37,7 @@ Item {
         width: 24; height: 24; radius: 12; anchors.verticalCenter: parent ? parent.verticalCenter : undefined
         color: rma.containsMouse ? Theme.surface3 : Theme.surface2
         scale: rma.pressed ? 0.97 : 1
+        Accessible.role: Accessible.Button; Accessible.name: tip; Accessible.onPressAction: rb.clicked()
         Glyph { anchors.centerIn: parent; width: 11; height: 11; name: rb.glyph; color: Theme.text2 }
         MouseArea { id: rma; anchors.fill: parent; hoverEnabled: true; onClicked: rb.clicked() }
     }
@@ -49,6 +50,7 @@ Item {
         width: pt.implicitWidth + 20; height: 24; radius: 12; anchors.verticalCenter: parent ? parent.verticalCenter : undefined
         color: strong ? (pma.containsMouse ? "#ffffff" : Theme.text) : (pma.containsMouse ? Theme.surface3 : Theme.surface2)
         scale: pma.pressed ? 0.97 : 1
+        Accessible.role: Accessible.Button; Accessible.name: text; Accessible.onPressAction: pb.clicked()
         Text { id: pt; anchors.centerIn: parent; text: pb.text; color: pb.strong ? Theme.bg : Theme.text; font.family: Theme.font; font.pixelSize: 12; font.weight: Font.DemiBold }
         MouseArea { id: pma; anchors.fill: parent; hoverEnabled: true; onClicked: pb.clicked() }
     }
@@ -78,6 +80,7 @@ Item {
         Round { visible: !cap.neutral && !cap.paused; glyph: "pause"; tip: "Pause"; onClicked: Os.agent.togglePause() }
         Pill { visible: !cap.neutral && cap.paused; text: "Resume"; strong: true; onClicked: Os.agent.togglePause() }
         Pill { visible: cap.st === "stuck"; text: "Show me"; strong: true; onClicked: Os.agent.showMe() }
+        Pill { visible: cap.st === "teaching" && Os.agent.real; text: "Done"; strong: true; onClicked: Os.agent.showedMe() }
         Pill { visible: cap.neutral || cap.paused; text: "Stop"; onClicked: Os.agent.stop() }
         Round { visible: !cap.neutral && !cap.paused; glyph: "stop"; tip: "Stop"; onClicked: Os.agent.stop() }
     }

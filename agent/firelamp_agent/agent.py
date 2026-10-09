@@ -8,6 +8,7 @@ real app, logs it to Activity with the brain's reason, and looks again.
 import itertools
 import json
 import os
+import re
 import subprocess
 import threading
 import time
@@ -28,18 +29,18 @@ Answer with exactly ONE JSON object and nothing else:
 {{"say": "short message to the user (optional)",
  "plan": ["short step", "..."],
  "step": 0,
- "do": "click", "id": 12,
+ "do": "click", "id": 12, "name": "Save",
  "why": "short reason, shown in the activity log",
  "risky": false}}
 "plan" goes only in your first answer, and only when the task needs 3 or more steps. "step" is the plan line this action belongs to.
 
 Actions ("do"):
  open   {{"do":"open","app":"Kate"}}  start an installed app (or one of Firelamp's own apps)
- click  {{"do":"click","id":12}}  press a button, menu, menu item, tab, link, list item or checkbox
- type   {{"do":"type","id":7,"text":"hello","replace":false}}  write into a text field ("replace": true clears it first)
+ click  {{"do":"click","id":12,"name":"Save"}}  press a button, menu, menu item, tab, link, list item or checkbox
+ type   {{"do":"type","id":7,"name":"Search","text":"hello","replace":false}}  write into a text field ("replace": true clears it first)
  key    {{"do":"key","keys":"ctrl+s"}}  press keys in the active window: Return, Tab, Escape, ctrl+s, alt+F4…
  focus  {{"do":"focus","window":"w2"}}  bring a window to the front and see inside it
- read   {{"do":"read","id":7}}  get the full text of an element
+ read   {{"do":"read","id":7,"name":"Search"}}  get the full text of an element
  run    {{"do":"run","command":"df -h"}}  run a bash command and get its output
  wait   {{"do":"wait","seconds":2}}  let something load
  done   {{"do":"done","say":"..."}}  finish: say what you did, or answer the question
@@ -47,6 +48,8 @@ Actions ("do"):
 Rules:
 - One action per answer. After each one you get its result and the new tree.
 - Only use ids from the latest tree. If what you need isn't there, open or focus the right window, or open the menu that holds it.
+- With click, type and read, "name" is the element's label as the tree shows it. If [id] is something else, I look for that name, and do nothing when it isn't on screen.
+- To start an app, use open with its name. Apps that aren't running aren't in the tree.
 - Menus show their items only once opened: click the menu first, then the item.
 - For facts about this computer (disk, memory, files, packages), use run. For general questions, answer with done.
 - Set "risky": true on anything that deletes, sends, publishes, buys, shares, installs or removes software, or can't be undone. The user approves those first.
@@ -67,6 +70,34 @@ class Stop(Exception):
     pass
 
 
+FILLER = {"the", "a", "an", "button", "menu", "item", "field", "tab", "link", "icon", "in", "on", "of"}
+
+
+def norm(s):
+    words = re.sub(r"[^\w\s]", " ", str(s or "").lower()).split()
+    return " ".join(w for w in words if w not in FILLER)
+
+
+def name_of(n):
+    return (n.get("name") if isinstance(n, dict) else n.name) or ""
+
+
+def named(n, want):
+    """Whether element n is plausibly the one the brain called `want`. Unnamed ones can't be checked."""
+    have, want = norm(name_of(n)), norm(want)
+    if not have or not want:
+        return True
+    return have == want or (" %s " % have) in (" %s " % want) or (" %s " % want) in (" %s " % have)
+
+
+def clickable(n):
+    return n.get("role") in ("button", "item", "menu item", "tab", "link") if isinstance(n, dict) else bool(n.actions)
+
+
+def editable(n):
+    return bool(n.get("editable")) if isinstance(n, dict) else bool(n.editable)
+
+
 class Agent:
     def __init__(self, events, eyes, kwin=None):
         self.events = events
@@ -81,6 +112,8 @@ class Agent:
         self.wins = []
         self.shell_wins = []
         self.asked_apps = set()
+        self.fingerprint = None
+        self.stuck_win = None
 
     # ---- control from the shell ----
     @property
@@ -154,7 +187,7 @@ class Agent:
         system = SYSTEM.format(name=name) + (REFLEX if reflexes else "")
         messages = [{"role": "system", "content": system},
                     {"role": "user", "content": intro + "\nScreen now:\n" + self.look()}]
-        plan, bad = [], 0
+        plan, bad, fails = [], 0, {}
         for turn in range(MAX_STEPS):
             self.checkpoint()
             self.events.emit("think", text="Thinking" if turn else "Reading the screen")
@@ -187,12 +220,30 @@ class Agent:
                 self.say(act.get("say") or act.get("text") or "Done.")
                 self.log("done", "Done", task["text"], "Firelamp")
                 return "done"
-            result = self.execute(act, do, cfg, jev, task)
+            note = self.aim(act, do)
+            before, target = self.fingerprint, self.node(act.get("id"))
+            result = note if note.startswith("Error:") else self.execute(act, do, cfg, jev, task) + note
             if result.startswith("DENIED"):
                 return "denied"
             time.sleep(0.35)
             screen = self.look()
-            if reflexes and act.get("then"):
+            # two failed tries at the same step: stop and hand it to the user instead of guessing
+            failed = self.failure(do, result, before)
+            step = act["step"] if plan and isinstance(act.get("step"), int) else "-"
+            if failed:
+                fails[step] = fails.get(step, 0) + 1
+                if fails[step] >= 2:
+                    fails[step] = 0
+                    self.stuck(*self.couldnt(act, do, failed, target))
+                    result += "\nYou were stuck, so the user did this step for you. Look at the screen and carry on."
+                    screen = self.look()
+                elif result.startswith("Error:"):
+                    result += "\n(If this step fails again, I stop and ask the user.)"
+                else:
+                    result += "\n(That didn't work: %s. Try another way. If this step fails again, I stop and ask the user.)" % failed
+            else:
+                fails[step] = 0
+            if reflexes and act.get("then") and not failed:
                 extra = self.reflex(str(act["then"])[:120], task, cfg, jev)
                 if extra == "DENIED":
                     return "denied"
@@ -204,6 +255,90 @@ class Agent:
             self.trim(messages, brain.budget)
         self.say("That took more steps than I allow myself, so I stopped here. Everything I did is in Activity.")
         return "stuck"
+
+    def aim(self, act, do):
+        """The brain names the element it means. When [id] is something else, find that name on
+        screen instead; when it isn't there, do nothing (and that counts as a failed try)."""
+        if do not in ("click", "press", "tap", "type", "read"):
+            return ""
+        want = str(act.get("name") or act.get("label") or act.get("target") or "").strip()
+        n = self.node(act.get("id"))
+        if not want or (n is not None and named(n, want)):
+            return ""
+        exact, loose = [], []
+        for i, m in self.nodes.items():
+            if not norm(name_of(m)):
+                continue
+            if norm(name_of(m)) == norm(want):
+                exact.append(i)
+            elif named(m, want):
+                loose.append(i)
+        usable = (lambda i: editable(self.nodes[i])) if do == "type" else (lambda i: clickable(self.nodes[i]))
+        picks = sorted(exact, key=lambda i: not usable(i)) or sorted(loose, key=lambda i: not usable(i))
+        have = ("[%s] is “%s”" % (act.get("id"), eyes_mod.clip(name_of(n) or "unnamed", 40)) if n is not None
+                else "there's no [%s]" % act.get("id"))
+        if not picks:
+            app = hands.find_app(norm(want))[0] if do != "read" and len(norm(want)) > 2 else None
+            hint = (" %s is an app that isn't open: use open." % app) if app and norm(app) in norm(want) else ""
+            return "Error: %s, and there's no element called “%s” on screen, so I did nothing.%s" % (
+                have, eyes_mod.clip(want, 40), hint)
+        act["id"] = picks[0]
+        return "\n(%s, not “%s”, so I used [%d].)" % (have, eyes_mod.clip(want, 40), picks[0])
+
+    def failure(self, do, result, before):
+        """Why the last action counts as a failed try, or None: its target wasn't on screen, the
+        hands couldn't do it, or a click or key press changed nothing in the tree."""
+        if result.startswith("Error:"):
+            return result[6:].strip().rstrip(".")
+        if do in ("click", "press", "tap", "key", "keys", "press_keys") and before is not None and before == self.fingerprint:
+            return "nothing changed on screen"
+        return None
+
+    def couldnt(self, act, do, why, target):
+        """The capsule's line for being stuck, and the app it happened in."""
+        active = next((w for w in self.wins if w.active), None)
+        app = eyes_mod.pretty_app(active.app) if active else ""
+        self.stuck_win = target.win if target is not None and not isinstance(target, dict) else active
+        label = ""
+        if isinstance(target, dict):
+            label, app = target.get("name") or "", target.get("appTitle") or app
+        elif target is not None:
+            label, app = target.label, eyes_mod.pretty_app(target.app)
+        where = (" in " + app) if app else ""
+        if "no element" in why:
+            # the id pointed at the wrong thing, so say what was missing and where you are
+            active = active or next(iter(self.wins), None)
+            app = eyes_mod.pretty_app(active.app) if active else ""
+            self.stuck_win = active
+            want = str(act.get("name") or act.get("label") or act.get("target") or "").strip()
+            return ("Couldn’t find “%s”" % eyes_mod.clip(want, 28) if want else "Couldn’t find what I needed") + \
+                ((" in " + app) if app else ""), app
+        if label:
+            return "Couldn’t get “%s” to work%s" % (eyes_mod.clip(label, 28), where), app
+        if do in ("key", "keys", "press_keys"):
+            return "Couldn’t get %s to do anything%s" % (eyes_mod.clip(str(act.get("keys") or act.get("key") or "the keys"), 20), where), app
+        return "Couldn’t %s%s" % (do, where), app
+
+    def stuck(self, line, app):
+        """Stop in the neutral capsule: Show me (you do the step, then Done) or Stop."""
+        self.log("stuck", line, "I tried twice, then stopped instead of guessing.", app or "Firelamp")
+        self.say("I tried twice and %s, so I stopped instead of guessing. Press Show me and do that step yourself, "
+                 "then Done, or press Stop." % (line[0].lower() + line[1:]))
+        self.raise_shell()
+        r = self.events.request("stuck", timeout=None, line=line, app=app)
+        if self.stopped or not (r and r.get("ok")):
+            raise Stop()
+        self.log("look", "You did that step for me", "I’ll carry on from here.", app or "Firelamp")
+
+    def show_me(self):
+        """You pressed Show me: bring the app it got stuck in to the front, so you can do the step."""
+        w = self.stuck_win
+        if w is None:
+            return
+        if self.kwin and self.kwin.ok:
+            self.kwin.activate(w.pid, w.title)
+        else:
+            hands.activate_x11(w.pid)
 
     def reflex(self, then, task, cfg, jev):
         """Jev picks the element the brain named for its next click, without another brain turn.
@@ -287,7 +422,9 @@ class Agent:
                     shell_lines.append('  [%d] %s "%s"%s' % (n["id"], n["role"], n["name"],
                                                             (' = "%s"' % eyes_mod.clip(n["text"], 160)) if n.get("text") else ""))
         self.nodes, self.wins = nodes, wins
-        return eyes_mod.render(wins, shell_lines)
+        screen = eyes_mod.render(wins, shell_lines)
+        self.fingerprint = screen
+        return screen
 
     def node(self, i):
         try:
