@@ -60,7 +60,14 @@ jobs:
             ollama run "$MODEL" "Say ok" --verbose 2>&1 | tail -n 12     # loads it, and shows its speed here
           fi
           [ -n "$FIRELAMP_JEV_KEY" ] || unset FIRELAMP_JEV_KEY
-          dbus-run-session -- python3 agent/test/real_run.py --out capture --timeout 3000 "$TASK"
+          # the shell, the agent and the apps run as a normal user, like on an installed system
+          useradd -m -s /bin/bash firelamp
+          mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
+          install -d -m 700 -o firelamp /tmp/runtime-firelamp
+          chown -R firelamp: "$GITHUB_WORKSPACE"
+          trap 'chown -R root: "$GITHUB_WORKSPACE"' EXIT
+          runuser -u firelamp -- env XDG_RUNTIME_DIR=/tmp/runtime-firelamp \
+            dbus-run-session -- python3 agent/test/real_run.py --out capture --timeout 3000 "$TASK"
 
       - name: Publish the film to the agent-capture branch
         if: always()

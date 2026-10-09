@@ -32,7 +32,7 @@ Answer with exactly ONE JSON object and nothing else:
  "do": "click", "id": 12, "name": "Save",
  "why": "short reason, shown in the activity log",
  "risky": false}}
-"plan" goes only in your first answer, and only when the task needs 3 or more steps. "step" is the plan line this action belongs to.
+"plan" goes in your first answer when the task needs 3 or more steps. "step" is the plan line this action belongs to.
 
 Actions ("do"):
  open   {{"do":"open","app":"Kate"}}  start an installed app (or one of Firelamp's own apps)
@@ -61,6 +61,18 @@ Rules:
 # with Jev at Instant: the brain names its next click, Jev finds it on the new screen
 REFLEX = """
 - When your next step will just be clicking something you can name, add "then": "the Save button in Kate". If it's on the next screen, it gets clicked right away and you get both results."""
+
+# the app actions: two of them make a plan worth showing, and any of them a check before Done
+CHANGES = ("open", "click", "press", "tap", "type", "key", "keys", "press_keys")
+
+ASK_PLAN = ("This takes more than one step, so the user sees a plan first. Answer again with \"plan\" "
+            "(the steps that are left, short) and this same next action, with \"step\": 0.")
+
+CHECK = ("Before you finish, check your work against the screen below. Go through what the user asked, "
+         "item by item, and find each one on screen (for typed text, the field's text). If it's all there, "
+         "answer done again with \"checked\": what on screen shows it. If something is missing or didn't "
+         "work, fix it, or answer done and say plainly what's missing or what you couldn't confirm. Never "
+         "say it worked unless the screen shows it.\n\nScreen now:\n%s")
 
 NEEDS_BRAIN = ("I can't think yet: no AI model is set up. Sign in to Puter in Settings › Assistant "
                "(free, it opens your browser), or add your own API key or a local Ollama model there.")
@@ -148,6 +160,19 @@ class Agent:
             self.paused = False
             self.events.cancel_waits()
 
+    def find_shell(self):
+        """The shell's pid, from its window on the accessibility bus (QML can't see its own).
+        Its windows are never the AI's to act on through AT-SPI."""
+        if self.events.shell_pid:
+            return
+        for app, pid, name in self.eyes.apps():
+            for j in range(eyes_mod._safe(app.get_child_count, 0) or 0):
+                w = eyes_mod._safe(lambda j=j: app.get_child_at_index(j))
+                if w is not None and (eyes_mod._safe(w.get_name, "") or "") in ("Firelamp OS", "Firelamp AI layer"):
+                    self.events.shell_pid = pid
+                    self.eyes.own_pids = {pid}
+                    return
+
     def held(self):
         """Pause holds typing where it is, and it carries on after Resume. Stop ends it."""
         while self.paused and not self.stopped:
@@ -164,6 +189,7 @@ class Agent:
     def _run(self, task):
         how = "done"
         try:
+            self.find_shell()
             how = self._loop(task)
         except Stop:
             how = "stopped"
@@ -200,10 +226,12 @@ class Agent:
         messages = [{"role": "system", "content": system},
                     {"role": "user", "content": intro + "\nScreen now:\n" + self.look()}]
         plan, bad, fails = [], 0, {}
+        acted, asked_plan, checked, label = 0, False, False, "Reading the screen"
         for turn in range(MAX_STEPS):
             self.checkpoint()
-            self.events.emit("think", text="Thinking" if turn else "Reading the screen")
-            raw = self.think(brain, messages)
+            self.events.emit("think", text=label)
+            raw = self.think(brain, messages, label)
+            label = "Thinking"
             try:
                 act = brains.parse(raw)
             except brains.BrainError:
@@ -217,7 +245,13 @@ class Agent:
             bad = 0
             messages.append({"role": "assistant", "content": json.dumps(act, ensure_ascii=False)})
             do = str(act.get("do") or act.get("action") or "").lower()
-            if turn == 0 and isinstance(act.get("plan"), list) and len(act["plan"]) >= 3 and do != "done":
+            has_plan = isinstance(act.get("plan"), list) and len(act["plan"]) >= (2 if asked_plan else 3) and do != "done"
+            # more than one action in apps: the user sees the plan first, with Go and Edit
+            if not plan and not has_plan and not asked_plan and acted and do in CHANGES:
+                asked_plan = True
+                messages.append({"role": "user", "content": ASK_PLAN})
+                continue
+            if not plan and has_plan:
                 plan = [str(p)[:90] for p in act["plan"][:8]]
                 if act.get("say"):
                     self.say(act["say"])
@@ -229,14 +263,21 @@ class Agent:
             if plan and isinstance(act.get("step"), int) and 0 <= act["step"] < len(plan):
                 self.events.emit("step", i=act["step"])
             if do == "done":
+                # Done means checked: after acting in apps, look again and compare before saying so
+                if acted and not checked:
+                    checked, label = True, "Checking the result"
+                    messages.append({"role": "user", "content": CHECK % self.look()})
+                    continue
                 self.say(act.get("say") or act.get("text") or "Done.")
-                self.log("done", "Done", task["text"], "Firelamp")
+                self.log("done", "Done", ("Checked: " + str(act["checked"])[:200]) if act.get("checked") else task["text"], "Firelamp")
                 return "done"
             note = self.aim(act, do)
             before, target = self.fingerprint, self.node(act.get("id"))
             result = note if note.startswith("Error:") else self.execute(act, do, cfg, jev, task) + note
             if result.startswith("DENIED"):
                 return "denied"
+            if do in CHANGES and not result.startswith("Error:"):
+                acted += 1
             time.sleep(0.35)
             screen = self.look()
             # two failed tries at the same step: stop and hand it to the user instead of guessing
@@ -402,9 +443,12 @@ class Agent:
         except hands.HandsError as e:
             return "Error: %s." % e
 
-    def think(self, brain, messages):
-        """Ask the brain on a side thread, so Stop works even while it's thinking."""
+    def think(self, brain, messages, label="Thinking"):
+        """Ask the brain on a side thread, so Stop works even while it's thinking. When it takes
+        a while, the capsule says what it's waiting on, so it doesn't look stuck."""
         box = {}
+        start, told = time.time(), False
+        where = {"local": "local model", "puter": "Puter"}.get(brain.provider, "your AI service")
 
         def call():
             try:
@@ -417,6 +461,9 @@ class Agent:
             t.join(0.1)
             if self.stopped:
                 raise Stop()
+            if not told and time.time() - start > 5:
+                told = True
+                self.events.emit("think", text="%s · %s" % (label, where))
         if "err" in box:
             raise RuntimeError("my AI model (%s) didn't answer: %s" % (brain.label, box["err"]))
         return box.get("text", "")
@@ -674,9 +721,29 @@ class Agent:
                 hands.type_keys(text)
         finally:
             self.events.emit("busy", on=False)
-        self.log("type", "Typed “%s” into %s" % (eyes_mod.clip(" ".join(text.split()), 32),
-                                                 ("“%s”" % eyes_mod.clip(n.name, 30)) if n.name else n.label), why, app)
-        return "Typed %d characters into “%s”." % (len(text), n.label)
+        where = ("“%s”" % eyes_mod.clip(n.name, 30)) if n.name else n.label
+        missing = self.not_typed(n, text) if aid != "terminal" else None
+        if missing:
+            self.log("type", "Typed into %s, but “%s” didn’t arrive" % (where, eyes_mod.clip(missing, 30)), why, app)
+            return "Error: I typed it, but “%s” isn't in the field. The field now says: “%s”" % (
+                eyes_mod.clip(missing, 50), eyes_mod.clip(" ".join((eyes_mod.text_of(n.acc, 2000) or "").split()), 200))
+        self.log("type", "Typed “%s” into %s" % (eyes_mod.clip(" ".join(text.split()), 32), where), why, app)
+        return "Typed %d characters into “%s”, and checked they're there." % (len(text), n.label)
+
+    @staticmethod
+    def not_typed(n, text):
+        """The first line of `text` the field doesn't show after typing, or None. Letters and
+        digits only, ignoring case, so autocorrect, auto-indent and smart quotes don't count."""
+        got = eyes_mod.text_of(n.acc, 200000)
+        if got is None or n.role == "password text":
+            return None              # can't be read back
+        def plain(s):
+            return " ".join(re.sub(r"[^\w]+", " ", s.lower()).split())
+        have = plain(got)
+        for line in text.splitlines():
+            if plain(line) and plain(line) not in have:
+                return line.strip()
+        return None
 
     def do_key(self, act, why, cfg, jev):
         keys = str(act.get("keys") or act.get("key") or "")

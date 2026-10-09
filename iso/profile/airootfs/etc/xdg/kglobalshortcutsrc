@@ -1,0 +1,4 @@
+# Meta+Space opens the Firelamp launcher too, as a normal key combination
+# (the Super tap alone goes through kwinrc's ModifierOnlyShortcuts).
+[services][firelamp-launcher.desktop]
+_launch=Meta+Space

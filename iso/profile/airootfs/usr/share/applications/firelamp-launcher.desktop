@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Firelamp Launcher
+Comment=Open the Firelamp launcher (also on a Super tap)
+Exec=gdbus call --session --dest org.firelamp.Shell --object-path /org/firelamp/Shell --method org.firelamp.Shell.ToggleLauncher
+Icon=system-search
+NoDisplay=true
+X-KDE-Shortcuts=Meta+Space
