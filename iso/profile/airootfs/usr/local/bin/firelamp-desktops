@@ -22,7 +22,12 @@ The shell's Settings page talks to `serve` over plain HTTP on localhost:
     GET  /events?after=N  -> {last, events:[{n, kind}]}; waits up to 25 s for one (long poll);
                              after=-1 answers at once, with where the queue is
     POST /event/launcher  -> tells the shell to toggle its launcher
-    POST /open/terminal   -> opens a real terminal (Konsole) running your login shell (bash)
+    GET  /apps            -> {files, web, mail, photos, music, calendar, terminal, settings: app or null}
+    POST /open/APP[/ARG]  -> opens the real app (terminal = Konsole running bash; kcm/wifi = a
+                             KDE settings page; files/Downloads, files/trash)
+    GET  /system          -> {wifi, bluetooth, volume, muted}; null when there's no such hardware
+    POST /system/wifi|bluetooth/on|off, /system/volume/0-100
+    POST /power/lock|sleep|restart|shutdown|logout
     POST /raise           -> brings the Firelamp shell window to the front (KWin script)
 
 The Super key: KWin's ModifierOnlyShortcuts calls org.firelamp.Shell.ToggleLauncher on the
@@ -374,18 +379,118 @@ def raise_shell():
         return 502, {"error": str(e)}
 
 
-# The dock's Terminal is a real terminal: Konsole (or whatever is installed) running the
-# user's login shell, which is bash. Firelamp has no shell of its own.
-TERMINALS = (["konsole"], ["kitty"], ["alacritty"], ["foot"], ["gnome-terminal"], ["xterm"])
+# The dock opens real Linux apps. Each entry is tried in order; the first one installed wins,
+# and GET /apps tells the shell which dock items have an app behind them at all.
+APPS = {
+    "files": ["dolphin", "nautilus", "thunar", "nemo", "pcmanfm-qt"],
+    "photos": ["gwenview", "loupe", "eog", "nomacs"],
+    "mail": ["thunderbird", "kmail", "evolution", "geary", "betterbird"],
+    "music": ["elisa", "strawberry", "rhythmbox", "lollypop", "amberol", "audacious"],
+    "calendar": ["merkuro-calendar", "korganizer", "gnome-calendar"],
+    "terminal": ["konsole", "kitty", "alacritty", "foot", "gnome-terminal", "xterm"],
+    "settings": ["systemsettings"],
+}
+# KDE settings pages the shell may open (systemsettings MODULE)
+KCMS = {"wifi": "kcm_networkmanagement", "sound": "kcm_pulseaudio", "bluetooth": "kcm_bluetooth",
+        "power": "kcm_powerdevilprofilesconfig", "display": "kcm_kscreen", "users": "kcm_users"}
+PLACES = {"Downloads": "~/Downloads", "Home": "~", "trash": "trash:/"}
 
 
-def open_terminal():
-    for cmd in ([os.environ["TERMINAL"]] if os.environ.get("TERMINAL") else []) + [t[0] for t in TERMINALS]:
-        if shutil.which(cmd):
-            subprocess.Popen([cmd], cwd=os.path.expanduser("~"), start_new_session=True,
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return 202, {"opened": cmd}
-    return 404, {"error": "no terminal installed"}
+def which_app(aid):
+    if aid == "terminal" and os.environ.get("TERMINAL") and shutil.which(os.environ["TERMINAL"]):
+        return os.environ["TERMINAL"]
+    if aid == "web":
+        return run_quiet(["xdg-settings", "get", "default-web-browser"]).stdout.strip() or shutil.which("firefox")
+    return next((c for c in APPS.get(aid, []) if shutil.which(c)), None)
+
+
+def app_listing():
+    return {aid: which_app(aid) for aid in [*APPS, "web"]}
+
+
+def spawn(cmd):
+    subprocess.Popen(cmd, cwd=os.path.expanduser("~"), start_new_session=True,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def open_app(aid, arg=""):
+    if aid == "web":
+        # the browser picked at first boot or in Settings is the system default
+        desktop = run_quiet(["xdg-settings", "get", "default-web-browser"]).stdout.strip()
+        if desktop and shutil.which("gtk-launch"):
+            spawn(["gtk-launch", desktop])
+        elif shutil.which("firefox"):
+            spawn(["firefox"])
+        else:
+            return 404, {"error": "no browser installed"}
+        return 202, {"opened": desktop or "firefox"}
+    if aid == "kcm":
+        if arg not in KCMS or not shutil.which("systemsettings"):
+            return 404, {"error": "unknown settings page"}
+        spawn(["systemsettings", KCMS[arg]])
+        return 202, {"opened": KCMS[arg]}
+    cmd = which_app(aid)
+    if not cmd:
+        return 404, {"error": f"no {aid} app installed"}
+    where = PLACES.get(arg)
+    if aid == "files" and where:
+        spawn([cmd, where if where.startswith("trash:") else os.path.expanduser(where)])
+    else:
+        spawn([cmd])
+    return 202, {"opened": cmd}
+
+
+# Control Center: the real radios and volume.
+def run_out(cmd):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=4).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def system_state():
+    st = {"wifi": None, "bluetooth": None, "volume": None, "muted": None}
+    if shutil.which("nmcli"):
+        out = run_out(["nmcli", "radio", "wifi"]).strip()
+        st["wifi"] = out == "enabled" if out else None
+    if shutil.which("bluetoothctl"):
+        out = run_out(["bluetoothctl", "show"])
+        st["bluetooth"] = ("Powered: yes" in out) if "Controller" in out else None
+    if shutil.which("wpctl"):
+        m = re.search(r"Volume: ([0-9.]+)( \[MUTED\])?", run_out(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]))
+        if m:
+            st["volume"], st["muted"] = float(m.group(1)), bool(m.group(2))
+    return st
+
+
+def set_system(what, val):
+    if what == "wifi" and val in ("on", "off") and shutil.which("nmcli"):
+        run_out(["nmcli", "radio", "wifi", val])
+    elif what == "bluetooth" and val in ("on", "off") and shutil.which("bluetoothctl"):
+        run_out(["bluetoothctl", "power", val])
+    elif what == "volume" and val.isdigit() and shutil.which("wpctl"):
+        run_out(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{min(100, int(val))}%"])
+    else:
+        return 404, {"error": "unknown setting"}
+    return 200, system_state()
+
+
+# Sleep, restart, shut down and lock go through the session, like Plasma's own menu.
+def power(what):
+    if what == "lock":
+        cmd = ["loginctl", "lock-session"]
+    elif what == "sleep":
+        cmd = ["systemctl", "suspend"]
+    elif what in ("restart", "shutdown", "logout"):
+        method = {"restart": "promptReboot", "shutdown": "promptShutDown", "logout": "promptLogout"}[what]
+        cmd = ["gdbus", "call", "--session", "--dest", "org.kde.LogoutPrompt", "--object-path", "/LogoutPrompt",
+               "--method", "org.kde.LogoutPrompt." + method]
+    else:
+        return 404, {"error": "unknown action"}
+    if not shutil.which(cmd[0]):
+        return 404, {"error": cmd[0] + " missing"}
+    spawn(cmd)
+    return 202, {"ok": True}
 
 
 class Api(BaseHTTPRequestHandler):
@@ -412,6 +517,10 @@ class Api(BaseHTTPRequestHandler):
             return self.reply(200, events_after(after))
         if self.path == "/live":
             return self.reply(200, {"live": os.path.isdir("/run/archiso")})
+        if self.path == "/apps":
+            return self.reply(200, app_listing())
+        if self.path == "/system":
+            return self.reply(200, system_state())
         self.reply(404, {"error": "not found"})
 
     def do_POST(self):
@@ -420,8 +529,14 @@ class Api(BaseHTTPRequestHandler):
             return self.reply(202, {"ok": True})
         if self.path == "/raise":
             return self.reply(*raise_shell())
-        if self.path == "/open/terminal":
-            return self.reply(*open_terminal())
+        if self.path.startswith("/open/"):
+            parts = self.path.split("/")[2:] + [""]
+            return self.reply(*open_app(parts[0], parts[1]))
+        if self.path.startswith("/system/"):
+            parts = self.path.split("/")[2:] + [""]
+            return self.reply(*set_system(parts[0], parts[1]))
+        if self.path.startswith("/power/"):
+            return self.reply(*power(self.path.rsplit("/", 1)[-1]))
         if self.path == "/install-os":
             if not os.path.isdir("/run/archiso") or not shutil.which("firelamp-install"):
                 return self.reply(404, {"error": "not a live session"})

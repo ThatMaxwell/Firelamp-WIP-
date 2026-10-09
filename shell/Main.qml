@@ -36,12 +36,16 @@ Window {
         { id: "about", title: "About Firelamp OS", icon: "assistant", src: "About", w: 360, h: 480, noDock: true }
     ]
 
+    // On a real install these dock items open real Linux apps (Dolphin, your default browser,
+    // Konsole running bash, Gwenview…); the windows in apps/ are the --demo stand-ins.
+    readonly property var external: ["files", "web", "mail", "terminal", "calendar", "photos", "music"]
+    function shows(a) { return Os.demo || external.indexOf(a.id) < 0 || !!Os.realApps[a.id]; }
     function launch(id) {
-        if (id === "downloads") id = "files";
         if (id === "install") return Os.installOS();
+        if (!Os.demo && (id === "downloads" || id === "trash")) return Os.openApp("files", id === "trash" ? "trash" : "Downloads");
+        if (id === "downloads") id = "files";
         if (id === "trash") return;
-        // Terminal is real: Konsole running bash, opened by the helper (--demo keeps the mock)
-        if (id === "terminal" && !Os.demo) return Os.openTerminal();
+        if (!Os.demo && external.indexOf(id) >= 0) return Os.openApp(id);
         if (desktop.registry[id]) desktop.open(id);
     }
     function ask(text) {
@@ -139,7 +143,7 @@ Window {
             Behavior on edge { SequentialAnimation { PauseAnimation { duration: 250 } NumberAnimation { duration: 900; easing.type: Easing.OutQuint } } }
             x: side === "left" ? edge + height / 2 - width / 2 : side === "right" ? parent.width - edge - height / 2 - width / 2 : (parent.width - width) / 2
             y: side === "bottom" ? parent.height - height - edge : (parent.height - height) / 2
-            items: win.apps.filter(function (a) { return !a.noDock; }).map(function (a) { return { id: a.id, icon: a.icon, title: a.title }; })
+            items: win.apps.filter(function (a) { return !a.noDock && win.shows(a); }).map(function (a) { return { id: a.id, icon: a.icon, title: a.title }; })
                    .concat(["-"], Os.live ? [{ id: "install", icon: "install", title: "Install Firelamp OS" }] : [],
                            [{ id: "downloads", icon: "downloads", title: "Downloads" }, { id: "trash", icon: "trash", title: "Trash" }])
             aiActiveId: agent.mode !== "idle" ? "assistant" : ""
@@ -180,7 +184,7 @@ Window {
     PermissionSheet { id: permission; objectName: "permission"; z: 50; onShownChanged: if (shown && win.autoAllow) allowLater.start() }
     Timer { id: allowLater; interval: 1700; onTriggered: permission.answer(true) }
     AskBar { id: askBar; z: 55; onGo: (t) => win.ask(t); onLaunch: (id) => win.launch(id)
-             apps: win.apps.filter(function (a) { return !a.noDock && a.id !== "assistant"; }) }
+             apps: win.apps.filter(function (a) { return !a.noDock && a.id !== "assistant" && win.shows(a); }) }
     // clicking anywhere else closes Control Center
     MouseArea { anchors.fill: parent; z: 56; enabled: control.open; onPressed: control.open = false }
     ControlCenter { id: control; z: 57; x: parent.width - width - 8; y: Theme.menubarH + 6 }

@@ -108,14 +108,31 @@ QtObject {
     property string defaultBrowser: "firefox"
     property bool browserHelper: false
     function raiseShell() { var x = new XMLHttpRequest(); x.open("POST", "http://127.0.0.1:7341/raise"); x.send(); }
-    function openTerminal() {
+    // ---- real apps: the dock opens Dolphin, the default browser, Konsole… through the helper ----
+    property var realApps: ({})                   // id -> the app behind it, or null when none is installed
+    // re-checked now and then, so Mail shows up in the dock once the Office pack puts Thunderbird in
+    property Timer appsTimer: Timer { interval: 30000; repeat: true; running: !os.demo; onTriggered: os.fetchApps() }
+    function fetchApps() {
+        var x = new XMLHttpRequest();
+        x.onreadystatechange = function () { if (x.readyState === XMLHttpRequest.DONE && x.status === 200) os.realApps = JSON.parse(x.responseText); };
+        x.open("GET", "http://127.0.0.1:7341/apps"); x.send();
+    }
+    function openApp(id, arg) {
         var x = new XMLHttpRequest();
         x.onreadystatechange = function () {
             if (x.readyState === XMLHttpRequest.DONE && x.status !== 202)
-                os.toast("terminal", "Couldn't open a terminal", x.status === 404 ? "No terminal app is installed. Try: sudo pacman -S konsole" : "The Firelamp helper isn't running.");
+                os.toast("downloads", "Couldn't open that", x.status === 0 ? "The Firelamp helper isn't running." : (JSON.parse(x.responseText || "{}").error || "Something went wrong."));
         };
-        x.open("POST", "http://127.0.0.1:7341/open/terminal"); x.send();
+        x.open("POST", "http://127.0.0.1:7341/open/" + id + (arg ? "/" + arg : "")); x.send();
     }
+    // ---- Control Center: the real Wi-Fi, Bluetooth and volume (null = no such hardware) ----
+    property var system: ({ wifi: null, bluetooth: null, volume: null, muted: null })
+    function fetchSystem(what, val) {
+        var x = new XMLHttpRequest();
+        x.onreadystatechange = function () { if (x.readyState === XMLHttpRequest.DONE && x.status === 200) os.system = JSON.parse(x.responseText); };
+        x.open(what ? "POST" : "GET", "http://127.0.0.1:7341/system" + (what ? "/" + what + "/" + val : "")); x.send();
+    }
+    function power(what) { var x = new XMLHttpRequest(); x.open("POST", "http://127.0.0.1:7341/power/" + what); x.send(); }
     function setBrowser(id, f) { var st = Object.assign({}, browserStatus); st[id] = Object.assign({}, st[id] || {}, f); browserStatus = st; }
     function fetchBrowsers() {
         var x = new XMLHttpRequest();
@@ -208,7 +225,7 @@ QtObject {
     readonly property var barDefault: ["assistant", "battery", "wifi", "search", "control", "clock"]
     readonly property var barItems: { try { var o = JSON.parse(settings.barOrder); return o.length === barDefault.length ? o : barDefault; } catch (e) { return barDefault; } }
     function resetHome() { settings.homeLayout = ""; widgets = defaultHome.slice(); }
-    Component.onCompleted: { loadHome(); loadNotes(); readSys(); readFile("/etc/hostname", function (t) { if (t.trim()) os.realHost = t.trim(); }); }
+    Component.onCompleted: { loadHome(); loadNotes(); readSys(); fetchApps(); readFile("/etc/hostname", function (t) { if (t.trim()) os.realHost = t.trim(); }); }
     // captures and the site's recordings pass --demo for sample notes, mail, photos and plans;
     // a real install starts empty and everything in it is yours
     onDemoChanged: { loadNotes(); if (!settings.homeLayout) loadHome(); }

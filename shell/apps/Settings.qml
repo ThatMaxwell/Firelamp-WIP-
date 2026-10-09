@@ -37,10 +37,21 @@ Item {
 
     Sidebar {
         id: side
+        // Firelamp's own panes, then the system pages KDE already does well (they open in
+        // System Settings). --demo keeps the old mock rows for the captures.
         Repeater {
-            model: [["Assistant", "sparkle"], ["Desktops", "grid"], ["Packs", "list"], ["Browser", "globe"], ["Permissions", "shield"], ["Fire Cursor", "cursor"], ["Activity", "clock"], ["Appearance", "moon"], ["Wi-Fi", "wifi"], ["Sound", "volume"], ["Bluetooth", "bluetooth"]]
+            model: Os.demo ? [["Assistant", "sparkle"], ["Desktops", "grid"], ["Packs", "list"], ["Browser", "globe"], ["Permissions", "shield"], ["Fire Cursor", "cursor"], ["Activity", "clock"], ["Appearance", "moon"], ["Wi-Fi", "wifi"], ["Sound", "volume"], ["Bluetooth", "bluetooth"]]
+                : [["Assistant", "sparkle"], ["Desktops", "grid"], ["Packs", "list"], ["Browser", "globe"], ["Appearance", "moon"]]
             SideItem { required property var modelData; text: modelData[0]; glyph: modelData[1]; selected: modelData[0] === app.pane
-                       onClicked: if (["Assistant", "Desktops", "Packs", "Browser"].indexOf(modelData[0]) >= 0) app.pane = modelData[0] }
+                       onClicked: {
+                           if (["Assistant", "Desktops", "Packs", "Browser"].indexOf(modelData[0]) >= 0) app.pane = modelData[0];
+                           else if (modelData[0] === "Appearance" && !Os.demo) Os.editingHome = true;
+                       } }
+        }
+        SideHeader { visible: !Os.demo && !!Os.realApps.settings; text: "System" }
+        Repeater {
+            model: !Os.demo && Os.realApps.settings ? [["Wi-Fi", "wifi", "wifi"], ["Sound", "volume", "sound"], ["Bluetooth", "bluetooth", "bluetooth"], ["Displays", "sun", "display"], ["Power", "battery", "power"], ["Users", "eye", "users"]] : []
+            SideItem { required property var modelData; text: modelData[0]; glyph: modelData[1]; onClicked: Os.openApp("kcm", modelData[2]) }
         }
     }
     PacksPane {

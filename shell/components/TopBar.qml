@@ -39,17 +39,33 @@ Rectangle {
         "Window": [{ label: "Minimize", sc: "⌘M", action: function () { Os.desktop.minimizeFocused(); } }, { label: "Zoom", action: function () { Os.desktop.zoomFocused(); } }, "-", { label: "Bring All to Front" }],
         "Help": [{ label: "Firelamp Help" }, { label: "Keyboard Shortcuts" }]
     })
+    // a real install shows only menu items that do something; --demo keeps the full Mac-like set
     function itemsFor(key) {
+        var raw = allItemsFor(key) || [];
+        if (Os.demo) return raw;
+        var out = [];
+        raw.forEach(function (it) {
+            if (it === "-") { if (out.length && out[out.length - 1] !== "-") out.push(it); }
+            else if (it.action || it.disabled) out.push(it);
+        });
+        while (out.length && out[out.length - 1] === "-") out.pop();
+        return out;
+    }
+    function allItemsFor(key) {
         if (key === "logo") return [
             { label: "About Firelamp OS", action: function () { Os.desktop.open("about"); } }, "-"].concat(
             Os.live ? [{ label: "Install Firelamp OS…", action: function () { Os.installOS(); } }, "-"] : [], [
             { label: "System Settings…", action: function () { Os.desktop.open("settings"); } },
             { label: "Activity Timeline", sc: "⌥⌘T", action: function () { Os.timelineToggle(undefined); } }, "-",
-            { label: "Sleep" }, { label: "Restart…" }, { label: "Shut Down…" }, "-", { label: "Lock Screen", sc: "⌃⌘Q" }]);
+            { label: "Sleep", action: function () { Os.power("sleep"); } },
+            { label: "Restart…", action: function () { Os.power("restart"); } },
+            { label: "Shut Down…", action: function () { Os.power("shutdown"); } }, "-",
+            { label: "Lock Screen", action: function () { Os.power("lock"); } },
+            { label: "Log Out…", action: function () { Os.power("logout"); } }]);
         if (key === "app") return [{ label: "About " + appName }, "-", { label: "Settings…", sc: "⌘,", action: function () { Os.desktop.open("settings"); } }, "-", { label: "Hide " + appName, sc: "⌘H" }, { label: "Quit " + appName, sc: "⌘Q", action: function () { Os.desktop.closeFocused(); } }];
         if (key === "control") return [{ label: "Focus", sc: "Off" }, { label: "Screen Mirroring" }, "-", { label: "Pause " + Os.name, sc: "⌃Space", action: function () { Os.agent.togglePause(); } }, { label: "Stop " + Os.name, sc: "Esc", action: function () { Os.agent.stop(); } }];
-        if (key === "wifi") return Os.demo ? [{ label: "Wi-Fi", sc: "On" }, "-", { label: "Hearth", sc: "●" }, { label: "Kitchen 5G" }, "-", { label: "Network Settings…" }] : [{ label: "Wi-Fi", sc: "On" }, "-", { label: "Network Settings…" }];
-        if (key === "battery") return [{ label: "Battery " + (Os.demo ? 87 : Os.battery) + "%", disabled: true }, { label: "Power Source: " + (Os.demo || !Os.charging ? "Battery" : "Power Adapter"), disabled: true }, "-", { label: "Battery Settings…" }];
+        if (key === "wifi") return Os.demo ? [{ label: "Wi-Fi", sc: "On" }, "-", { label: "Hearth", sc: "●" }, { label: "Kitchen 5G" }, "-", { label: "Network Settings…" }] : [{ label: "Wi-Fi", disabled: true }, "-", { label: "Network Settings…", action: function () { Os.openApp("kcm", "wifi"); } }];
+        if (key === "battery") return [{ label: "Battery " + (Os.demo ? 87 : Os.battery) + "%", disabled: true }, { label: "Power Source: " + (Os.demo || !Os.charging ? "Battery" : "Power Adapter"), disabled: true }, "-", { label: "Battery Settings…", action: function () { Os.openApp("kcm", "power"); } }];
         return appMenus[key];
     }
 
@@ -91,7 +107,7 @@ Rectangle {
                 source: "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="24 26 644 966"><path fill="' + Theme.text + '" d="' + L.PATHS.outer + '"/></svg>') } }
         BarItem { key: "app"; label: "App menu"; BarText { text: bar.appName; font.weight: Font.Bold } }
         Repeater {
-            model: ["File", "Edit", "View", "Window", "Help"]
+            model: ["File", "Edit", "View", "Window", "Help"].filter(function (k) { return bar.itemsFor(k).length > 0; })
             BarItem { required property string modelData; key: modelData; label: modelData + " menu"; BarText { text: modelData } }
         }
     }

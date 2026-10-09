@@ -22,6 +22,11 @@ Item {
     property bool focusMode: false
     property real display: 0.72
     property real sound: 0.45
+    // a real install drives the real radios and volume through the helper; rows for hardware
+    // that isn't there (no Wi-Fi card, no Bluetooth) don't show. Focus and Display are --demo only.
+    onOpenChanged: if (open && !Os.demo) Os.fetchSystem()
+    Connections { target: Os; function onSystemChanged() { if (!Os.demo && Os.system.volume !== null && !volSend.running) cc.sound = Math.min(1, Os.system.volume); } }
+    Timer { id: volSend; interval: 120; onTriggered: Os.fetchSystem("volume", Math.round(cc.sound * 100)) }
 
     RectangularShadow { anchors.fill: bg; radius: 14; blur: 40; offset.y: 14; color: Qt.rgba(0, 0, 0, 0.45) }
     Rectangle { id: bg; anchors.fill: parent; radius: 14; color: Theme.surface1; border.color: Theme.hairline2; border.width: 1 }
@@ -64,17 +69,23 @@ Item {
     Column {
         id: col
         x: 8; y: 8; width: parent.width - 16
-        CcRow { glyph: "wifi"; title: "Wi‑Fi"; sub: cc.wifi ? (Os.demo ? "Hearth" : "On") : "Off"
-            Toggle { label: "Wi-Fi"; checked: cc.wifi; anchors.verticalCenter: parent.verticalCenter; onToggled: (c) => cc.wifi = c } }
-        CcRow { glyph: "bluetooth"; title: "Bluetooth"; sub: cc.bluetooth ? (Os.demo ? "AirPods" : "On") : "Off"
-            Toggle { label: "Bluetooth"; checked: cc.bluetooth; anchors.verticalCenter: parent.verticalCenter; onToggled: (c) => cc.bluetooth = c } }
-        CcRow { glyph: "moon"; title: "Focus"; sub: cc.focusMode ? "On until tomorrow" : "Off"
+        CcRow { glyph: "wifi"; title: "Wi‑Fi"; visible: Os.demo || Os.system.wifi !== null
+            readonly property bool on: Os.demo ? cc.wifi : !!Os.system.wifi
+            sub: on ? (Os.demo ? "Hearth" : "On") : "Off"
+            Toggle { label: "Wi-Fi"; checked: parent.parent.on; anchors.verticalCenter: parent.verticalCenter
+                     onToggled: (c) => { if (Os.demo) cc.wifi = c; else Os.fetchSystem("wifi", c ? "on" : "off"); } } }
+        CcRow { glyph: "bluetooth"; title: "Bluetooth"; visible: Os.demo || Os.system.bluetooth !== null
+            readonly property bool on: Os.demo ? cc.bluetooth : !!Os.system.bluetooth
+            sub: on ? (Os.demo ? "AirPods" : "On") : "Off"
+            Toggle { label: "Bluetooth"; checked: parent.parent.on; anchors.verticalCenter: parent.verticalCenter
+                     onToggled: (c) => { if (Os.demo) cc.bluetooth = c; else Os.fetchSystem("bluetooth", c ? "on" : "off"); } } }
+        CcRow { glyph: "moon"; title: "Focus"; sub: cc.focusMode ? "On until tomorrow" : "Off"; visible: Os.demo
             Toggle { label: "Focus"; checked: cc.focusMode; anchors.verticalCenter: parent.verticalCenter; onToggled: (c) => cc.focusMode = c } }
         Sep {}
-        CcRow { glyph: "sun"; title: "Display"
+        CcRow { glyph: "sun"; title: "Display"; visible: Os.demo
             Slide { value: cc.display; onMoved: (v) => cc.display = v } }
-        CcRow { glyph: "volume"; title: "Sound"
-            Slide { value: cc.sound; onMoved: (v) => cc.sound = v } }
+        CcRow { glyph: "volume"; title: "Sound"; visible: Os.demo || Os.system.volume !== null
+            Slide { value: cc.sound; onMoved: (v) => { cc.sound = v; if (!Os.demo) volSend.restart(); } } }
         Sep {}
         // the assistant, as a system control
         Item {

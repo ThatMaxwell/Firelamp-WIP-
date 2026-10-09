@@ -76,7 +76,7 @@ Item {
             anchors.right: parent.right; anchors.rightMargin: 12; y: 12; spacing: 4
             TbButton { glyph: "compose"; label: "New note"; onClicked: app.newNote() }
             TbButton { glyph: "trash"; label: "Delete note"; visible: !!app.cur; onClicked: app.deleteNote() }
-            SearchPill {}
+            SearchPill { visible: Os.demo }   // decorative; a real install shows no dead controls
         }
         Text {
             y: 58; anchors.horizontalCenter: parent.horizontalCenter

@@ -24,7 +24,7 @@ Item {
         { kind: "photo", name: "Photo frame", sizes: ["S", "M", "L"] },
         { kind: "system", name: "System", sizes: ["S", "M"] },
         { kind: "assistant", name: Os.name, sizes: ["S", "M"] },
-        { kind: "quick", name: "Quick actions", sizes: ["S", "M"] } ]
+        { kind: "quick", name: "Quick actions", sizes: ["S", "M"] } ].filter(function (g) { return Os.demo || ["weather", "nowplaying", "quick"].indexOf(g.kind) < 0; })
 
     // ---- Looks ----
     readonly property var presets: [

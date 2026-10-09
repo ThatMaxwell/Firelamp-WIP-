@@ -440,6 +440,14 @@ elif scene == "clean":
          ("do", lambda: call("launch", "terminal")), ("wait", 1300), ("still", "clean-terminal"), ("do", lambda: call("closeTop")), ("wait", 500),
          ("do", lambda: call("openAsk")), ("wait", 700), ("still", "clean-ask"),
          ("do", lambda: stop(200))])
+elif scene == "real":
+    # a real install with firelamp-desktops serving: the dock opens real apps through it
+    run([("wait", 1500), ("still", "real-home"),
+         ("do", lambda: [call("launch", a) for a in ("files", "web", "terminal", "photos", "downloads", "trash")]), ("wait", 600),
+         ("do", lambda: call("toggleControl")), ("wait", 900), ("still", "real-control"), ("do", lambda: call("toggleControl")), ("wait", 300),
+         ("do", lambda: call("launch", "settings")), ("wait", 1200), ("still", "real-settings"), ("do", lambda: call("closeTop")), ("wait", 400),
+         ("do", lambda: call("editHome", True, "")), ("wait", 1200), ("still", "real-widgets"), ("do", lambda: call("editHome", False, "")),
+         ("do", lambda: stop(400))])
 elif scene == "clean2":
     # the same HOME again: the note typed in "clean" is still there after a restart
     run([("wait", 700), ("do", lambda: call("launch", "notes")), ("wait", 1300), ("still", "clean-note-kept"), ("do", lambda: stop(200))])
