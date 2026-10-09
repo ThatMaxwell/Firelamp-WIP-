@@ -7,6 +7,7 @@ event stream the shell listens to.
     POST /reply     {req, ...}           answer a request from an event (Go, Allow, cursor arrived, …)
     POST /pause     {on}                 pause or resume between steps
     POST /stop                           stop now
+    POST /showme                         stuck: bring its app forward so you can do the step yourself
     POST /config    {…}                  settings and keys (keys are stored only here, mode 0600)
     GET  /status                         {busy, brain, jev, puter_user, keyboard}
     POST /puter/signin                   opens Puter's sign-in page in your browser
@@ -15,7 +16,7 @@ event stream the shell listens to.
     POST /hello     {pid, apps}          the shell says it's here (its pid, its built-in apps)
 
 Events the shell acts on (kind): start, say, think, plan*, step, point*, press, busy, opening*,
-log, ask*, shell*, paused, done, needs. Starred ones carry `req` and wait for POST /reply.
+log, ask*, stuck*, shell*, paused, done, needs. Starred ones carry `req` and wait for POST /reply.
 """
 import itertools
 import json
@@ -177,6 +178,9 @@ def make_handler(app):
                 return self.reply(200, {"ok": app.events.reply(req, b)})
             if u.path == "/pause":
                 app.agent.pause(bool(b.get("on", True)))
+                return self.reply(200, {"ok": True})
+            if u.path == "/showme":
+                app.agent.show_me()
                 return self.reply(200, {"ok": True})
             if u.path == "/stop":
                 app.agent.stop()

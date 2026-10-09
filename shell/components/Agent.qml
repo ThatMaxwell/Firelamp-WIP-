@@ -132,16 +132,25 @@ Item {
                      : "I couldn’t find " + what + " in " + where + ", so I stopped instead of guessing. Press Show me and click it for me, or stop.");
     }
     // "Show me": your next click in that window tells it where the thing is
+    // (in a real app: you do that step yourself, then press Done)
     function showMe() {
         if (mode !== "stuck") return;
         mode = "teaching";
+        if (stuckOn.real) { capsule.stuck = "Do that step yourself, then press Done"; cursor.note = "Show me"; link.showMe(); return; }
         var t = stuckOn.target, w = Os.desktop.get(t.app);
         if (w) Os.desktop.focusWindow(w);
         capsule.stuck = "Click the " + (t.role === "button" ? t.name + " button" : "“" + (t.say || t.name) + "”") + " for me";
         cursor.note = "Show me";
     }
+    function showedMe() {
+        if (mode !== "teaching" || !stuckOn || !stuckOn.real) return;
+        var s = stuckOn; stuckOn = null;
+        mode = "running"; capsule.stuck = ""; cursor.paused = false; cursor.note = "";
+        Os.say("Got it, thanks. Carrying on.");
+        s.k(true);
+    }
     function taught(n) {
-        if (mode !== "teaching" || !n) return;
+        if (mode !== "teaching" || !n || (stuckOn && stuckOn.real)) return;
         var s = stuckOn; stuckOn = null;
         mode = "running"; capsule.stuck = ""; cursor.paused = false; cursor.note = "";
         if (blind === s.target.name) blind = "";
@@ -432,6 +441,14 @@ Item {
         capsule.what = "Waiting for your OK"; cursor.clearTarget(); cursor.busy = true;
         permission.ask({ app: e.app, title: e.title, body: e.body, details: e.details, deny: e.deny, allow: e.allow, why: "" },
                        function (ok) { cursor.busy = false; k(ok); });
+    }
+    // two failed tries at one step: the neutral capsule, with Show me and Stop
+    function realStuck(e, k) {
+        if (!real) return k(false);
+        cursorHome();
+        mode = "stuck"; stuckOn = { real: true, k: k, line: e.line };
+        cursor.busy = false; cursor.clearTarget(); cursor.note = "Stuck"; cursor.paused = true;
+        capsule.stuck = e.line;
     }
     function realPaused(on) {
         if (!real || (mode === "paused") === on) return;

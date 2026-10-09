@@ -36,6 +36,7 @@ Item {
     function ask(text, done) { post("/ask", { text: text, settings: settings() }, function (code, r) { done(code, r); }); }
     function pause(on) { post("/pause", { on: on }); }
     function stop() { post("/stop", {}); }
+    function showMe() { post("/showme", {}); }
     function signInPuter(cb) { post("/puter/signin", {}, function (code, r) { if (cb) cb(code === 200, r); }); }
     function signOutPuter() { post("/puter/signout", {}, function () { Os.settings.puterUser = ""; refresh(); }); }
 
@@ -124,6 +125,7 @@ Item {
         case "opening": return a.realOpening(e, function () { reply(e.req, { ok: true }); });
         case "log": if (a.real) a.log(e.entry.kind, e.entry.title, e.entry.why, e.entry.app); return;
         case "ask": return a.realAsk(e, function (ok) { reply(e.req, { ok: ok }); });
+        case "stuck": return a.realStuck(e, function (ok) { reply(e.req, { ok: ok }); });
         case "shell": return shellOp(e);
         case "paused": return a.realPaused(e.on);
         case "done": return a.realDone(e.how);

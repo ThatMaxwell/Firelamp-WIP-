@@ -10,7 +10,8 @@ AT-SPI so the result is checked in the app itself, not taken from the agent's wo
     dbus-run-session -- python3 agent/test/real_run.py --out capture "Open a text editor and …"
 
 Nothing here answers for the model: the brain is whatever firelamp-agent picks from its
-settings and FIRELAMP_* variables. A permission sheet is refused: only a person allows.
+settings and FIRELAMP_* variables. A permission sheet is refused: only a person allows. When
+it gets stuck, nobody can do the step for it, so Stop is pressed.
 """
 import argparse
 import base64
@@ -261,6 +262,14 @@ def main():
                     time.sleep(2)
                     click(e.get("deny") or "Don’t")
                     log("refused")
+                elif k == "stuck":
+                    n_shot += 1
+                    time.sleep(1.5)
+                    scr.shot("%02d-stuck" % n_shot)
+                    log("stuck:", e.get("line"))
+                    time.sleep(3)            # nobody here can do the step for it
+                    click("Stop")
+                    log("pressed Stop")
                 elif k == "done":
                     how = e["how"]
     elapsed = time.time() - t0

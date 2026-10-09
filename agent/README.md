@@ -71,6 +71,11 @@ start of each task.
 - Per app trust from Settings › Assistant: ask before anything, ask before risky things, or
   never ask (risky ones still ask).
 - Stop works at once, even mid-thought. Pause holds it between steps.
+- It doesn't guess. Each click names the element it means, and nothing happens when that
+  element isn't on screen. Two failed tries at the same step (the element is missing, or a
+  click or key changes nothing) stop it with “Couldn’t …”, Show me (it brings the app forward,
+  you do the step, then press Done) and Stop. There are also caps of 3 unreadable answers and
+  40 steps.
 - It never types passwords, and every action is in Activity with the reason.
 
 ## Files
