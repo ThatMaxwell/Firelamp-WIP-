@@ -5,6 +5,13 @@
 port=/dev/ttyS0
 report=/run/user/1000/firelamp-boot-report.txt
 
+# QEMU boot test only: hand the session the test brain (fw_cfg files are readable by root only).
+brain=/sys/firmware/qemu_fw_cfg/by_name/opt/firelamp/test-brain/raw
+if [[ -e $brain ]]; then
+    install -d -m 755 /run/firelamp
+    install -m 644 "$brain" /run/firelamp/test-brain
+fi
+
 for _ in $(seq 240); do
     [[ -s "$report" ]] && break
     sleep 1

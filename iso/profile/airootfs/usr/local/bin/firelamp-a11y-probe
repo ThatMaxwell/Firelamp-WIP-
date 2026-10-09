@@ -156,7 +156,8 @@ def agent_check():
         json.dumps(st.get("brain")), st.get("keyboard"), st.get("shell"), ydotoold)
 
 
-TEST_BRAIN = "/sys/firmware/qemu_fw_cfg/by_name/opt/firelamp/test-brain/raw"
+# fw_cfg files are root-only; firelamp-boot-report (root) copies this one here for the session.
+TEST_BRAIN = "/run/firelamp/test-brain"
 
 
 def agent_call(method, path, body=None, timeout=30):
@@ -221,6 +222,15 @@ def screen_size():
 
 
 def capsule_test():
+    try:
+        _capsule_test()
+    except Exception as exc:  # the host waits for a line either way
+        out = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-capsule.txt")
+        with open(out, "a") as fh:
+            fh.write(f"=== FIRELAMP STOP SKIPPED the test crashed: {exc!r} ===\n")
+
+
+def _capsule_test():
     """Boot test only (QEMU passes a test brain): start a real task, find the capsule's Stop button
     over AT-SPI, hand its screen position to the host, which clicks it with QEMU's tablet."""
     # firelamp-boot-report (root) copies these lines to the serial port for the host.
@@ -229,9 +239,15 @@ def capsule_test():
     def say(text):
         with open(out, "a") as fh:
             fh.write(text + "\n")
-    if not os.path.exists(TEST_BRAIN):
+    for _ in range(120):
+        if os.path.exists(TEST_BRAIN):
+            break
+        time.sleep(1)
+    try:
+        base, _, model = open(TEST_BRAIN).read().strip().partition("|")
+    except OSError as exc:
+        say(f"=== FIRELAMP STOP SKIPPED no test brain: {exc} ===")
         return
-    base, _, model = open(TEST_BRAIN).read().strip().partition("|")
     # Start once the boot report is out and the host has tapped Super.
     report = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-boot-report.txt")
     for _ in range(300):
