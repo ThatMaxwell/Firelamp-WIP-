@@ -105,12 +105,12 @@ def greeter_check(theme="/usr/share/sddm/themes/firelamp"):
     return ("ERROR " + " | ".join(errors[:5])) if errors else "OK"
 
 
-def helper(method, path, timeout=30):
+def helper(method, path, timeout=30, limit=300):
     import urllib.request
     try:
         req = urllib.request.Request("http://127.0.0.1:7341" + path, method=method, data=b"" if method == "POST" else None)
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.read().decode(errors="replace")[:300]
+            return resp.read().decode(errors="replace")[:limit]
     except Exception as exc:
         return f"ERROR {exc}"
 
@@ -123,15 +123,21 @@ def launcher_checks():
     run(["gdbus", "call", "--session", "--dest", "org.firelamp.Shell", "--object-path", "/org/firelamp/Shell",
          "--method", "org.firelamp.Shell.ToggleLauncher"])
     out.append("launcher event: " + helper("GET", "/events?after=-1"))
+    time.sleep(3)
+    # The shell's own trace of the open: acks and the raw /raise output.
+    out.append("launcher debug: " + helper("GET", "/debug", limit=4000))
+    # Close it again so the boot test's Super tap opens it on camera.
+    run(["gdbus", "call", "--session", "--dest", "org.firelamp.Shell", "--object-path", "/org/firelamp/Shell",
+         "--method", "org.firelamp.Shell.ToggleLauncher"])
     return out
 
 
-def terminal_check(wait=15):
-    """Open a terminal the way the dock does and report whether Konsole came up."""
-    reply = helper("POST", "/open/terminal")
+def open_check(route, proc, wait=30):
+    """Open an app the way the dock does and report whether its process came up."""
+    reply = helper("POST", "/open/" + route)
     for _ in range(wait):
         time.sleep(1)
-        pid = run(["pgrep", "-a", "-x", "konsole"])
+        pid = run(["pgrep", "-a", "-x", proc])
         if pid:
             return "RUNNING " + pid
     return "NOT RUNNING " + reply
@@ -182,7 +188,9 @@ def boot_report():
         out.append(f"FIRELAMP_ATSPI_FAIL {exc}")
     out.append("login theme: " + greeter_check())
     out.extend(launcher_checks())
-    out.append("terminal window: " + terminal_check())
+    out.append("terminal window: " + open_check("terminal", "konsole"))
+    out.append("files window: " + open_check("files", "dolphin"))
+    out.append("web window: " + open_check("web", "firefox", wait=45))
     out.append("installer window: " + installer_check())
     path = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-boot-report.txt")
     tmp = path + ".tmp"
