@@ -268,7 +268,7 @@ def _capsule_test():
     btn, win = hit
     sw, _ = screen_size()
 
-    def position():
+    def position(use_extents):
         """Stop's screen centre. The capsule widens as the agent's status text arrives, and Stop
         sits at its right end, so read it until the layout holds still for two seconds."""
         last, same = None, 0
@@ -281,18 +281,18 @@ def _capsule_test():
             if same >= 2:
                 break
             time.sleep(1)
-        # The capsule surface is anchored top-centre just under the 28px bar (Layered.qml), and
-        # Wayland gives clients no global position, so place the button within that surface.
-        if b.width > 0 and b.height > 0:
+        # Two ways to place it, since Wayland gives clients no global position. From the layout
+        # (Layered.qml / AgentCapsule.qml): the capsule surface is anchored top-centre under the
+        # 28px bar, it is the capsule plus 24px each side, Stop's centre is 18px in from the
+        # capsule's right edge, and the capsule's centre line is at y 58. Or from Qt's own
+        # extents for the button within that surface, when it reports any.
+        if use_extents and b.width > 0 and b.height > 0:
             x = (sw - w.width) // 2 + b.x + b.width // 2
             y = 28 + b.y + b.height // 2
         else:
-            # Qt reported no extents for it: use the capsule's layout (Layered.qml / AgentCapsule.qml):
-            # the surface is the capsule plus 24px each side, Stop's centre is 18px in from the
-            # capsule's right edge, and the capsule's centre line is at y 58.
             x = sw // 2 + (w.width - 48) // 2 - 18
             y = 58
-        return x, y, f"button={b.x},{b.y} {b.width}x{b.height} surface={w.width}x{w.height} screen_w={sw}"
+        return x, y, f"from={'extents' if use_extents else 'layout'} button={b.x},{b.y} {b.width}x{b.height} surface={w.width}x{w.height} screen_w={sw}"
 
     def ended():
         try:
@@ -307,7 +307,7 @@ def _capsule_test():
     # The host clicks each position it is sent; measure again and resend if a click missed.
     for attempt in range(1, 4):
         try:
-            x, y, detail = position()
+            x, y, detail = position(attempt == 2)
         except Exception as exc:
             say(f"=== FIRELAMP STOP SKIPPED Stop went away before it could be clicked: {exc} ===")
             return

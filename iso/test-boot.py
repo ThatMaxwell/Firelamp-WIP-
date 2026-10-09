@@ -12,6 +12,7 @@ Writes to the output folder:
 Exits non-zero if the desktop session or the AT-SPI2 tree never came up.
 """
 import argparse
+import json
 import os
 import re
 import shutil
@@ -36,7 +37,40 @@ def hmp(sock_path, command):
             return ""
 
 
-def capsule_stop(mon, serial, out):
+def qmp_click(sock_path, x, y, width, height):
+    """Click at (x, y) on the guest screen. QEMU's tablet is absolute, and HMP's mouse_move only
+    sends relative motion, so use QMP's input-send-event with the tablet's 0..32767 axes."""
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+        s.settimeout(10)
+        s.connect(sock_path)
+        f = s.makefile("rw")
+        f.readline()  # greeting
+
+        def cmd(c):
+            f.write(json.dumps(c) + "\n")
+            f.flush()
+            while True:
+                r = json.loads(f.readline())
+                if "return" in r or "error" in r:
+                    return r
+        cmd({"execute": "qmp_capabilities"})
+        ax = lambda axis, v, size: {"type": "abs", "data": {"axis": axis, "value": round(v * 32767 / max(size - 1, 1))}}
+        btn = lambda down: {"type": "btn", "data": {"button": "left", "down": down}}
+        r = cmd({"execute": "input-send-event", "arguments": {"events": [ax("x", x, width), ax("y", y, height)]}})
+        time.sleep(0.4)
+        cmd({"execute": "input-send-event", "arguments": {"events": [btn(True)]}})
+        time.sleep(0.15)
+        cmd({"execute": "input-send-event", "arguments": {"events": [btn(False)]}})
+        return r
+
+
+def png_size(path):
+    with open(path, "rb") as fh:
+        head = fh.read(24)
+    return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+
+
+def capsule_stop(mon, qmp, serial, out):
     """The guest starts a real task, finds the capsule's Stop over AT-SPI and prints its screen
     position; click it like a person would (QEMU's tablet) and print what the agent says."""
     def serial_text():
@@ -50,18 +84,20 @@ def capsule_stop(mon, serial, out):
         if m:
             print("test-boot:", m.group(0), flush=True)
             return
-        tries = re.findall(r"=== FIRELAMP STOP AT (\d+) (\d+)[^\n]*", text)
+        tries = list(re.finditer(r"=== FIRELAMP STOP AT (\d+) (\d+)[^\n]*", text))
         if len(tries) > clicked:
-            x, y = int(tries[-1][0]), int(tries[-1][1])
+            x, y = int(tries[-1].group(1)), int(tries[-1].group(2))
             clicked = len(tries)
-            print(f"test-boot: clicking Stop at {x} {y} (try {clicked})", flush=True)
+            print("test-boot:", tries[-1].group(0), flush=True)
             if clicked == 1:
                 hmp(mon, f"screendump {os.path.join(out, 'capsule.png')} -f png")
-            hmp(mon, f"mouse_move {x} {y}")
-            time.sleep(0.5)
-            hmp(mon, "mouse_button 1")
-            time.sleep(0.2)
-            hmp(mon, "mouse_button 0")
+            try:
+                width, height = png_size(os.path.join(out, "capsule.png"))
+            except OSError:
+                width, height = 1280, 800
+            r = qmp_click(qmp, x, y, width, height)
+            if "error" in r:
+                print("test-boot: QMP click failed:", r["error"], flush=True)
             time.sleep(1)
             hmp(mon, f"screendump {os.path.join(out, f'capsule-click{clicked}.png')} -f png")
             deadline = time.time() + 120
@@ -86,7 +122,8 @@ def main():
     os.makedirs(frames, exist_ok=True)
     serial = os.path.join(out, "serial.log")
     mon = os.path.join(out, "monitor.sock")
-    for p in (serial, mon):
+    qmp = os.path.join(out, "qmp.sock")
+    for p in (serial, mon, qmp):
         if os.path.exists(p):
             os.remove(p)
 
@@ -101,6 +138,7 @@ def main():
         "-display", "none",
         "-serial", f"file:{serial}",
         "-monitor", f"unix:{mon},server,nowait",
+        "-qmp", f"unix:{qmp},server,nowait",
         "-device", "virtio-tablet-pci",
         "-nic", "user,model=virtio-net-pci",
         "-no-reboot",
@@ -168,7 +206,7 @@ def main():
             else:
                 print("test-boot: no Super debug on the serial port", flush=True)
             if args.test_brain:
-                capsule_stop(mon, serial, out)
+                capsule_stop(mon, qmp, serial, out)
     finally:
         if vm.poll() is None:
             try:
