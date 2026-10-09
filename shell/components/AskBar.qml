@@ -26,7 +26,8 @@ Item {
         if (firstPos.x < 0) firstPos = Qt.point(x, y);
         else if (Math.abs(x - firstPos.x) + Math.abs(y - firstPos.y) > 3) armed = true;
     }
-    function close() { shown = false; }
+    // give the keyboard back, or Return would send the last request again
+    function close() { shown = false; field.input.focus = false; if (Os.root) Os.root.forceActiveFocus(); }
     function typeText(t) { field.text = t; }
 
     readonly property string q: field.text.trim()

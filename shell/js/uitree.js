@@ -17,22 +17,43 @@ function appOf(item) {
     return { app: "system", z: 0, win: null };
 }
 
-/** Flat list of every element the AI can perceive right now. */
-function nodes(root) {
-    var out = [];
-    (function walk(it) {
+// Layered mode (Layered.qml) moves the bar and dock into their own windows. They are still part
+// of what the AI sees, so they are registered here with where their window sits on screen.
+var extras = [], extraFor = [];
+// roots: items whose tree should also include the extras; list: [{ item, origin() -> {x, y} }]
+function setExtraRoots(roots, list) { extraFor = roots; extras = list; }
+
+function walkAll(root, visit) {
+    function walk(it, off, top) {
         var kids = it.children;
         for (var i = 0; i < kids.length; i++) {
             var c = kids[i];
-            if (!c.visible || c.aiHidden === true) continue;
-            if (c.aiName !== undefined && c.aiName !== "" && visibleIn(c, root)) {
-                var p = c.mapToItem(root, 0, 0), a = appOf(c);
-                out.push({ item: c, role: c.aiRole || "item", name: c.aiName, app: a.app, z: a.z,
-                           bounds: { x: Math.round(p.x), y: Math.round(p.y), w: Math.round(c.width), h: Math.round(c.height) } });
-            }
-            walk(c);
+            if (!c.visible) continue;
+            if (visit(c, top, off) !== false) walk(c, off, top);
         }
-    })(root);
+    }
+    walk(root, { x: 0, y: 0 }, root);
+    if (extraFor.indexOf(root) < 0) return;
+    for (var e = 0; e < extras.length; e++) if (extras[e].item.visible) {
+        var o = extras[e].origin();
+        walk(extras[e].item, o, extras[e].item);
+    }
+}
+
+function boundsOf(c, top, off) {
+    var p = c.mapToItem(top, 0, 0);
+    return { x: Math.round(p.x + off.x), y: Math.round(p.y + off.y), w: Math.round(c.width), h: Math.round(c.height) };
+}
+
+/** Flat list of every element the AI can perceive right now. */
+function nodes(root) {
+    var out = [];
+    walkAll(root, function (c, top, off) {
+        if (c.aiHidden === true) return false; // hides its whole subtree
+        if (c.aiName === undefined || c.aiName === "" || !visibleIn(c, top)) return;
+        var a = appOf(c);
+        out.push({ item: c, role: c.aiRole || "item", name: c.aiName, app: a.app, z: a.z, bounds: boundsOf(c, top, off) });
+    });
     return out;
 }
 
@@ -67,18 +88,10 @@ function find(root, q) {
 /** Controls an app ships without an accessible label: the AI sees something is there, not what. */
 function unlabeled(root) {
     var out = [];
-    (function walk(it) {
-        var kids = it.children;
-        for (var i = 0; i < kids.length; i++) {
-            var c = kids[i];
-            if (!c.visible) continue;
-            if (c.aiUnlabeled === true && visibleIn(c, root)) {
-                var p = c.mapToItem(root, 0, 0);
-                out.push({ item: c, role: "button", name: "", app: appOf(c).app, bounds: { x: Math.round(p.x), y: Math.round(p.y), w: Math.round(c.width), h: Math.round(c.height) } });
-            }
-            walk(c);
-        }
-    })(root);
+    walkAll(root, function (c, top, off) {
+        if (c.aiUnlabeled === true && visibleIn(c, top))
+            out.push({ item: c, role: "button", name: "", app: appOf(c).app, bounds: boundsOf(c, top, off) });
+    });
     return out;
 }
 

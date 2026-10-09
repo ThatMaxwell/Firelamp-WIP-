@@ -56,6 +56,11 @@ jobs:
             # GitHub Models' free tier takes about 8000 tokens per request
             export FIRELAMP_API_BASE=https://models.github.ai/inference FIRELAMP_API_KEY="$REPO_TOKEN" \
                    FIRELAMP_API_MODEL="$MODEL" FIRELAMP_CONTEXT_CHARS=20000
+            # what the endpoint answers, headers included, in case the run can't read it
+            curl -sS -i --max-time 60 -X POST "$FIRELAMP_API_BASE/chat/completions" \
+              -H "Authorization: Bearer $REPO_TOKEN" -H "Content-Type: application/json" -H "Accept: application/json" \
+              -d "{\"model\":\"$MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"Say ok\"}],\"max_tokens\":5}" | head -c 1500 || true
+            echo
           fi
           [ -n "$FIRELAMP_JEV_KEY" ] || unset FIRELAMP_JEV_KEY
           dbus-run-session -- python3 agent/test/real_run.py --out capture "$TASK"
