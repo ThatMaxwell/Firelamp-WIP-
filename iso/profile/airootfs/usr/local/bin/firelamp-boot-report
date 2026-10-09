@@ -58,13 +58,12 @@ fi
 # the next launcher-key ack and write it to the serial port too.
 before=$(curl -s --max-time 5 127.0.0.1:7341/debug)
 for _ in $(seq 90); do
-    sleep 2
+    sleep 1
     now=$(curl -s --max-time 5 127.0.0.1:7341/debug)
     if [[ -n "$now" && "$now" != "$before" ]]; then
-        sleep 3
-        { echo '=== FIRELAMP SUPER DEBUG ==='; curl -s --max-time 5 127.0.0.1:7341/debug; echo; echo '=== END FIRELAMP SUPER DEBUG ==='; } \
+        { echo '=== FIRELAMP SUPER DEBUG ==='; echo "$now"; echo '=== END FIRELAMP SUPER DEBUG ==='; } \
             | timeout 10 tee "$port" >/dev/null 2>&1
-        break
+        before=$now
     fi
 done
 wait

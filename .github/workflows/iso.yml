@@ -67,7 +67,7 @@ jobs:
       - name: Print desktop screenshot (base64 JPEG, for tools without artifact access)
         if: always()
         run: |
-          for shot in bios/desktop uefi/desktop bios/super bios/capsule; do
+          for shot in bios/desktop uefi/desktop bios/super bios/metaspace bios/capsule; do
             f=boot-test/$shot.png
             [ -f "$f" ] || continue
             tag=$(echo "$shot" | tr / _)
@@ -87,6 +87,7 @@ jobs:
           path: |
             boot-test/*/desktop.png
             boot-test/*/super.png
+            boot-test/*/metaspace.png
             boot-test/*/capsule.png
             boot-test/*/boot.gif
             boot-test/*/serial.log

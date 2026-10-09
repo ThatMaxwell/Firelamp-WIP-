@@ -151,12 +151,18 @@ def main():
             hmp(mon, "sendkey meta_l 150")
             time.sleep(3)
             hmp(mon, f"screendump {os.path.join(out, 'super.png')} -f png")
+            # Meta+Space goes through kglobalaccel instead of KWin's modifier-only tap.
+            time.sleep(2)
+            hmp(mon, "sendkey meta_l-spc 150")
+            time.sleep(3)
+            hmp(mon, f"screendump {os.path.join(out, 'metaspace.png')} -f png")
             # The guest writes the shell's trace of that keypress to the serial port.
             for _ in range(10):
                 with open(serial, errors="replace") as fh:
                     text = fh.read()
                 if "=== END FIRELAMP SUPER DEBUG ===" in text:
-                    print(text[text.index("=== FIRELAMP SUPER DEBUG ==="):text.index("=== END FIRELAMP SUPER DEBUG ===")], flush=True)
+                    for m in re.finditer(r"=== FIRELAMP SUPER DEBUG ===(.*?)=== END FIRELAMP SUPER DEBUG ===", text, re.S):
+                        print("test-boot: shell trace after a key:", m.group(1).strip(), flush=True)
                     break
                 time.sleep(1)
             else:
