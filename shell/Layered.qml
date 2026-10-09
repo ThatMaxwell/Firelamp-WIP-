@@ -4,7 +4,8 @@
 //   (normal) every real app
 //   top      the menu bar and the dock, each reserving its edge (apps maximize between them)
 //   overlay  the launcher, Control Center, menus, first-boot cards — mapped only while open
-//   overlay  the AI's layer (fire cursor, capsule, vision, toasts): never takes input
+//   overlay  the AI's capsule: its own small surface, so Stop always takes clicks
+//   overlay  the AI's layer (fire cursor, vision, toasts): never takes input
 // firelamp-shell runs this when org.kde.layershell is installed and falls back to Main.qml.
 // layer-shell-qt only takes its named enum values here (plain numbers fail to load).
 import QtQuick
@@ -73,6 +74,20 @@ Main {
         LayerShell.Window.keyboardInteractivity: LayerShell.Window.KeyboardInteractivityExclusive
     }
 
+    // ---- the AI's capsule (Pause, Stop, Show me, Done): its own small surface, because Stop
+    // must always take clicks while the rest of the AI's layer lets them through ----
+    Window {
+        id: capWin
+        visible: main.capsuleItem.shown || main.capsuleItem.opacity > 0
+        color: "transparent"; flags: Qt.FramelessWindowHint
+        width: main.capsuleItem.width + 48; height: main.capsuleItem.height + 12 + 28
+        LayerShell.Window.scope: "firelamp-capsule"
+        LayerShell.Window.layer: LayerShell.Window.LayerOverlay
+        LayerShell.Window.anchors: LayerShell.Window.AnchorTop
+        LayerShell.Window.exclusionZone: 0
+        LayerShell.Window.keyboardInteractivity: LayerShell.Window.KeyboardInteractivityNone
+    }
+
     // ---- the AI's layer: drawn over everything, clicks pass straight through ----
     Window {
         id: aiWin
@@ -91,7 +106,11 @@ Main {
         main.dockItem.parent = dockWin.contentItem;
         [main.askBarItem, main.controlCatcher, main.controlItem, main.menuLayerItem, main.permissionItem].concat(main.cardsList)
             .forEach(function (it) { it.parent = overlayWin.contentItem; });
-        [main.visionItem, main.capsuleItem, main.toastsItem, main.ghostItem, main.cursorItem]
+        // below the bar (its exclusive zone), centred by the compositor, shadow inside the surface
+        main.capsuleItem.parent = capWin.contentItem;
+        main.capsuleItem.anchors.horizontalCenter = undefined;
+        main.capsuleItem.x = 24; main.capsuleItem.y = 12;
+        [main.visionItem, main.toastsItem, main.ghostItem, main.cursorItem]
             .forEach(function (it) { it.parent = aiWin.contentItem; });
         // the AI still sees the bar and dock, at their real place on screen
         Tree.setExtraRoots([Os.root, main.contentItem], [
