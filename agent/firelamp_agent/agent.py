@@ -37,7 +37,7 @@ Answer with exactly ONE JSON object and nothing else:
 Actions ("do"):
  open   {{"do":"open","app":"Kate"}}  start an installed app (or one of Firelamp's own apps)
  click  {{"do":"click","id":12,"name":"Save"}}  press a button, menu, menu item, tab, link, list item or checkbox
- type   {{"do":"type","id":7,"name":"Search","text":"hello","replace":false}}  write into a text field ("replace": true clears it first)
+ type   {{"do":"type","id":7,"name":"Search","text":"hello"}}  write into a text field: a one-line field gets just this text, a document gets it at the cursor ("replace": true clears a document first)
  key    {{"do":"key","keys":"ctrl+s"}}  press keys in the active window: Return, Tab, Escape, ctrl+s, alt+F4…
  focus  {{"do":"focus","window":"w2"}}  bring a window to the front and see inside it
  read   {{"do":"read","id":7,"name":"Search"}}  get the full text of an element
@@ -706,13 +706,20 @@ class Agent:
         self.point(eyes_mod.caret_point(n.acc) or n.bounds, n.label, "typing in")
         self.events.emit("press")
         self.events.emit("busy", on=True)
+        # a one-line field (a file name, a search box) gets what you type instead of what was there;
+        # a document gets it at the cursor, unless the brain says to replace
+        replace = act.get("replace")
+        if replace is None:
+            replace = self.one_line(n)
         try:
             if n.editable and aid != "terminal":
-                hands.set_text(n, text, bool(act.get("replace")), cancelled=self.held)
+                hands.set_text(n, text, bool(replace), cancelled=self.held)
                 self.checkpoint()
             else:
                 hands.focus(n)
                 time.sleep(0.15)
+                if replace and aid != "terminal":
+                    hands.press_keys("ctrl+a")
                 if aid == "terminal":
                     level, reason = safety.command_risk(text.strip())
                     if level and not self.gate(dict(act, risky=True), "run `%s` in the terminal" % eyes_mod.clip(text, 50),
@@ -729,6 +736,14 @@ class Agent:
                 eyes_mod.clip(missing, 50), eyes_mod.clip(" ".join((eyes_mod.text_of(n.acc, 2000) or "").split()), 200))
         self.log("type", "Typed “%s” into %s" % (eyes_mod.clip(" ".join(text.split()), 32), where), why, app)
         return "Typed %d characters into “%s”, and checked they're there." % (len(text), n.label)
+
+    @staticmethod
+    def one_line(n):
+        # Qt marks only multi-line fields, GTK marks both; a field holding a line break is a document
+        st = n.states
+        if st is None or n.role in ("document text", "terminal", "paragraph") or st.contains(eyes_mod.S.MULTI_LINE):
+            return False
+        return st.contains(eyes_mod.S.SINGLE_LINE) or "\n" not in (eyes_mod.text_of(n.acc, 200000) or "")
 
     @staticmethod
     def not_typed(n, text):

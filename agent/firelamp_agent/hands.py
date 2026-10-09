@@ -3,6 +3,8 @@
 Preferred, because they work on X11 and Wayland alike and never miss:
     press   AT-SPI Action (the element's own "press"/"click"/"activate")
     type    AT-SPI EditableText (text goes straight into the field, at the caret)
+    GTK 3 menu items are the exception: highlighted, then Enter, since their action runs inside the
+    call and a dialog it opens (Save As...) would freeze the app
 Keyboard and pointer fallbacks, for things with no accessible action (terminals, shortcuts):
     X11      xdotool, else AT-SPI's synthetic key events
     Wayland  ydotool (needs ydotoold); without it, keys report that they can't be pressed
@@ -32,7 +34,40 @@ class HandsError(Exception):
     pass
 
 
+MENU_ITEMS = ("menu item", "check menu item", "radio menu item")
+
+
+def _freezes_on_action(node):
+    """GTK 3 runs a menu item inside the accessibility call itself, so an item that opens a
+    dialog (Save As..., Quit with unsaved work) would freeze the whole app, for good."""
+    if node.role not in MENU_ITEMS:
+        return False
+    app = _safe(node.acc.get_application)
+    kit = ((_safe(app.get_toolkit_name) if app else "") or "").lower()
+    ver = (_safe(app.get_toolkit_version) if app else "") or ""
+    return kit in ("gtk", "gail") and not ver.startswith("4")
+
+
+def _press_menu_item(node):
+    # the way the keyboard does it: highlight the item in its menu, then Enter
+    parent = _safe(node.acc.get_parent)
+    i = _safe(node.acc.get_index_in_parent, -1)
+    if keyboard_ready() and parent is not None and i >= 0 and _safe(parent.get_selection_iface) \
+            and _safe(lambda: Atspi.Selection.select_child(parent, i), False):
+        time.sleep(0.1)
+        press_keys("Return")
+        return "pressed"
+    if node.bounds and not WAYLAND:
+        x, y, w, h = node.bounds
+        click_at(x + w // 2, y + h // 2)
+        return "clicked"
+    raise HandsError("this app freezes if I press its menu items directly, and I can't press keys here"
+                     " (Wayland needs ydotoold)")
+
+
 def press(node):
+    if _freezes_on_action(node):
+        return _press_menu_item(node)
     names = node.actions or []
     idx = None
     for want in PRESS_ORDER:
