@@ -45,18 +45,46 @@ def _http(url, body=None, key="", timeout=60, method=None):
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, method=method or ("POST" if data else "GET"))
     req.add_header("Content-Type", "application/json")
+    req.add_header("Accept", "application/json")
     req.add_header("User-Agent", "firelamp-agent/0.1")
     if key:
         req.add_header("Authorization", "Bearer " + key)
     ctx = ssl.create_default_context()
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
-            return json.loads(resp.read().decode() or "null")
+            raw = resp.read().decode(errors="replace")
+            try:
+                return json.loads(raw or "null")
+            except ValueError:
+                # some endpoints stream even when asked not to
+                if raw.lstrip().startswith("data:"):
+                    return _from_stream(raw)
+                raise BrainError("%s answered with something that isn't JSON (HTTP %s, %s): %r" % (
+                    url.split("/")[2], resp.status, resp.headers.get("Content-Type") or "no type", raw[:240])) from None
     except urllib.error.HTTPError as e:
         detail = e.read().decode(errors="replace")[:400]
         raise BrainError(f"HTTP {e.code}: {detail}") from None
     except (urllib.error.URLError, TimeoutError, OSError) as e:
         raise BrainError(f"can't reach {url.split('/')[2]}: {getattr(e, 'reason', e)}") from None
+
+
+def _from_stream(raw):
+    """A streamed (server-sent events) chat answer, put back together."""
+    text, model = [], ""
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line.startswith("data:") or line[5:].strip() == "[DONE]":
+            continue
+        try:
+            ev = json.loads(line[5:])
+        except ValueError:
+            continue
+        model = ev.get("model") or model
+        for c in ev.get("choices") or []:
+            part = (c.get("delta") or c.get("message") or {}).get("content")
+            if isinstance(part, str):
+                text.append(part)
+    return {"model": model, "choices": [{"message": {"role": "assistant", "content": "".join(text)}}]}
 
 
 class Brain:
@@ -69,7 +97,7 @@ class Brain:
         self.budget = int(os.environ.get("FIRELAMP_CONTEXT_CHARS") or (14000 if provider == "local" else 60000))
 
     def chat(self, messages, max_tokens=700, temperature=0.2):
-        body = {"model": self.model, "messages": messages, "max_tokens": max_tokens, "temperature": temperature}
+        body = {"model": self.model, "messages": messages, "max_tokens": max_tokens, "temperature": temperature, "stream": False}
         if self.json_mode:
             body["response_format"] = {"type": "json_object"}
         if self.reasoning:
