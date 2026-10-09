@@ -19,6 +19,26 @@ Window {
     title: "Firelamp OS"
     flags: Qt.FramelessWindowHint
 
+    // Layered.qml (a real Wayland session) runs this same window as the desktop layer and moves
+    // the bar, dock, launcher and the AI's layer into their own layer-shell surfaces, so real
+    // apps sit between them. Run directly (captures, X11), everything stays in this one window.
+    property bool layered: false
+    property bool dockHot: false              // the pointer is on the dock's own surface
+    readonly property alias barItem: bar
+    readonly property alias dockItem: dock
+    readonly property alias askBarItem: askBar
+    readonly property alias controlItem: control
+    readonly property alias controlCatcher: ccCatcher
+    readonly property alias menuLayerItem: menuLayer
+    readonly property alias permissionItem: permission
+    readonly property alias capsuleItem: capsule
+    readonly property alias toastsItem: toasts
+    readonly property alias cursorItem: cursor
+    readonly property alias ghostItem: ghost
+    readonly property alias visionItem: vision
+    readonly property var cardsList: [splash, nameCard, packsCard, browserCard]
+    readonly property bool booted: screen.booted
+
     // a human answering the permission sheet (used by the recorder)
     property bool autoAllow: false
 
@@ -136,9 +156,11 @@ Window {
             transform: [ Rotation { origin.x: dock.width / 2; origin.y: dock.height / 2; angle: dock.turn },
                          Scale { origin.x: dock.width / 2; origin.y: dock.height / 2; xScale: dock.mirrored ? -1 : 1 } ]
             // autohide: tucked away until your pointer reaches its edge
-            readonly property bool tucked: Os.settings.dockAutohide && !Os.editingHome && (side === "left" ? win.lastX < 0 || win.lastX > dock.height + 20
+            // (layered, the dock's own surface says when the pointer is on it: win.dockHot)
+            readonly property bool tucked: Os.settings.dockAutohide && !Os.editingHome && !win.dockHot
+                                           && (win.layered || (side === "left" ? win.lastX < 0 || win.lastX > dock.height + 20
                                            : side === "right" ? win.lastX < 0 || win.lastX < win.width - (dock.height + 20)
-                                           : win.lastY < 0 || win.lastY < win.height - (dock.height + 20))
+                                           : win.lastY < 0 || win.lastY < win.height - (dock.height + 20)))
             property real edge: screen.booted && !tucked ? 7 : -110
             Behavior on edge { SequentialAnimation { PauseAnimation { duration: 250 } NumberAnimation { duration: 900; easing.type: Easing.OutQuint } } }
             x: side === "left" ? edge + height / 2 - width / 2 : side === "right" ? parent.width - edge - height / 2 - width / 2 : (parent.width - width) / 2
@@ -166,7 +188,7 @@ Window {
         y: Theme.menubarH + 12
         z: 20
     }
-    Toasts { x: parent.width - width - 14; y: Theme.menubarH + 12; z: 21 }
+    Toasts { id: toasts; x: parent.width - width - 14; y: Theme.menubarH + 12; z: 21 }
 
     Image {
         id: ghost
@@ -179,14 +201,14 @@ Window {
         rotation: -4
         property bool aiHidden: true
     }
-    VisionOverlay { target: screen; z: 35 }
+    VisionOverlay { id: vision; target: screen; z: 35 }
     FireCursor { id: cursor; z: 40 }
     PermissionSheet { id: permission; objectName: "permission"; z: 50; onShownChanged: if (shown && win.autoAllow) allowLater.start() }
     Timer { id: allowLater; interval: 1700; onTriggered: permission.answer(true) }
     AskBar { id: askBar; z: 55; onGo: (t) => win.ask(t); onLaunch: (id) => win.launch(id)
              apps: win.apps.filter(function (a) { return !a.noDock && a.id !== "assistant" && win.shows(a); }) }
     // clicking anywhere else closes Control Center
-    MouseArea { anchors.fill: parent; z: 56; enabled: control.open; onPressed: control.open = false }
+    MouseArea { id: ccCatcher; anchors.fill: parent; z: 56; enabled: control.open; onPressed: control.open = false }
     ControlCenter { id: control; z: 57; x: parent.width - width - 8; y: Theme.menubarH + 6 }
     Item { id: menuLayer; anchors.fill: parent; z: 60
         MouseArea { anchors.fill: parent; enabled: bar.menu !== null; onPressed: bar.closeMenu() } }
@@ -196,6 +218,7 @@ Window {
     BrowserCard { id: browserCard; z: 72; onDone: { screen.booted = true; openAssistant.start(); } }
     Timer { id: openAssistant; interval: 900; onTriggered: win.launch("assistant") }
     Splash {
+        id: splash
         anchors.fill: parent; z: 80
         visible: !win.flag("nosplash")
         onFinished: { if (!Os.settings.assistantName) nameCard.shown = true; else screen.booted = true; }
@@ -246,8 +269,8 @@ Window {
             if (!screen.booted || Os.editingHome) return;
             if (askBar.shown) { askBar.close(); return; }
             Os.ack("launcher-open");
-            win.raise(); win.requestActivate();
-            Os.raiseShell();                  // Wayland ignores raise(); KWin does it for us
+            // layered: the launcher has its own overlay surface, above every app
+            if (!win.layered) { win.raise(); win.requestActivate(); Os.raiseShell(); }
             askBar.open();
         }
         function onTrashFull() { dock.trashIcon = Art.icon("trash", true); }

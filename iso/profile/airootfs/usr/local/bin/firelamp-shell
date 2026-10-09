@@ -21,6 +21,17 @@ if [[ -n "${FIRELAMP_SHELL_CMD:-}" ]]; then
 elif [[ -x /usr/lib/firelamp/shell/firelamp-shell ]]; then
     exec /usr/lib/firelamp/shell/firelamp-shell "$@"
 elif [[ -f /usr/share/firelamp/shell/Main.qml ]]; then
-    exec /usr/lib/qt6/bin/qml -I /usr/share/firelamp/shell /usr/share/firelamp/shell/Main.qml "$@"
+    # On Wayland with layer-shell-qt's QML module, run the layered shell: desktop, bar, dock,
+    # launcher and the AI's layer as separate layer surfaces, so real apps stack between them.
+    # If it can't load (old layer-shell-qt), fall back to the single full-screen window.
+    shell=/usr/share/firelamp/shell
+    if [[ -n "${WAYLAND_DISPLAY:-}" && -d /usr/lib/qt6/qml/org/kde/layershell && -f $shell/Layered.qml ]]; then
+        started=$SECONDS
+        /usr/lib/qt6/bin/qml -I "$shell" "$shell/Layered.qml" "$@" && exit 0
+        # only fall back when it failed to start, not after a long session
+        (( SECONDS - started < 10 )) || exit 1
+        echo "firelamp-shell: layered shell failed, using the single window" >&2
+    fi
+    exec /usr/lib/qt6/bin/qml -I "$shell" "$shell/Main.qml" "$@"
 fi
 echo "firelamp-shell: no shell installed" >&2

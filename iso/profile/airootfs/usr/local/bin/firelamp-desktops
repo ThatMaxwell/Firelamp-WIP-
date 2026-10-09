@@ -547,7 +547,8 @@ class Api(BaseHTTPRequestHandler):
             push_event("launcher")
             return self.reply(202, {"ok": True})
         if self.path.startswith("/ack/"):     # the shell saying it acted on an event (boot-test trace)
-            acks[self.path[5:]] = acks.get(self.path[5:], 0) + 1
+            k = self.path[5:]
+            acks[k] = {"n": acks.get(k, {}).get("n", 0) + 1, "at": __import__("time").strftime("%H:%M:%S")}
             return self.reply(200, acks)
         if self.path == "/raise":
             return self.reply(*raise_shell())
