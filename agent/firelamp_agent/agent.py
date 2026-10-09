@@ -148,6 +148,19 @@ class Agent:
             self.paused = False
             self.events.cancel_waits()
 
+    def find_shell(self):
+        """The shell's pid, from its window on the accessibility bus (QML can't see its own).
+        Its windows are never the AI's to act on through AT-SPI."""
+        if self.events.shell_pid:
+            return
+        for app, pid, name in self.eyes.apps():
+            for j in range(eyes_mod._safe(app.get_child_count, 0) or 0):
+                w = eyes_mod._safe(lambda j=j: app.get_child_at_index(j))
+                if w is not None and (eyes_mod._safe(w.get_name, "") or "") in ("Firelamp OS", "Firelamp AI layer"):
+                    self.events.shell_pid = pid
+                    self.eyes.own_pids = {pid}
+                    return
+
     def held(self):
         """Pause holds typing where it is, and it carries on after Resume. Stop ends it."""
         while self.paused and not self.stopped:
@@ -164,6 +177,7 @@ class Agent:
     def _run(self, task):
         how = "done"
         try:
+            self.find_shell()
             how = self._loop(task)
         except Stop:
             how = "stopped"

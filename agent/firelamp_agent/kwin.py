@@ -57,13 +57,26 @@ class KWin:
             self.bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
         except Exception:
             return
-        node = Gio.DBusNodeInfo.new_for_xml(XML)
+        # KWin's calls back arrive on a main context of our own, run by our own thread. AT-SPI's
+        # connection lives on the default context and must only ever be used from the task's
+        # thread: a second thread dispatching it corrupts libatspi's memory.
+        self.ctx = GLib.MainContext.new()
+        self.ctx.push_thread_default()
         try:
+            node = Gio.DBusNodeInfo.new_for_xml(XML)
             self.bus.register_object(PATH, node.interfaces[0], self._on_call, None, None)
+            Gio.bus_own_name_on_connection(self.bus, BUS_NAME, Gio.BusNameOwnerFlags.NONE, None, None)
         except Exception:
             return
-        Gio.bus_own_name_on_connection(self.bus, BUS_NAME, Gio.BusNameOwnerFlags.NONE, None, None)
+        finally:
+            self.ctx.pop_thread_default()
+        loop = GLib.MainLoop.new(self.ctx, False)
+        threading.Thread(target=self._dispatch, args=(loop,), name="kwin-dbus", daemon=True).start()
         self.ok = self._has_kwin()
+
+    def _dispatch(self, loop):
+        self.ctx.push_thread_default()
+        loop.run()
 
     def _has_kwin(self):
         try:
@@ -126,11 +139,3 @@ class KWin:
             return False
         js = ACTIVATE_JS.replace("%PID%", str(int(pid))).replace("%CAPTION%", json.dumps(caption or ""))
         return self._run(js, "firelamp-agent-activate")
-
-
-def start_mainloop():
-    """Gio delivers D-Bus calls on a GLib main loop; run one in the background."""
-    loop = GLib.MainLoop()
-    t = threading.Thread(target=loop.run, name="glib", daemon=True)
-    t.start()
-    return loop

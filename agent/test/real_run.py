@@ -229,7 +229,15 @@ def main():
     t0, n_shot = time.time(), 0
     with open(os.path.join(out, "events.jsonl"), "w") as ev:
         while how is None and time.time() - t0 < a.timeout:
-            _, r = call("/events?after=%d" % last, timeout=40)
+            try:
+                _, r = call("/events?after=%d" % last, timeout=40)
+            except TimeoutError:
+                continue
+            except (urllib.error.URLError, OSError) as e:
+                # the agent died: say so, and still keep the film and the summary
+                how = "agent crashed (%s)" % e
+                log(how)
+                break
             last = r["last"]
             for e in r["events"]:
                 ev.write(json.dumps(dict(e, t=round(time.time() - t0, 1)), ensure_ascii=False) + "\n")
@@ -306,6 +314,9 @@ def main():
             ["", "## Activity (as logged for the user)", ""] + \
             ["- %s: %s%s" % (x["kind"], x["title"], (" (%s)" % x["why"]) if x.get("why") else "") for x in acts] + \
             ["", "## The screen afterwards, read back through AT-SPI", "", "```", tree.strip()[:6000], "```", ""]
+    if how and how.startswith("agent crashed"):
+        with open(os.path.join(out, "agent.log"), errors="replace") as f:
+            lines += ["## The agent's last words", "", "```", "".join(f.readlines()[-30:]).strip(), "```", ""]
     with open(os.path.join(out, "summary.md"), "w") as f:
         f.write("\n".join(lines))
     print("\n".join(lines[:6]))
