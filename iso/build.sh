@@ -57,6 +57,22 @@ if [[ -d "$repo_dir/shell" ]]; then
     fi
 fi
 
+# The assistant (agent/): /usr/lib/firelamp/agent, run as /usr/local/bin/firelamp-agent.
+if [[ -d "$repo_dir/agent" ]]; then
+    echo "build.sh: including the assistant from agent/"
+    dest="$staged/airootfs/usr/lib/firelamp/agent"
+    mkdir -p "$dest" "$staged/airootfs/usr/local/bin"
+    cp -a "$repo_dir/agent/." "$dest/"
+    rm -rf "$dest/test"
+    find "$dest" -name __pycache__ -prune -exec rm -rf {} +
+    chmod 755 "$dest/firelamp-agent"
+    ln -sf /usr/lib/firelamp/agent/firelamp-agent "$staged/airootfs/usr/local/bin/firelamp-agent"
+    if [[ -f "$repo_dir/agent/packages.x86_64" ]]; then
+        printf '\n# From agent/packages.x86_64\n' >>"$staged/packages.x86_64"
+        cat "$repo_dir/agent/packages.x86_64" >>"$staged/packages.x86_64"
+    fi
+fi
+
 # Packages we rebuild ourselves (iso/pkgbuilds/) go in a local repo listed
 # before [cachyos], so they win over the prebuilt ones.
 if compgen -G "$iso_dir/pkgbuilds/*/PKGBUILD" >/dev/null; then

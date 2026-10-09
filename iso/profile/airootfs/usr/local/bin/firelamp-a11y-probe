@@ -10,6 +10,7 @@
 """
 import argparse
 import os
+import json
 import re
 import shutil
 import subprocess
@@ -70,9 +71,9 @@ def snapshot(max_depth):
     return apps, counter[0], lines
 
 
-def run(cmd):
+def run(cmd, timeout=5):
     try:
-        return subprocess.run(cmd, capture_output=True, text=True, timeout=5).stdout.strip()
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout).stdout.strip()
     except Exception as exc:
         return f"({exc})"
 
@@ -143,6 +144,18 @@ def open_check(route, proc, wait=30):
     return "NOT RUNNING " + reply
 
 
+def agent_check():
+    """The assistant should be serving, and honest that no brain is set up on a fresh session."""
+    out = run(["/usr/local/bin/firelamp-agent", "status"], timeout=20)
+    try:
+        st = json.loads(out)
+    except ValueError:
+        return "NOT RUNNING " + out[:300]
+    ydotoold = run(["pgrep", "-a", "-x", "ydotoold"]) or "ydotoold NOT RUNNING"
+    return "RUNNING brain=%s keyboard=%s shell=%s (%s)" % (
+        json.dumps(st.get("brain")), st.get("keyboard"), st.get("shell"), ydotoold)
+
+
 def installer_check(wait=45):
     """Start the installer the way the desktop button does and report whether its window stays up."""
     log = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-install.log")
@@ -191,6 +204,7 @@ def boot_report():
     out.append("plasma panels: " + run(["gdbus", "call", "--session", "--dest", "org.kde.plasmashell", "--object-path", "/PlasmaShell",
                                         "--method", "org.kde.PlasmaShell.evaluateScript", "print(panels().length)"]))
     out.extend(launcher_checks())
+    out.append("agent: " + agent_check())
     out.append("terminal window: " + open_check("terminal", "konsole"))
     out.append("files window: " + open_check("files", "dolphin"))
     out.append("web window: " + open_check("web", "firefox", wait=45))
