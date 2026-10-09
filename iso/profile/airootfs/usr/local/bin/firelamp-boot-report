@@ -18,6 +18,8 @@ done
     journalctl -b -u sddm --no-pager -q 2>/dev/null | tail -n 15
     echo '--- shell log ---'
     tail -n 40 /home/firelamp/.local/state/firelamp/shell.log 2>/dev/null
+    echo '--- shell messages in the journal ---'
+    journalctl -b --no-pager -q _UID=1000 2>/dev/null | grep -iE 'qml|layer|firelamp' | tail -n 25
     echo '--- installer output ---'
     tail -n 40 /run/user/1000/firelamp-install.log 2>/dev/null
     echo '--- installer session log ---'
