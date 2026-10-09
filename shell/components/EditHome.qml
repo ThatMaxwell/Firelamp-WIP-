@@ -179,7 +179,8 @@ Item {
                 boundsBehavior: Flickable.StopAtBounds
                 model: eh.gallery.filter(function (g) { return !search.text || g.name.toLowerCase().indexOf(search.text.toLowerCase()) >= 0; })
                 footer: Item {
-                    width: 168 + 12; height: strip.height
+                    visible: Os.demo   // Plasma widgets don't run on this home; a real install doesn't offer them
+                    width: Os.demo ? 168 + 12 : 0; height: strip.height
                     Rectangle {
                         x: 12; width: 168; height: parent.height; radius: 12
                         color: "transparent"; border.color: Theme.hairline2; border.width: 1
@@ -227,6 +228,14 @@ Item {
                         }
                     }
                 }
+            }
+            // more cards past the edge: a soft fade says "scroll", instead of a hard cut
+            Rectangle {
+                visible: strip.visible && strip.contentX < strip.contentWidth - strip.width - 1
+                anchors.right: strip.right; width: 24; height: strip.height
+                gradient: Gradient { orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: "transparent" }
+                    GradientStop { position: 1; color: Theme.surface2 } }
             }
 
             // Wallpaper: Graphite, Dynamic (follows the time of day), yours, then the rest of ours

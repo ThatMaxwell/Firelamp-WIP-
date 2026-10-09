@@ -56,7 +56,8 @@ Item {
         lastGeo[win.app.id] = { x: win.x, y: win.y, w: win.width, h: win.height };
         windows = windows.filter(function (o) { return o !== win; });
         if (!get(win.app.id)) Os.dock.setRunning(win.app.id, false);
-        if (focused === win) { focused = null; focusWindow(topmost()); }
+        // hand focus on (and tell the bar, even when nothing is left: "Desktop")
+        if (focused === win) { focused = null; var t = topmost(); if (t) focusWindow(t); else focusChanged2(null); }
         win.destroy();
     }
     function topmost() {
