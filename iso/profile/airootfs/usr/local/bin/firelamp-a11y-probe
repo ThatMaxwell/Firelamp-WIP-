@@ -105,12 +105,12 @@ def greeter_check(theme="/usr/share/sddm/themes/firelamp"):
     return ("ERROR " + " | ".join(errors[:5])) if errors else "OK"
 
 
-def helper(method, path, timeout=30):
+def helper(method, path, timeout=30, limit=300):
     import urllib.request
     try:
         req = urllib.request.Request("http://127.0.0.1:7341" + path, method=method, data=b"" if method == "POST" else None)
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.read().decode(errors="replace")[:300]
+            return resp.read().decode(errors="replace")[:limit]
     except Exception as exc:
         return f"ERROR {exc}"
 
@@ -123,6 +123,12 @@ def launcher_checks():
     run(["gdbus", "call", "--session", "--dest", "org.firelamp.Shell", "--object-path", "/org/firelamp/Shell",
          "--method", "org.firelamp.Shell.ToggleLauncher"])
     out.append("launcher event: " + helper("GET", "/events?after=-1"))
+    time.sleep(3)
+    # The shell's own trace of the open: acks and the raw /raise output.
+    out.append("launcher debug: " + helper("GET", "/debug", limit=4000))
+    # Close it again so the boot test's Super tap opens it on camera.
+    run(["gdbus", "call", "--session", "--dest", "org.firelamp.Shell", "--object-path", "/org/firelamp/Shell",
+         "--method", "org.firelamp.Shell.ToggleLauncher"])
     return out
 
 
