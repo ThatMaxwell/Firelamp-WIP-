@@ -18,7 +18,9 @@ Each turn the brain gets your request, the live tree of every window (roles, lab
 numbered) and the result of the last action, and answers with one JSON action: `open`,
 `click`, `type`, `key`, `focus`, `read`, `run`, `wait` or `done`. The agent checks it against
 the safety rules, moves the fire cursor there, does it on the real app, logs it with the
-brain's reason and looks again. Tasks of three or more steps show a plan first and wait for Go.
+brain's reason and looks again. Tasks of more than one step in apps show a plan first and wait
+for Go. Typed text is read back from the field, and before saying Done it looks at the screen
+again and checks the result against what you asked; if something's missing it says so.
 
 ## Running it
 
