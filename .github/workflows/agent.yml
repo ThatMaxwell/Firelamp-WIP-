@@ -2,9 +2,10 @@ name: Assistant real run
 
 # A real AI model drives a real app through the real Firelamp shell, filmed.
 # Arch with the ISO's packages, Xvfb + openbox, shell/Main.qml, agent/ (firelamp-agent) and Kate.
-# The brain: Puter when the PUTER_AUTH_TOKEN secret is set (the product's default), otherwise
-# GitHub Models with this repository's own token. The film, screenshots, Activity log and an
-# AT-SPI read-back of the apps are pushed to the `agent-capture` branch and the job summary.
+# The brain: Puter when the PUTER_AUTH_TOKEN secret is set (the product's default), otherwise an
+# open model in Ollama on the runner itself, the same "on this computer" brain the ISO ships.
+# The film, screenshots, Activity log and an AT-SPI read-back of the apps are pushed to the
+# `agent-capture` branch and the job summary.
 
 on:
   workflow_dispatch:
@@ -13,15 +14,14 @@ on:
         description: 'What to ask the assistant'
         default: 'Open a text editor and write a to-do list for this weekend: groceries, laundry, call mom'
       model:
-        description: 'GitHub Models model, used when there is no PUTER_AUTH_TOKEN secret'
-        default: 'openai/gpt-4.1'
+        description: 'Ollama model, used when there is no PUTER_AUTH_TOKEN secret'
+        default: 'qwen2.5:7b'
   push:
     branches: [main]
     paths: ['agent/**', 'shell/components/Agent*.qml', 'shell/components/AiLayer*.qml', '.github/workflows/agent.yml']
 
 permissions:
   contents: write
-  models: read
 
 concurrency:
   group: agent-real-run
@@ -30,7 +30,7 @@ concurrency:
 jobs:
   real-run:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 75
     container: archlinux:latest
     steps:
       - name: Install the ISO's packages for the shell, the agent and Kate
@@ -39,31 +39,28 @@ jobs:
           pacman -Su --noconfirm --needed git xorg-server-xvfb openbox xcompmgr xdotool dbus mesa \
             at-spi2-core python python-gobject python-atspi python-dbus \
             qt6-base qt6-declarative qt6-svg qt6-shadertools qt6-5compat qt6-imageformats qt6-multimedia \
-            noto-fonts papirus-icon-theme adwaita-cursors kate ffmpeg
+            noto-fonts papirus-icon-theme adwaita-cursors kate ffmpeg ollama
 
       - uses: actions/checkout@v4
 
       - name: Ask the assistant and film it
         env:
           TASK: "${{ inputs.task || 'Open a text editor and write a to-do list for this weekend: groceries, laundry, call mom' }}"
-          MODEL: ${{ inputs.model || 'openai/gpt-4.1' }}
+          MODEL: ${{ inputs.model || 'qwen2.5:7b' }}
           FIRELAMP_PUTER_TOKEN: ${{ secrets.PUTER_AUTH_TOKEN }}
           FIRELAMP_JEV_KEY: ${{ secrets.JEV_API_KEY }}
-          REPO_TOKEN: ${{ github.token }}
         run: |
           if [ -z "$FIRELAMP_PUTER_TOKEN" ]; then
             unset FIRELAMP_PUTER_TOKEN
-            # GitHub Models' free tier takes about 8000 tokens per request
-            export FIRELAMP_API_BASE=https://models.github.ai/inference FIRELAMP_API_KEY="$REPO_TOKEN" \
-                   FIRELAMP_API_MODEL="$MODEL" FIRELAMP_CONTEXT_CHARS=20000
-            # what the endpoint answers, headers included, in case the run can't read it
-            curl -sS -i --max-time 60 -X POST "$FIRELAMP_API_BASE/chat/completions" \
-              -H "Authorization: Bearer $REPO_TOKEN" -H "Content-Type: application/json" -H "Accept: application/json" \
-              -d "{\"model\":\"$MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"Say ok\"}],\"max_tokens\":5}" | head -c 1500 || true
-            echo
+            # the model runs here on the runner's CPU: a bigger context, and patience
+            export OLLAMA_CONTEXT_LENGTH=16384 OLLAMA_KEEP_ALIVE=-1 FIRELAMP_LOCAL_MODEL="$MODEL" FIRELAMP_CONTEXT_CHARS=36000
+            ollama serve > /tmp/ollama.log 2>&1 &
+            for i in $(seq 1 30); do curl -sf http://127.0.0.1:11434/api/tags >/dev/null && break; sleep 1; done
+            ollama pull "$MODEL"
+            ollama run "$MODEL" "Say ok" --verbose 2>&1 | tail -n 12     # loads it, and shows its speed here
           fi
           [ -n "$FIRELAMP_JEV_KEY" ] || unset FIRELAMP_JEV_KEY
-          dbus-run-session -- python3 agent/test/real_run.py --out capture "$TASK"
+          dbus-run-session -- python3 agent/test/real_run.py --out capture --timeout 3000 "$TASK"
 
       - name: Publish the film to the agent-capture branch
         if: always()
@@ -71,6 +68,7 @@ jobs:
           REPO_TOKEN: ${{ github.token }}
         run: |
           [ -d capture ] || exit 0
+          cp /tmp/ollama.log capture/ 2>/dev/null || true
           [ -f capture/summary.md ] && cat capture/summary.md >> "$GITHUB_STEP_SUMMARY"
           cd capture
           echo "From ${GITHUB_SHA} (run ${GITHUB_RUN_ID})" > SOURCE
