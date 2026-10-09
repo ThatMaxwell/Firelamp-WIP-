@@ -266,36 +266,60 @@ def _capsule_test():
         say("=== FIRELAMP STOP SKIPPED no Stop button on the AT-SPI tree within 90s ===")
         return
     btn, win = hit
-    b = btn.get_extents(Atspi.CoordType.WINDOW)
-    w = win.get_extents(Atspi.CoordType.WINDOW)
     sw, _ = screen_size()
-    # The capsule surface is anchored top-centre just under the 28px bar (Layered.qml), and Wayland
-    # gives clients no global position, so place the button within that surface.
-    if b.width > 0 and b.height > 0:
-        x = (sw - w.width) // 2 + b.x + b.width // 2
-        y = 28 + b.y + b.height // 2
-    else:
-        # Qt reported no extents for it: use the capsule's layout (Layered.qml / AgentCapsule.qml):
-        # the surface is the capsule plus 24px each side, Stop's centre is 18px in from the
-        # capsule's right edge, and the capsule's centre line is at y 58.
-        x = sw // 2 + (w.width - 48) // 2 - 18
-        y = 58
-    say(f"=== FIRELAMP STOP AT {x} {y} button={b.x},{b.y} {b.width}x{b.height} surface={w.width}x{w.height} screen_w={sw} ===")
-    # Proof is the agent's own end-of-task event: Stop in the shell posts /stop, and the task
-    # ends with how=stopped. Any other ending means the click didn't land.
-    end = time.time() + 90
-    while time.time() < end:
+
+    def position():
+        """Stop's screen centre. The capsule widens as the agent's status text arrives, and Stop
+        sits at its right end, so read it until the layout holds still for two seconds."""
+        last, same = None, 0
+        for _ in range(30):
+            b = btn.get_extents(Atspi.CoordType.WINDOW)
+            w = win.get_extents(Atspi.CoordType.WINDOW)
+            now = (b.x, b.y, b.width, b.height, w.width, w.height)
+            same = same + 1 if now == last else 0
+            last = now
+            if same >= 2:
+                break
+            time.sleep(1)
+        # The capsule surface is anchored top-centre just under the 28px bar (Layered.qml), and
+        # Wayland gives clients no global position, so place the button within that surface.
+        if b.width > 0 and b.height > 0:
+            x = (sw - w.width) // 2 + b.x + b.width // 2
+            y = 28 + b.y + b.height // 2
+        else:
+            # Qt reported no extents for it: use the capsule's layout (Layered.qml / AgentCapsule.qml):
+            # the surface is the capsule plus 24px each side, Stop's centre is 18px in from the
+            # capsule's right edge, and the capsule's centre line is at y 58.
+            x = sw // 2 + (w.width - 48) // 2 - 18
+            y = 58
+        return x, y, f"button={b.x},{b.y} {b.width}x{b.height} surface={w.width}x{w.height} screen_w={sw}"
+
+    def ended():
         try:
             ev = agent_call("GET", "/events?after=-1", timeout=30).get("events", [])
         except Exception:
-            time.sleep(2)
-            continue
+            return None
         done = [e for e in ev if e.get("kind") == "done"]
-        if done:
-            say(f"=== FIRELAMP STOP RESULT task ended how={done[-1].get('how')} ===")
+        return done[-1].get("how") if done else None
+
+    # Proof is the agent's own end-of-task event: Stop in the shell posts /stop, which ends the task
+    # at once (even mid-thought) with how=stopped. Any other ending means the click didn't land.
+    # The host clicks each position it is sent; measure again and resend if a click missed.
+    for attempt in range(1, 4):
+        try:
+            x, y, detail = position()
+        except Exception as exc:
+            say(f"=== FIRELAMP STOP SKIPPED Stop went away before it could be clicked: {exc} ===")
             return
-        time.sleep(2)
-    say("=== FIRELAMP STOP RESULT task still running 90s after the Stop position was sent ===")
+        say(f"=== FIRELAMP STOP AT {x} {y} try={attempt} {detail} ===")
+        end = time.time() + 25
+        while time.time() < end:
+            how = ended()
+            if how:
+                say(f"=== FIRELAMP STOP RESULT task ended how={how} on try {attempt} ===")
+                return
+            time.sleep(2)
+    say("=== FIRELAMP STOP RESULT task still running after 3 clicks on Stop ===")
 
 
 def installer_check(wait=45):

@@ -42,30 +42,29 @@ def capsule_stop(mon, serial, out):
     def serial_text():
         with open(serial, errors="replace") as fh:
             return fh.read()
-    pos = None
-    for _ in range(240):
-        m = re.search(r"=== FIRELAMP STOP (AT (\d+) (\d+)|SKIPPED)[^\n]*", serial_text())
-        if m:
-            print("test-boot:", m.group(0), flush=True)
-            if m.group(2):
-                pos = int(m.group(2)), int(m.group(3))
-            break
-        time.sleep(1)
-    else:
-        print("test-boot: capsule Stop test: the guest never sent a Stop position", flush=True)
-    if not pos:
-        return
-    hmp(mon, f"screendump {os.path.join(out, 'capsule.png')} -f png")
-    hmp(mon, f"mouse_move {pos[0]} {pos[1]}")
-    time.sleep(0.5)
-    hmp(mon, "mouse_button 1")
-    time.sleep(0.2)
-    hmp(mon, "mouse_button 0")
-    for _ in range(120):
-        m = re.search(r"=== FIRELAMP STOP RESULT[^\n]*", serial_text())
+    # The guest sends a position per try (it re-measures if a click missed), then one RESULT.
+    clicked, deadline = 0, time.time() + 240
+    while time.time() < deadline:
+        text = serial_text()
+        m = re.search(r"=== FIRELAMP STOP (RESULT|SKIPPED)[^\n]*", text)
         if m:
             print("test-boot:", m.group(0), flush=True)
             return
+        tries = re.findall(r"=== FIRELAMP STOP AT (\d+) (\d+)[^\n]*", text)
+        if len(tries) > clicked:
+            x, y = int(tries[-1][0]), int(tries[-1][1])
+            clicked = len(tries)
+            print(f"test-boot: clicking Stop at {x} {y} (try {clicked})", flush=True)
+            if clicked == 1:
+                hmp(mon, f"screendump {os.path.join(out, 'capsule.png')} -f png")
+            hmp(mon, f"mouse_move {x} {y}")
+            time.sleep(0.5)
+            hmp(mon, "mouse_button 1")
+            time.sleep(0.2)
+            hmp(mon, "mouse_button 0")
+            time.sleep(1)
+            hmp(mon, f"screendump {os.path.join(out, f'capsule-click{clicked}.png')} -f png")
+            deadline = time.time() + 120
         time.sleep(1)
     print("test-boot: capsule Stop test: no result from the guest", flush=True)
 
