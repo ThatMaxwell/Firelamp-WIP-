@@ -271,8 +271,15 @@ def _capsule_test():
     sw, _ = screen_size()
     # The capsule surface is anchored top-centre just under the 28px bar (Layered.qml), and Wayland
     # gives clients no global position, so place the button within that surface.
-    x = (sw - w.width) // 2 + b.x + b.width // 2
-    y = 28 + b.y + b.height // 2
+    if b.width > 0 and b.height > 0:
+        x = (sw - w.width) // 2 + b.x + b.width // 2
+        y = 28 + b.y + b.height // 2
+    else:
+        # Qt reported no extents for it: use the capsule's layout (Layered.qml / AgentCapsule.qml):
+        # the surface is the capsule plus 24px each side, Stop's centre is 18px in from the
+        # capsule's right edge, and the capsule's centre line is at y 58.
+        x = sw // 2 + (w.width - 48) // 2 - 18
+        y = 58
     say(f"=== FIRELAMP STOP AT {x} {y} button={b.x},{b.y} {b.width}x{b.height} surface={w.width}x{w.height} screen_w={sw} ===")
     # Proof is the agent's own end-of-task event: Stop in the shell posts /stop, and the task
     # ends with how=stopped. Any other ending means the click didn't land.

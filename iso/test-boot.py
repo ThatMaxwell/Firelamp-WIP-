@@ -156,6 +156,7 @@ def main():
             hmp(mon, "sendkey meta_l-spc 150")
             time.sleep(3)
             hmp(mon, f"screendump {os.path.join(out, 'metaspace.png')} -f png")
+            hmp(mon, "sendkey meta_l-spc 150")  # close the launcher again
             # The guest writes the shell's trace of that keypress to the serial port.
             for _ in range(10):
                 with open(serial, errors="replace") as fh:
