@@ -105,6 +105,38 @@ def greeter_check(theme="/usr/share/sddm/themes/firelamp"):
     return ("ERROR " + " | ".join(errors[:5])) if errors else "OK"
 
 
+def helper(method, path, timeout=30):
+    import urllib.request
+    try:
+        req = urllib.request.Request("http://127.0.0.1:7341" + path, method=method, data=b"" if method == "POST" else None)
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.read().decode(errors="replace")[:300]
+    except Exception as exc:
+        return f"ERROR {exc}"
+
+
+def launcher_checks():
+    """Super-key path: KWin config -> org.firelamp.Shell -> helper event the shell long-polls."""
+    out = ["kwin meta key: " + (run(["kreadconfig6", "--file", "kwinrc", "--group", "ModifierOnlyShortcuts", "--key", "Meta"]) or "(unset)")]
+    owned = run(["busctl", "--user", "status", "org.firelamp.Shell"])
+    out.append("shell bus name: " + ("OWNED " + owned.splitlines()[0] if owned and not owned.startswith("(") and "PID=" in owned else "NOT OWNED " + owned[:120]))
+    run(["gdbus", "call", "--session", "--dest", "org.firelamp.Shell", "--object-path", "/org/firelamp/Shell",
+         "--method", "org.firelamp.Shell.ToggleLauncher"])
+    out.append("launcher event: " + helper("GET", "/events?after=-1"))
+    return out
+
+
+def terminal_check(wait=15):
+    """Open a terminal the way the dock does and report whether Konsole came up."""
+    reply = helper("POST", "/open/terminal")
+    for _ in range(wait):
+        time.sleep(1)
+        pid = run(["pgrep", "-a", "-x", "konsole"])
+        if pid:
+            return "RUNNING " + pid
+    return "NOT RUNNING " + reply
+
+
 def installer_check(wait=45):
     """Start the installer the way the desktop button does and report whether its window stays up."""
     log = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-install.log")
@@ -149,6 +181,8 @@ def boot_report():
     except Exception as exc:
         out.append(f"FIRELAMP_ATSPI_FAIL {exc}")
     out.append("login theme: " + greeter_check())
+    out.extend(launcher_checks())
+    out.append("terminal window: " + terminal_check())
     out.append("installer window: " + installer_check())
     path = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-boot-report.txt")
     tmp = path + ".tmp"
