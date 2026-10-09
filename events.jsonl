@@ -1,0 +1,76 @@
+{"task": "t1", "text": "Open a text editor and write a to-do list for this weekend: groceries, laundry, call mom", "model": "qwen2.5:7b (on this computer)", "provider": "local", "jev": false, "kind": "start", "n": 1, "t": 0.2}
+{"req": 1, "op": "snapshot", "kind": "shell", "n": 2, "t": 0.2}
+{"text": "Reading the screen", "kind": "think", "n": 3, "t": 0.4}
+{"text": "Reading the screen · local model", "kind": "think", "n": 4, "t": 5.5}
+{"text": "Opening KWrite to start the to-do list.", "kind": "say", "n": 5, "t": 113.3}
+{"text": "Opening KWrite", "kind": "think", "n": 6, "t": 113.3}
+{"req": 2, "app": "KWrite", "dock": "", "kind": "opening", "n": 7, "t": 113.3}
+{"entry": {"kind": "open", "title": "Opened KWrite", "why": "KWrite is a text editor and suitable for creating a to-do list.", "app": "KWrite"}, "kind": "log", "n": 8, "t": 113.7}
+{"req": 3, "op": "snapshot", "kind": "shell", "n": 9, "t": 114.7}
+{"text": "Thinking", "kind": "think", "n": 10, "t": 114.7}
+{"text": "Thinking · local model", "kind": "think", "n": 11, "t": 119.8}
+{"text": "Thinking", "kind": "think", "n": 12, "t": 170.1}
+{"text": "Thinking · local model", "kind": "think", "n": 13, "t": 175.1}
+{"text": "Starting to write the to-do list.", "kind": "say", "n": 14, "t": 196.2}
+{"req": 4, "task": "t1", "lines": ["Write to-do list", "Save document"], "text": "Open a text editor and write a to-do list for this weekend: groceries, laundry, call mom", "kind": "plan", "n": 15, "t": 196.2}
+{"i": 0, "kind": "step", "n": 16, "t": 199.5}
+{"req": 5, "op": "snapshot", "kind": "shell", "n": 17, "t": 199.6}
+{"text": "Thinking", "kind": "think", "n": 18, "t": 199.6}
+{"text": "Thinking · local model", "kind": "think", "n": 19, "t": 204.6}
+{"text": "Opening KWrite to start the to-do list.", "kind": "say", "n": 20, "t": 255.0}
+{"i": 1, "kind": "step", "n": 21, "t": 255.0}
+{"text": "Clicking “New File”", "kind": "think", "n": 22, "t": 255.3}
+{"req": 6, "x": 65, "y": 185, "w": 92, "h": 25, "label": "New File", "verb": "clicking", "kind": "point", "n": 23, "t": 255.3}
+{"kind": "press", "n": 24, "t": 256.2}
+{"entry": {"kind": "click", "title": "Clicked “New File”", "why": "Opening a new file to write the to-do list.", "app": "Kwrite"}, "kind": "log", "n": 25, "t": 256.2}
+{"req": 7, "op": "snapshot", "kind": "shell", "n": 26, "t": 256.6}
+{"text": "Thinking", "kind": "think", "n": 27, "t": 256.7}
+{"text": "Thinking · local model", "kind": "think", "n": 28, "t": 261.7}
+{"text": "Starting to write the to-do list.", "kind": "say", "n": 29, "t": 418.8}
+{"i": 0, "kind": "step", "n": 30, "t": 418.8}
+{"text": "Typing in Untitled", "kind": "think", "n": 31, "t": 418.8}
+{"req": 8, "x": 40, "y": 82, "w": 540, "h": 397, "label": "Untitled", "verb": "typing in", "kind": "point", "n": 32, "t": 418.8}
+{"kind": "press", "n": 33, "t": 419.4}
+{"on": true, "kind": "busy", "n": 34, "t": 419.4}
+{"on": false, "kind": "busy", "n": 35, "t": 420.1}
+{"entry": {"kind": "type", "title": "Typed “Groceries Laundry Call mom” into “Untitled”", "why": "Adding the tasks to the document.", "app": "Kwrite"}, "kind": "log", "n": 36, "t": 420.1}
+{"req": 9, "op": "snapshot", "kind": "shell", "n": 37, "t": 420.6}
+{"text": "Thinking", "kind": "think", "n": 38, "t": 420.7}
+{"text": "Thinking · local model", "kind": "think", "n": 39, "t": 425.7}
+{"text": "The to-do list has been written.", "kind": "say", "n": 40, "t": 590.9}
+{"i": 1, "kind": "step", "n": 41, "t": 590.9}
+{"text": "Clicking “Save”", "kind": "think", "n": 42, "t": 590.9}
+{"req": 10, "x": 152, "y": 48, "w": 67, "h": 29, "label": "Save", "verb": "clicking", "kind": "point", "n": 43, "t": 590.9}
+{"kind": "press", "n": 44, "t": 591.6}
+{"entry": {"kind": "click", "title": "Clicked “Save”", "why": "Saving the document to keep the to-do list.", "app": "Kwrite"}, "kind": "log", "n": 45, "t": 592.5}
+{"req": 11, "op": "snapshot", "kind": "shell", "n": 46, "t": 593.1}
+{"text": "Thinking", "kind": "think", "n": 47, "t": 593.1}
+{"text": "Thinking · local model", "kind": "think", "n": 48, "t": 598.2}
+{"text": "Saving the document.", "kind": "say", "n": 49, "t": 785.0}
+{"i": 1, "kind": "step", "n": 50, "t": 785.0}
+{"text": "Typing in File name:", "kind": "think", "n": 51, "t": 785.0}
+{"req": 12, "x": 148, "y": 381, "w": 2, "h": 17, "label": "File name:", "verb": "typing in", "kind": "point", "n": 52, "t": 785.0}
+{"kind": "press", "n": 53, "t": 786.0}
+{"on": true, "kind": "busy", "n": 54, "t": 786.0}
+{"on": false, "kind": "busy", "n": 55, "t": 786.3}
+{"entry": {"kind": "type", "title": "Typed “GroceriesList” into “File name:”", "why": "Saving the document with a meaningful name.", "app": "Kwrite"}, "kind": "log", "n": 56, "t": 786.3}
+{"req": 13, "op": "snapshot", "kind": "shell", "n": 57, "t": 786.9}
+{"text": "Thinking", "kind": "think", "n": 58, "t": 786.9}
+{"text": "Thinking · local model", "kind": "think", "n": 59, "t": 792.0}
+{"text": "Saving the document.", "kind": "say", "n": 60, "t": 1002.8}
+{"i": 1, "kind": "step", "n": 61, "t": 1002.8}
+{"text": "Clicking “Save”", "kind": "think", "n": 62, "t": 1002.8}
+{"req": 14, "x": 544, "y": 381, "w": 80, "h": 25, "label": "Save", "verb": "clicking", "kind": "point", "n": 63, "t": 1002.8}
+{"kind": "press", "n": 64, "t": 1003.5}
+{"entry": {"kind": "click", "title": "Clicked “Save”", "why": "Saving the document with the name 'GroceriesList'.", "app": "Kwrite"}, "kind": "log", "n": 65, "t": 1003.5}
+{"req": 15, "op": "snapshot", "kind": "shell", "n": 66, "t": 1004.0}
+{"text": "Thinking", "kind": "think", "n": 67, "t": 1004.0}
+{"text": "Thinking · local model", "kind": "think", "n": 68, "t": 1009.1}
+{"i": 0, "kind": "step", "n": 69, "t": 1222.0}
+{"req": 16, "op": "snapshot", "kind": "shell", "n": 70, "t": 1222.2}
+{"text": "Checking the result", "kind": "think", "n": 71, "t": 1222.2}
+{"text": "Checking the result · local model", "kind": "think", "n": 72, "t": 1227.3}
+{"i": 0, "kind": "step", "n": 73, "t": 1303.4}
+{"text": "Checked: The to-do list 'Groceries, Laundry, Call mom' is present in the document.", "kind": "say", "n": 74, "t": 1303.4}
+{"entry": {"kind": "done", "title": "Done", "why": "Open a text editor and write a to-do list for this weekend: groceries, laundry, call mom", "app": "Firelamp"}, "kind": "log", "n": 75, "t": 1303.4}
+{"how": "done", "task": "t1", "kind": "done", "n": 76, "t": 1303.8}
