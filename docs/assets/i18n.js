@@ -23,7 +23,7 @@ window.I18N = {
     'st.text': "Most AI agents use your computer through screenshots. They take a picture, guess what it means, click, and take another. Firelamp doesn't guess. The OS tells the AI exactly what's on screen, the moment it changes.",
 
     's1.t': 'It reads the screen.', 's1.p': "Ask it “Show me what you see”. Every window, button and text field is already labeled for the AI with its exact position, and you can watch the live list yourself. No screenshots.",
-    's2.t': 'It has its own cursor.', 's2.p': 'The fire cursor moves, clicks and types next to yours. In this release it opens a console and prints that live list for you.',
+    's2.t': 'It has its own cursor.', 's2.p': 'The fire cursor moves, clicks and types next to yours. In this release it opens the terminal and prints that live list for you.',
     's3.t': 'It asks first.', 's3.p': 'Deleting files, sending messages, paying for things. The OS itself stops and asks you, every single time.',
     's4.t': 'It shows its work.', 's4.p': 'Everything it did lands in a timeline you can actually read: what, where, and why.',
 
@@ -84,7 +84,7 @@ window.I18N = {
     'st.text': 'A maioria dos agentes de IA usa seu computador por prints de tela. Tira uma foto, tenta adivinhar o que ela mostra, clica e tira outra. O Firelamp não adivinha. O sistema diz à IA exatamente o que está na tela, no instante em que muda.',
 
     's1.t': 'Ela lê a tela.', 's1.p': 'Peça “Me mostra o que você vê”. Cada janela, botão e campo de texto já chega à IA identificado, com a posição exata, e você pode ver a lista ao vivo. Sem prints.',
-    's2.t': 'Ela tem o próprio cursor.', 's2.p': 'O cursor de fogo se move, clica e digita ao lado do seu. Nesta versão ele abre um console e imprime essa lista ao vivo pra você.',
+    's2.t': 'Ela tem o próprio cursor.', 's2.p': 'O cursor de fogo se move, clica e digita ao lado do seu. Nesta versão ele abre o terminal e imprime essa lista ao vivo pra você.',
     's3.t': 'Ela pergunta antes.', 's3.p': 'Apagar arquivos, enviar mensagens, pagar algo. O próprio sistema para e pergunta pra você, toda vez.',
     's4.t': 'Ela mostra o que fez.', 's4.p': 'Tudo o que ela fez vai para uma linha do tempo que dá pra ler de verdade: o quê, onde e por quê.',
 
