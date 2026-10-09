@@ -158,7 +158,7 @@ def main():
     ap.add_argument("task", nargs="?", default=TASK)
     ap.add_argument("--out", default="capture")
     ap.add_argument("--display", default=":99")
-    ap.add_argument("--name", default="Ember")
+    ap.add_argument("--name", default="Juno")      # the user names the assistant; this one is the test's
     ap.add_argument("--timeout", type=int, default=900)
     ap.add_argument("--shell-cmd", default="/usr/lib/qt6/bin/qml -I {root}/shell {root}/shell/Main.qml -- --nosplash --name={name}")
     a = ap.parse_args()
