@@ -94,8 +94,14 @@ def clickable(n):
     return n.get("role") in ("button", "item", "menu item", "tab", "link") if isinstance(n, dict) else bool(n.actions)
 
 
-def editable(n):
-    return bool(n.get("editable")) if isinstance(n, dict) else bool(n.editable)
+TEXT_ROLES = ("text", "entry", "document text", "terminal", "password text", "paragraph")
+
+
+def typeable(n):
+    """A place that takes typing: a text field, document or terminal."""
+    if isinstance(n, dict):
+        return bool(n.get("editable")) or n.get("role") in TEXT_ROLES
+    return bool(n.editable) or n.role in TEXT_ROLES or (n.states is not None and n.states.contains(eyes_mod.S.EDITABLE))
 
 
 class Agent:
@@ -141,6 +147,12 @@ class Agent:
             self.stopped = True
             self.paused = False
             self.events.cancel_waits()
+
+    def held(self):
+        """Pause holds typing where it is, and it carries on after Resume. Stop ends it."""
+        while self.paused and not self.stopped:
+            time.sleep(0.1)
+        return self.stopped
 
     def checkpoint(self):
         while self.paused and not self.stopped:
@@ -257,10 +269,18 @@ class Agent:
         return "stuck"
 
     def aim(self, act, do):
-        """The brain names the element it means. When [id] is something else, find that name on
-        screen instead; when it isn't there, do nothing (and that counts as a failed try)."""
+        """Make sure the action lands on what the brain means. A note for the result, or an
+        "Error:" when there's nothing right to act on (which counts as a failed try)."""
         if do not in ("click", "press", "tap", "type", "read"):
             return ""
+        note = self.find_named(act, do)
+        if do == "type" and not note.startswith("Error:"):
+            field = self.find_field(act)
+            note = field if field.startswith("Error:") else note + field
+        return note
+
+    def find_named(self, act, do):
+        """The brain names the element it means. When [id] is something else, use that name."""
         want = str(act.get("name") or act.get("label") or act.get("target") or "").strip()
         n = self.node(act.get("id"))
         if not want or (n is not None and named(n, want)):
@@ -273,7 +293,7 @@ class Agent:
                 exact.append(i)
             elif named(m, want):
                 loose.append(i)
-        usable = (lambda i: editable(self.nodes[i])) if do == "type" else (lambda i: clickable(self.nodes[i]))
+        usable = (lambda i: typeable(self.nodes[i])) if do == "type" else (lambda i: clickable(self.nodes[i]))
         picks = sorted(exact, key=lambda i: not usable(i)) or sorted(loose, key=lambda i: not usable(i))
         have = ("[%s] is “%s”" % (act.get("id"), eyes_mod.clip(name_of(n) or "unnamed", 40)) if n is not None
                 else "there's no [%s]" % act.get("id"))
@@ -284,6 +304,22 @@ class Agent:
                 have, eyes_mod.clip(want, 40), hint)
         act["id"] = picks[0]
         return "\n(%s, not “%s”, so I used [%d].)" % (have, eyes_mod.clip(want, 40), picks[0])
+
+    def find_field(self, act):
+        """Typing goes into text, never into a button (a space would press it). When [id] isn't a
+        text field, use the one in that window that has the focus, or its biggest one."""
+        n = self.node(act.get("id"))
+        if n is None or isinstance(n, dict) or typeable(n):
+            return ""
+        what = "“%s”" % eyes_mod.clip(n.name, 30) if n.name else "it"
+        fields = [m for m in self.nodes.values() if not isinstance(m, dict) and m.win is n.win and typeable(m)]
+        if not fields:
+            return "Error: [%d] %s is a %s, not a text field, and %s has no text field here, so I typed nothing." % (
+                n.id, what, n.role, eyes_mod.pretty_app(n.app))
+        focused = [m for m in fields if m.states is not None and m.states.contains(eyes_mod.S.FOCUSED)]
+        pick = focused[0] if len(focused) == 1 else max(fields, key=lambda m: m.bounds[2] * m.bounds[3] if m.bounds else 0)
+        act["id"] = pick.id
+        return "\n([%d] %s is a %s, not a text field, so I typed into [%d] instead.)" % (n.id, what, n.role, pick.id)
 
     def failure(self, do, result, before):
         """Why the last action counts as a failed try, or None: its target wasn't on screen, the
@@ -625,10 +661,11 @@ class Agent:
         self.events.emit("busy", on=True)
         try:
             if n.editable and aid != "terminal":
-                hands.set_text(n, text, bool(act.get("replace")), cancelled=lambda: self.stopped or self.paused)
+                hands.set_text(n, text, bool(act.get("replace")), cancelled=self.held)
                 self.checkpoint()
             else:
                 hands.focus(n)
+                time.sleep(0.15)
                 if aid == "terminal":
                     level, reason = safety.command_risk(text.strip())
                     if level and not self.gate(dict(act, risky=True), "run `%s` in the terminal" % eyes_mod.clip(text, 50),
@@ -637,7 +674,8 @@ class Agent:
                 hands.type_keys(text)
         finally:
             self.events.emit("busy", on=False)
-        self.log("type", "Typed into %s" % (("“%s”" % eyes_mod.clip(n.name, 40)) if n.name else n.label), why, app)
+        self.log("type", "Typed “%s” into %s" % (eyes_mod.clip(" ".join(text.split()), 32),
+                                                 ("“%s”" % eyes_mod.clip(n.name, 30)) if n.name else n.label), why, app)
         return "Typed %d characters into “%s”." % (len(text), n.label)
 
     def do_key(self, act, why, cfg, jev):
