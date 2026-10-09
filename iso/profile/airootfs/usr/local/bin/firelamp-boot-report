@@ -18,6 +18,10 @@ done
     journalctl -b -u sddm --no-pager -q 2>/dev/null | tail -n 15
     echo '--- shell log ---'
     tail -n 40 /home/firelamp/.local/state/firelamp/shell.log 2>/dev/null
+    echo '--- installer output ---'
+    tail -n 40 /run/user/1000/firelamp-install.log 2>/dev/null
+    echo '--- installer session log ---'
+    tail -n 60 /root/.cache/calamares/session.log 2>/dev/null
     echo '--- errors this boot ---'
     journalctl -b -p err --no-pager -q 2>/dev/null | tail -n 30
     echo '=== END FIRELAMP BOOT REPORT ==='

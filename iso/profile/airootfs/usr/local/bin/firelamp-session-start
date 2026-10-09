@@ -14,6 +14,15 @@ mkdir -p "$state"
 busctl --user call org.a11y.Bus /org/a11y/bus org.a11y.Bus GetAddress >/dev/null 2>&1
 busctl --user set-property org.a11y.Bus /org/a11y/bus org.a11y.Status IsEnabled b true >/dev/null 2>&1
 
+# The QEMU boot test (iso/test-boot.py) passes this fw_cfg entry so the shell
+# skips first-boot naming and the test can reach the desktop. Real hardware
+# never has it.
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}/firelamp/shell.conf"
+if [[ -e /sys/firmware/qemu_fw_cfg/by_name/opt/firelamp/skip-onboarding/raw && ! -e "$cfg" ]]; then
+    mkdir -p "$(dirname "$cfg")"
+    printf '[General]\nassistantName=Test\npacksAsked=true\nbrowserAsked=true\n' >"$cfg"
+fi
+
 if [[ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/firelamp/no-shell" ]] && ! grep -qw firelamp.noshell /proc/cmdline; then
     /usr/local/bin/firelamp-shell >>"$state/shell.log" 2>&1 &
 fi

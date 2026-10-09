@@ -69,6 +69,8 @@ def main():
         "-device", "virtio-tablet-pci",
         "-nic", "user,model=virtio-net-pci",
         "-no-reboot",
+        # Tells the live session to skip the shell's first-boot naming screen.
+        "-fw_cfg", "name=opt/firelamp/skip-onboarding,string=1",
     ]
     cmd += ["-enable-kvm", "-cpu", "host"] if kvm else ["-accel", "tcg", "-cpu", "max"]
     if args.uefi:
@@ -107,6 +109,10 @@ def main():
             time.sleep(3)
             hmp(mon, f"screendump {os.path.join(out, 'desktop.png')} -f png")
             shutil.copy(os.path.join(out, "desktop.png"), os.path.join(frames, f"{frame:04d}.png"))
+            # Tap Super: it should open the Firelamp launcher, not Plasma's.
+            hmp(mon, "sendkey meta_l")
+            time.sleep(3)
+            hmp(mon, f"screendump {os.path.join(out, 'super.png')} -f png")
     finally:
         if vm.poll() is None:
             try:
@@ -130,7 +136,8 @@ def main():
     m = re.search(r"FIRELAMP_ATSPI_OK apps=(\d+)", report)
     ok = bool(m) and int(m.group(1)) > 0 and "compositor: NOT RUNNING" not in report \
         and "shell: NOT RUNNING" not in report and re.search(r"^kernel: .*cachyos", report, re.M) is not None \
-        and "installer: NOT INSTALLED" not in report and "login theme: ERROR" not in report
+        and "installer: NOT INSTALLED" not in report and "login theme: ERROR" not in report \
+        and "installer window: RUNNING" in report
     print("test-boot:", "PASS" if ok else "FAIL", flush=True)
     sys.exit(0 if ok else 1)
 

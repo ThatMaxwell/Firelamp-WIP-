@@ -53,14 +53,15 @@ jobs:
       - name: Print desktop screenshot (base64 JPEG, for tools without artifact access)
         if: always()
         run: |
-          for mode in bios uefi; do
-            f=boot-test/$mode/desktop.png
+          for shot in bios/desktop uefi/desktop bios/super; do
+            f=boot-test/$shot.png
             [ -f "$f" ] || continue
-            ffmpeg -loglevel error -y -i "$f" -vf scale=960:-1 -q:v 6 "boot-test/$mode/desktop-small.jpg"
-            echo "::group::desktop-$mode.jpg base64"
-            echo "BEGIN_DESKTOP_JPEG_$mode"
-            base64 -w 0 "boot-test/$mode/desktop-small.jpg"; echo
-            echo "END_DESKTOP_JPEG_$mode"
+            tag=$(echo "$shot" | tr / _)
+            ffmpeg -loglevel error -y -i "$f" -vf scale=960:-1 -q:v 6 "boot-test/$tag-small.jpg"
+            echo "::group::$tag.jpg base64"
+            echo "BEGIN_JPEG_$tag"
+            base64 -w 0 "boot-test/$tag-small.jpg"; echo
+            echo "END_JPEG_$tag"
             echo "::endgroup::"
           done
 
@@ -71,6 +72,7 @@ jobs:
           name: boot-screenshots
           path: |
             boot-test/*/desktop.png
+            boot-test/*/super.png
             boot-test/*/boot.gif
             boot-test/*/serial.log
           if-no-files-found: warn
