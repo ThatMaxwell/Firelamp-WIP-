@@ -137,7 +137,8 @@ def main():
     ok = bool(m) and int(m.group(1)) > 0 and "compositor: NOT RUNNING" not in report \
         and "shell: NOT RUNNING" not in report and re.search(r"^kernel: .*cachyos", report, re.M) is not None \
         and "installer: NOT INSTALLED" not in report and "login theme: ERROR" not in report \
-        and "installer window: RUNNING" in report and "terminal window: RUNNING" in report
+        and "installer window: RUNNING" in report and "terminal window: RUNNING" in report \
+        and "files window: RUNNING" in report and "web window: RUNNING" in report
     print("test-boot:", "PASS" if ok else "FAIL", flush=True)
     sys.exit(0 if ok else 1)
 

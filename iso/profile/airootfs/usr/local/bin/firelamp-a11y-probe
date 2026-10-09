@@ -126,12 +126,12 @@ def launcher_checks():
     return out
 
 
-def terminal_check(wait=15):
-    """Open a terminal the way the dock does and report whether Konsole came up."""
-    reply = helper("POST", "/open/terminal")
+def open_check(route, proc, wait=30):
+    """Open an app the way the dock does and report whether its process came up."""
+    reply = helper("POST", "/open/" + route)
     for _ in range(wait):
         time.sleep(1)
-        pid = run(["pgrep", "-a", "-x", "konsole"])
+        pid = run(["pgrep", "-a", "-x", proc])
         if pid:
             return "RUNNING " + pid
     return "NOT RUNNING " + reply
@@ -182,7 +182,9 @@ def boot_report():
         out.append(f"FIRELAMP_ATSPI_FAIL {exc}")
     out.append("login theme: " + greeter_check())
     out.extend(launcher_checks())
-    out.append("terminal window: " + terminal_check())
+    out.append("terminal window: " + open_check("terminal", "konsole"))
+    out.append("files window: " + open_check("files", "dolphin"))
+    out.append("web window: " + open_check("web", "firefox", wait=45))
     out.append("installer window: " + installer_check())
     path = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "firelamp-boot-report.txt")
     tmp = path + ".tmp"
