@@ -63,6 +63,11 @@ function calendarIcon() {
 
 // Our own icon family (design/DIRECTION.md §8): muted neutral tiles, one simple glyph each,
 // filling about 55% of the tile. Graphite, paper, clay, sage, slate, ink-blue. Only the Assistant is ember.
+function place(art) {
+  return svg(`<path d="${SQUIRCLE}" fill="#272422"/><g transform="translate(50 50) scale(.86) translate(-50 -50)">${art}</g>
+    <path d="${SQUIRCLE}" fill="none" stroke="#FFF4E8" stroke-opacity=".07" stroke-width="1"/>`);
+}
+
 function flat(bg, art) {
   return tile({ fill: bg }, `<g transform="translate(50 50) scale(.86) translate(-50 -50)">${art}</g>`, { sheen: .07 });
 }
@@ -79,10 +84,12 @@ var APP_ICONS = {
   music: () => flat('#4A3B47', '<path d="M42 28v34a8 8 0 1 1-6-7.7V34l28-6v28a8 8 0 1 1-6-7.7V34" fill="none" stroke="#EADDE6" stroke-width="5" stroke-linejoin="round"/>'),
   settings: () => flat('#3A3836', '<circle cx="50" cy="50" r="10" fill="none" stroke="#D8D2CA" stroke-width="6"/><path d="M50 22v10M50 68v10M22 50h10M68 50h10M30 30l7 7M63 63l7 7M70 30l-7 7M37 63l-7 7" stroke="#D8D2CA" stroke-width="6" stroke-linecap="round"/>'),
   timeline: () => flat('#2C2B2A', '<path d="M30 30h.01M30 50h.01M30 70h.01" stroke="#D8D2CA" stroke-width="8" stroke-linecap="round"/><path d="M44 30h28M44 50h20M44 70h24" stroke="#8D867F" stroke-width="5" stroke-linecap="round"/>'),
-  downloads: () => flat('#3A3E44', '<path d="M50 26v36M36 50l14 14 14-14M28 74h44" fill="none" stroke="#D4D9DE" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'),
+  // places after the dock divider: the same tile, surface #272422, glyph in text2 (Designo)
+  downloads: () => place('<path d="M50 26v36M36 50l14 14 14-14M28 74h44" fill="none" stroke="#ABA49C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'),
   // live session only: a drive with the flame mark going onto it
   install: () => flat('#E9E4DC', `<rect x="24" y="56" width="52" height="18" rx="5" fill="#3A3631"/><circle cx="66" cy="65" r="2.6" fill="#E9E4DC"/><g transform="translate(41.5 22) scale(.026)"><path fill="#3A3631" d="${Logo.PATHS.outer}"/></g>`),
-  trash: (full = false) => flat('#2C2B2A', `${full ? '<path d="M36 34q4-10 12-5 8-8 16 2z" fill="#E9E4DC"/>' : ''}<path d="M32 34h36l-4 42H36z" fill="none" stroke="#BDB6AE" stroke-width="4" stroke-linejoin="round"/><path d="M28 34h44M42 28h16" stroke="#BDB6AE" stroke-width="4" stroke-linecap="round"/>`),
+  // with something in it the bin fills in
+  trash: (full = false) => place(`<path d="M32 34h36l-4 42H36z" fill="${full ? '#ABA49C' : 'none'}" stroke="#ABA49C" stroke-width="4" stroke-linejoin="round"/><path d="M28 34h44M42 28h16" stroke="#ABA49C" stroke-width="4" stroke-linecap="round"/>`),
 };
 
 // ---------- 16px line glyphs ----------
