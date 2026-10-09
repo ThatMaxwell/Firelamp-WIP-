@@ -6,8 +6,7 @@
 //   overlay  the launcher, Control Center, menus, first-boot cards — mapped only while open
 //   overlay  the AI's layer (fire cursor, capsule, vision, toasts): never takes input
 // firelamp-shell runs this when org.kde.layershell is installed and falls back to Main.qml.
-// Layer-shell values as numbers: layer 1 bottom, 2 top, 3 overlay; anchors top 1, bottom 2,
-// left 4, right 8; keyboard 0 none, 1 exclusive, 2 on demand.
+// layer-shell-qt only takes its named enum values here (plain numbers fail to load).
 import QtQuick
 import QtQuick.Window
 import org.kde.layershell 1.0 as LayerShell
@@ -19,10 +18,10 @@ Main {
     layered: true
     visibility: Window.Windowed
     LayerShell.Window.scope: "firelamp-desktop"
-    LayerShell.Window.layer: 1
-    LayerShell.Window.anchors: 15
+    LayerShell.Window.layer: LayerShell.Window.LayerBottom
+    LayerShell.Window.anchors: LayerShell.Window.AnchorTop | LayerShell.Window.AnchorBottom | LayerShell.Window.AnchorLeft | LayerShell.Window.AnchorRight
     LayerShell.Window.exclusionZone: -1
-    LayerShell.Window.keyboardInteractivity: 2
+    LayerShell.Window.keyboardInteractivity: LayerShell.Window.KeyboardInteractivityOnDemand
 
     // ---- the menu bar ----
     Window {
@@ -31,10 +30,10 @@ Main {
         color: "transparent"; flags: Qt.FramelessWindowHint
         width: Screen.width; height: Theme.menubarH
         LayerShell.Window.scope: "firelamp-bar"
-        LayerShell.Window.layer: 2
-        LayerShell.Window.anchors: 1 | 4 | 8
+        LayerShell.Window.layer: LayerShell.Window.LayerTop
+        LayerShell.Window.anchors: LayerShell.Window.AnchorTop | LayerShell.Window.AnchorLeft | LayerShell.Window.AnchorRight
         LayerShell.Window.exclusionZone: Theme.menubarH
-        LayerShell.Window.keyboardInteractivity: 0
+        LayerShell.Window.keyboardInteractivity: LayerShell.Window.KeyboardInteractivityNone
     }
 
     // ---- the dock: grows while the pointer is on it, so icons can magnify ----
@@ -49,10 +48,10 @@ Main {
         width: side === "bottom" ? Screen.width : depth
         height: side === "bottom" ? depth : Screen.height
         LayerShell.Window.scope: "firelamp-dock"
-        LayerShell.Window.layer: 2
-        LayerShell.Window.anchors: side === "left" ? 4 | 1 | 2 : side === "right" ? 8 | 1 | 2 : 2 | 4 | 8
+        LayerShell.Window.layer: LayerShell.Window.LayerTop
+        LayerShell.Window.anchors: side === "left" ? LayerShell.Window.AnchorLeft | LayerShell.Window.AnchorTop | LayerShell.Window.AnchorBottom : side === "right" ? LayerShell.Window.AnchorRight | LayerShell.Window.AnchorTop | LayerShell.Window.AnchorBottom : LayerShell.Window.AnchorBottom | LayerShell.Window.AnchorLeft | LayerShell.Window.AnchorRight
         LayerShell.Window.exclusionZone: Os.settings.dockAutohide ? 0 : base
-        LayerShell.Window.keyboardInteractivity: 0
+        LayerShell.Window.keyboardInteractivity: LayerShell.Window.KeyboardInteractivityNone
         HoverHandler { id: dockHover; onHoveredChanged: main.dockHot = hovered }
     }
 
@@ -68,10 +67,10 @@ Main {
         color: "transparent"; flags: Qt.FramelessWindowHint
         width: Screen.width; height: Screen.height
         LayerShell.Window.scope: "firelamp-launcher"
-        LayerShell.Window.layer: 3
-        LayerShell.Window.anchors: 15
+        LayerShell.Window.layer: LayerShell.Window.LayerOverlay
+        LayerShell.Window.anchors: LayerShell.Window.AnchorTop | LayerShell.Window.AnchorBottom | LayerShell.Window.AnchorLeft | LayerShell.Window.AnchorRight
         LayerShell.Window.exclusionZone: -1
-        LayerShell.Window.keyboardInteractivity: 1
+        LayerShell.Window.keyboardInteractivity: LayerShell.Window.KeyboardInteractivityExclusive
     }
 
     // ---- the AI's layer: drawn over everything, clicks pass straight through ----
@@ -81,10 +80,10 @@ Main {
         color: "transparent"; flags: Qt.FramelessWindowHint | Qt.WindowTransparentForInput
         width: Screen.width; height: Screen.height
         LayerShell.Window.scope: "firelamp-ai"
-        LayerShell.Window.layer: 3
-        LayerShell.Window.anchors: 15
+        LayerShell.Window.layer: LayerShell.Window.LayerOverlay
+        LayerShell.Window.anchors: LayerShell.Window.AnchorTop | LayerShell.Window.AnchorBottom | LayerShell.Window.AnchorLeft | LayerShell.Window.AnchorRight
         LayerShell.Window.exclusionZone: -1
-        LayerShell.Window.keyboardInteractivity: 0
+        LayerShell.Window.keyboardInteractivity: LayerShell.Window.KeyboardInteractivityNone
     }
 
     Component.onCompleted: {
