@@ -45,7 +45,7 @@ jobs:
 
       - name: Ask the assistant and film it
         env:
-          TASK: ${{ inputs.task || 'Open a text editor and write a to-do list for this weekend: groceries, laundry, call mom' }}
+          TASK: "${{ inputs.task || 'Open a text editor and write a to-do list for this weekend: groceries, laundry, call mom' }}"
           MODEL: ${{ inputs.model || 'openai/gpt-4.1' }}
           FIRELAMP_PUTER_TOKEN: ${{ secrets.PUTER_AUTH_TOKEN }}
           FIRELAMP_JEV_KEY: ${{ secrets.JEV_API_KEY }}
