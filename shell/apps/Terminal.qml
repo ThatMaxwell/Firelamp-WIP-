@@ -1,4 +1,6 @@
-// Terminal: a small shell with `fetch` and `tree`, the live UI tree the AI reads, as text.
+// The UI tree console: `fetch` and `tree`, the live UI tree the AI reads, as text. On a real
+// install the dock's Terminal is Konsole running bash; only "Show me what you see" opens this,
+// titled "UI Tree". With --demo it plays the old mock terminal.
 import QtQuick
 import "../components"
 import "../js/uitree.js" as Tree
@@ -9,7 +11,7 @@ Rectangle {
     color: Theme.bg
     readonly property string prompt: "<font color=\"#7FB98A\">" + Os.user + "@" + Os.host + "</font> <font color=\"#ABA49C\">~</font> <font color=\"#76706A\">%</font> "
     function start(opts) {
-        echo("<font color=\"#5f5c59\">Last login: " + new Date().toDateString() + " on ttys001</font>");
+        if (Os.demo) echo("<font color=\"#5f5c59\">Last login: " + new Date().toDateString() + " on ttys001</font>");
         run("fetch", true);
         echo("<font color=\"#5f5c59\">Type</font> <font color=\"#e8e4e0\">help</font> <font color=\"#5f5c59\">to see commands.</font>");
     }
@@ -78,7 +80,7 @@ Rectangle {
                         "<font color=\"#9aa6b2\">OS</font>        Firelamp OS 0.1 “Kindling” x86_64",
                         "<font color=\"#9aa6b2\">Base</font>      Arch Linux",
                         "<font color=\"#9aa6b2\">Shell</font>     Hearth (Qt Quick on Wayland)",
-                        "<font color=\"#9aa6b2\">Assistant</font> " + app.esc(Os.name) + " · LLM brain + Jev reflexes",
+                        "<font color=\"#9aa6b2\">Assistant</font> " + app.esc(Os.name) + (Os.demo ? " · LLM brain + Jev reflexes" : ""),
                         "<font color=\"#9aa6b2\">UI tree</font>   AT-SPI2, live",
                         "<font color=\"#9aa6b2\">Cursors</font>   2 (yours + the fire one)"
                     ]
