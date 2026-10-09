@@ -28,7 +28,7 @@
     $$('[data-i18n-ph]').forEach(n => (n.placeholder = d[n.dataset.i18nPh]));
     $$('#langToggle b').forEach(b => b.classList.toggle('on', b.dataset.l === l));
     try { localStorage.setItem('fl-lang', l); } catch (e) {}
-    splitWords(); onScroll(); pipeReset(); ctlText(); if (typeof relText === 'function') relText();
+    splitWords(); onScroll(); if (typeof relText === 'function') relText();
   }
 
   /* ---------- flow ---------- */
@@ -125,36 +125,14 @@
   }), { threshold: 0.35 });
   $$('.clip').forEach(v => clipIO.observe(v));
 
-  /* ---------- brain → reflexes pipeline ---------- */
-  const pipe = $('#pipe'), plan = $('.plan', pipe), acts = $('.acts', pipe);
-  let pipeRun = 0, pipeVisible = false;
   const wait = ms => new Promise(r => setTimeout(r, ms));
-  function pipeReset() { pipeRun++; plan.innerHTML = ''; acts.innerHTML = ''; if (pipeVisible) runPipe(); }
-  async function runPipe() {
-    const id = ++pipeRun;
-    while (pipeVisible && id === pipeRun) {
-      plan.innerHTML = ''; acts.innerHTML = '';
-      await wait(700);
-      for (const s of T[lang]['pipe.plan']) { if (id !== pipeRun) return; plan.insertAdjacentHTML('beforeend', `<span>${s}</span>`); await wait(260); }
-      await wait(300);
-      for (const a of T[lang]['pipe.acts']) {
-        if (id !== pipeRun) return;
-        $$('span', acts).forEach(x => x.classList.remove('cur'));
-        acts.insertAdjacentHTML('beforeend', `<span class="cur">${a}</span>`);
-        await wait(a.includes('…') || a.includes('wait') || a.includes('esperar') ? 900 : 380);
-      }
-      $$('span', acts).forEach(x => x.classList.remove('cur'));
-      await wait(2600);
-    }
-  }
-  new IntersectionObserver(es => { pipeVisible = es[0].isIntersecting; if (pipeVisible) runPipe(); else pipeRun++; }, { threshold: 0.4 }).observe(pipe);
 
   /* ---------- the page's own fire cursor ---------- */
   const cursor = (() => {
     const el = $('#pageCursor'), tag = $('.pc-tag', el);
     let x = innerWidth * 0.8, y = innerHeight * 0.4, tx = x, ty = y, vx = 0, vy = 0;
     let paused = false, awake = false, asleep = false, nextAt = 0, raf;
-    const targets = () => $$('.hero-h, .hero-sub, .btn, .reveal-words .w.lit, .feat h3, .feat-text p, .stack-p, .pipe-v span, .lede, .keycap, #aiName, .end-h, .num, .h2')
+    const targets = () => $$('.hero-h, .hero-sub, .btn, .reveal-words .w.lit, .feat h3, .feat-text p, .stack-p, .lede, #aiName, .end-h, .num, .h2')
       .filter(n => { const r = n.getBoundingClientRect(); return r.width && r.bottom > 80 && r.top < innerHeight - 40; });
     function pick(t) {
       const ts = targets();
@@ -163,7 +141,7 @@
       tx = Math.min(innerWidth - 40, r.left + r.width * (0.1 + Math.random() * 0.8));
       ty = Math.min(innerHeight - 40, Math.max(80, r.top + r.height * (0.3 + Math.random() * 0.5)));
       nextAt = t + 1400 + Math.random() * 2200;
-      if (n.matches('.btn, .keycap, .pipe-v span') && Math.random() < 0.6) setTimeout(click, 700);
+      if (n.matches('.btn') && Math.random() < 0.6) setTimeout(click, 700);
     }
     function click() { if (paused) return; el.classList.remove('click'); void el.offsetWidth; el.classList.add('click'); }
     let lastY = scrollY;
@@ -190,17 +168,6 @@
     return { wake, sleep, setPaused, setName, hold, release, click, near, get paused() { return paused; } };
   })();
 
-  /* ---------- pause: Esc or the key ---------- */
-  const key = $('#escKey');
-  function ctlText() { $('#ctlState').textContent = T[lang][cursor.paused ? 'ctl.paused' : 'ctl.run']; }
-  function togglePause() { cursor.setPaused(!cursor.paused); ctlText(); }
-  key.addEventListener('click', togglePause);
-  addEventListener('keydown', e => {
-    if (e.key !== 'Escape' || !site.classList.contains('show') || $('#film').classList.contains('show')) return;
-    key.classList.add('down'); togglePause();
-  });
-  addEventListener('keyup', e => { if (e.key === 'Escape') key.classList.remove('down'); });
-
   /* ---------- name ---------- */
   const nameIn = $('#aiName'), ask = $('#nameAsk');
   nameIn.addEventListener('input', e => cursor.setName(e.target.value.trim()));
@@ -208,7 +175,7 @@
   ask.addEventListener('click', async () => {
     if (ask.disabled) return;
     ask.disabled = true;
-    cursor.wake(); cursor.setPaused(false); ctlText();
+    cursor.wake(); cursor.setPaused(false);
     const r = nameIn.getBoundingClientRect();
     cursor.hold(r.left + 18, r.top + r.height * 0.55);
     for (let i = 0; i < 90 && !cursor.near(); i++) await wait(30);
