@@ -12,6 +12,7 @@ Writes to the output folder:
 Exits non-zero if the desktop session or the AT-SPI2 tree never came up.
 """
 import argparse
+import json
 import os
 import re
 import shutil
@@ -36,6 +37,74 @@ def hmp(sock_path, command):
             return ""
 
 
+def qmp_click(sock_path, x, y, width, height):
+    """Click at (x, y) on the guest screen. QEMU's tablet is absolute, and HMP's mouse_move only
+    sends relative motion, so use QMP's input-send-event with the tablet's 0..32767 axes."""
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+        s.settimeout(10)
+        s.connect(sock_path)
+        f = s.makefile("rw")
+        f.readline()  # greeting
+
+        def cmd(c):
+            f.write(json.dumps(c) + "\n")
+            f.flush()
+            while True:
+                r = json.loads(f.readline())
+                if "return" in r or "error" in r:
+                    return r
+        cmd({"execute": "qmp_capabilities"})
+        ax = lambda axis, v, size: {"type": "abs", "data": {"axis": axis, "value": round(v * 32767 / max(size - 1, 1))}}
+        btn = lambda down: {"type": "btn", "data": {"button": "left", "down": down}}
+        r = cmd({"execute": "input-send-event", "arguments": {"events": [ax("x", x, width), ax("y", y, height)]}})
+        time.sleep(0.4)
+        cmd({"execute": "input-send-event", "arguments": {"events": [btn(True)]}})
+        time.sleep(0.15)
+        cmd({"execute": "input-send-event", "arguments": {"events": [btn(False)]}})
+        return r
+
+
+def png_size(path):
+    with open(path, "rb") as fh:
+        head = fh.read(24)
+    return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+
+
+def capsule_stop(mon, qmp, serial, out):
+    """The guest starts a real task, finds the capsule's Stop over AT-SPI and prints its screen
+    position; click it like a person would (QEMU's tablet) and print what the agent says."""
+    def serial_text():
+        with open(serial, errors="replace") as fh:
+            return fh.read()
+    # The guest sends a position per try (it re-measures if a click missed), then one RESULT.
+    clicked, deadline = 0, time.time() + 240
+    while time.time() < deadline:
+        text = serial_text()
+        m = re.search(r"=== FIRELAMP STOP (RESULT|SKIPPED)[^\n]*", text)
+        if m:
+            print("test-boot:", m.group(0), flush=True)
+            return
+        tries = list(re.finditer(r"=== FIRELAMP STOP AT (\d+) (\d+)[^\n]*", text))
+        if len(tries) > clicked:
+            x, y = int(tries[-1].group(1)), int(tries[-1].group(2))
+            clicked = len(tries)
+            print("test-boot:", tries[-1].group(0), flush=True)
+            if clicked == 1:
+                hmp(mon, f"screendump {os.path.join(out, 'capsule.png')} -f png")
+            try:
+                width, height = png_size(os.path.join(out, "capsule.png"))
+            except OSError:
+                width, height = 1280, 800
+            r = qmp_click(qmp, x, y, width, height)
+            if "error" in r:
+                print("test-boot: QMP click failed:", r["error"], flush=True)
+            time.sleep(1)
+            hmp(mon, f"screendump {os.path.join(out, f'capsule-click{clicked}.png')} -f png")
+            deadline = time.time() + 120
+        time.sleep(1)
+    print("test-boot: capsule Stop test: no result from the guest", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("iso")
@@ -44,6 +113,8 @@ def main():
     ap.add_argument("--memory", default="4096")
     ap.add_argument("--uefi", action="store_true", help="boot with OVMF instead of BIOS")
     ap.add_argument("--frame-interval", type=float, default=4.0)
+    ap.add_argument("--test-brain", default=os.environ.get("FIRELAMP_TEST_BRAIN", ""),
+                    help="BASE|MODEL of an OpenAI-compatible server the guest can reach; runs the capsule Stop test")
     args = ap.parse_args()
 
     out = os.path.abspath(args.out)
@@ -51,7 +122,8 @@ def main():
     os.makedirs(frames, exist_ok=True)
     serial = os.path.join(out, "serial.log")
     mon = os.path.join(out, "monitor.sock")
-    for p in (serial, mon):
+    qmp = os.path.join(out, "qmp.sock")
+    for p in (serial, mon, qmp):
         if os.path.exists(p):
             os.remove(p)
 
@@ -66,12 +138,15 @@ def main():
         "-display", "none",
         "-serial", f"file:{serial}",
         "-monitor", f"unix:{mon},server,nowait",
+        "-qmp", f"unix:{qmp},server,nowait",
         "-device", "virtio-tablet-pci",
         "-nic", "user,model=virtio-net-pci",
         "-no-reboot",
         # Tells the live session to skip the shell's first-boot naming screen.
         "-fw_cfg", "name=opt/firelamp/skip-onboarding,string=1",
     ]
+    if args.test_brain:
+        cmd += ["-fw_cfg", f"name=opt/firelamp/test-brain,string={args.test_brain}"]
     cmd += ["-enable-kvm", "-cpu", "host"] if kvm else ["-accel", "tcg", "-cpu", "max"]
     if args.uefi:
         for fw in ("/usr/share/ovmf/OVMF.fd", "/usr/share/OVMF/OVMF_CODE.fd", "/usr/share/edk2/x64/OVMF.4m.fd"):
@@ -109,20 +184,29 @@ def main():
             time.sleep(3)
             hmp(mon, f"screendump {os.path.join(out, 'desktop.png')} -f png")
             shutil.copy(os.path.join(out, "desktop.png"), os.path.join(frames, f"{frame:04d}.png"))
-            # Tap Super: it should open the Firelamp launcher, not Plasma's.
-            hmp(mon, "sendkey meta_l")
+            # Tap Super (held 150 ms, so KWin counts a modifier-only tap): it should open the Firelamp launcher.
+            hmp(mon, "sendkey meta_l 150")
             time.sleep(3)
             hmp(mon, f"screendump {os.path.join(out, 'super.png')} -f png")
+            # Meta+Space goes through kglobalaccel instead of KWin's modifier-only tap.
+            time.sleep(2)
+            hmp(mon, "sendkey meta_l-spc 150")
+            time.sleep(3)
+            hmp(mon, f"screendump {os.path.join(out, 'metaspace.png')} -f png")
+            hmp(mon, "sendkey meta_l-spc 150")  # close the launcher again
             # The guest writes the shell's trace of that keypress to the serial port.
             for _ in range(10):
                 with open(serial, errors="replace") as fh:
                     text = fh.read()
                 if "=== END FIRELAMP SUPER DEBUG ===" in text:
-                    print(text[text.index("=== FIRELAMP SUPER DEBUG ==="):text.index("=== END FIRELAMP SUPER DEBUG ===")], flush=True)
+                    for m in re.finditer(r"=== FIRELAMP SUPER DEBUG ===(.*?)=== END FIRELAMP SUPER DEBUG ===", text, re.S):
+                        print("test-boot: shell trace after a key:", m.group(1).strip(), flush=True)
                     break
                 time.sleep(1)
             else:
                 print("test-boot: no Super debug on the serial port", flush=True)
+            if args.test_brain:
+                capsule_stop(mon, qmp, serial, out)
     finally:
         if vm.poll() is None:
             try:

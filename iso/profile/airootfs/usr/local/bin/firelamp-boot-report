@@ -5,6 +5,13 @@
 port=/dev/ttyS0
 report=/run/user/1000/firelamp-boot-report.txt
 
+# QEMU boot test only: hand the session the test brain (fw_cfg files are readable by root only).
+brain=/sys/firmware/qemu_fw_cfg/by_name/opt/firelamp/test-brain/raw
+if [[ -e $brain ]]; then
+    install -d -m 755 /run/firelamp
+    install -m 644 "$brain" /run/firelamp/test-brain
+fi
+
 for _ in $(seq 240); do
     [[ -s "$report" ]] && break
     sleep 1
@@ -29,17 +36,35 @@ done
     echo '=== END FIRELAMP BOOT REPORT ==='
 } | timeout 10 tee "$port" >/dev/null 2>&1
 
+# The capsule test (QEMU only) writes what the host needs to click Stop; pass it to the serial port.
+capsule=/run/user/1000/firelamp-capsule.txt
+if [[ -e /sys/firmware/qemu_fw_cfg/by_name/opt/firelamp/test-brain/raw ]]; then
+    (
+        sent=0
+        for _ in $(seq 300); do
+            sleep 2
+            [[ -f "$capsule" ]] || continue
+            total=$(wc -l <"$capsule")
+            if (( total > sent )); then
+                tail -n +"$((sent + 1))" "$capsule" | head -n "$((total - sent))" | timeout 10 tee "$port" >/dev/null 2>&1
+                sent=$total
+            fi
+            grep -q 'STOP RESULT\|STOP SKIPPED' "$capsule" && break
+        done
+    ) &
+fi
+
 # The boot test taps Super after reading the report. Watch the shell's trace for
 # the next launcher-key ack and write it to the serial port too.
 before=$(curl -s --max-time 5 127.0.0.1:7341/debug)
 for _ in $(seq 90); do
-    sleep 2
+    sleep 1
     now=$(curl -s --max-time 5 127.0.0.1:7341/debug)
     if [[ -n "$now" && "$now" != "$before" ]]; then
-        sleep 3
-        { echo '=== FIRELAMP SUPER DEBUG ==='; curl -s --max-time 5 127.0.0.1:7341/debug; echo; echo '=== END FIRELAMP SUPER DEBUG ==='; } \
+        { echo '=== FIRELAMP SUPER DEBUG ==='; echo "$now"; echo '=== END FIRELAMP SUPER DEBUG ==='; } \
             | timeout 10 tee "$port" >/dev/null 2>&1
-        break
+        before=$now
     fi
 done
+wait
 exit 0

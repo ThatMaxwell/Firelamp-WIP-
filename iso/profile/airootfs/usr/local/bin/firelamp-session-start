@@ -50,3 +50,7 @@ if [[ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/firelamp/no-shell" ]] && ! grep -q
 fi
 
 /usr/local/bin/firelamp-a11y-probe --boot-report >/dev/null 2>&1 &
+# QEMU boot test only: start a real task against the test brain and hand the host the capsule's Stop.
+if [[ -e /sys/firmware/qemu_fw_cfg/by_name/opt/firelamp/test-brain/raw ]]; then
+    /usr/local/bin/firelamp-a11y-probe --capsule-test >>"$state/capsule-test.log" 2>&1 &
+fi

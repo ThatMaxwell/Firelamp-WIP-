@@ -4,9 +4,9 @@ on:
   push:
     branches: [main, master]
     tags: ['v*']
-    paths: ['iso/**', 'shell/**', '.github/workflows/iso.yml']
+    paths: ['iso/**', 'shell/**', 'agent/**', '.github/workflows/iso.yml']
   pull_request:
-    paths: ['iso/**', 'shell/**', '.github/workflows/iso.yml']
+    paths: ['iso/**', 'shell/**', 'agent/**', '.github/workflows/iso.yml']
   workflow_dispatch:
     inputs:
       release_tag:
@@ -43,7 +43,21 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm || true
 
+      # A small open model on the runner, so the boot test can start a real assistant task and
+      # click the capsule's Stop (the guest reaches the host at 10.0.2.2). Only the test uses it;
+      # the ISO ships with no brain set up.
+      - name: Start a test brain for the assistant (Ollama)
+        id: brain
+        continue-on-error: true
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          for i in $(seq 30); do curl -sf http://127.0.0.1:11434/api/tags >/dev/null && break; sleep 1; done
+          ollama pull qwen2.5:0.5b
+          echo "test_brain=http://10.0.2.2:11434/v1|qwen2.5:0.5b" >> "$GITHUB_OUTPUT"
+
       - name: Boot in QEMU (BIOS) and screenshot the desktop
+        env:
+          FIRELAMP_TEST_BRAIN: ${{ steps.brain.outputs.test_brain }}
         run: python3 iso/test-boot.py iso/out/*.iso --out boot-test/bios
 
       - name: Boot in QEMU (UEFI)
@@ -53,7 +67,7 @@ jobs:
       - name: Print desktop screenshot (base64 JPEG, for tools without artifact access)
         if: always()
         run: |
-          for shot in bios/desktop uefi/desktop bios/super; do
+          for shot in bios/desktop uefi/desktop bios/super bios/metaspace bios/capsule bios/capsule-click1 bios/capsule-click2; do
             f=boot-test/$shot.png
             [ -f "$f" ] || continue
             tag=$(echo "$shot" | tr / _)
@@ -73,6 +87,8 @@ jobs:
           path: |
             boot-test/*/desktop.png
             boot-test/*/super.png
+            boot-test/*/metaspace.png
+            boot-test/*/capsule*.png
             boot-test/*/boot.gif
             boot-test/*/serial.log
           if-no-files-found: warn
